@@ -40,7 +40,7 @@ public:
     int custo_total;
     int veiculos_usados;
     int veiculos_disponiveis;
-    Rota* rotas;
+    vector<Rota> rotas;
 };
 
 #endif
