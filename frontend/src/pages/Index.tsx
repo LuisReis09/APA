@@ -1,7 +1,7 @@
-import Layout from "@/components/Layout";
+import { VehicleRoutingApp } from "@/components/VehicleRoutingApp";
 
 const Index = () => {
-  return <Layout />;
+  return <VehicleRoutingApp />;
 };
 
 export default Index;

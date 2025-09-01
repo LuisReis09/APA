@@ -2,58 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-/* VRP Dark Theme Design System */
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
 
 @layer base {
   :root {
-    /* Dark theme as default for VRP app */
-    --background: 222 15% 8%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 100%;
+    --foreground: 215 20% 15%;
 
-    --card: 222 20% 12%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 20% 15%;
 
-    --popover: 222 20% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 20% 15%;
 
-    --primary: 142 76% 36%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 214 84% 56%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 214 100% 70%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 215 20% 25%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 142 86% 28%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 142 76% 36%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    /* VRP specific colors */
-    --route-1: 142 76% 36%;
-    --route-2: 217 91% 60%;
-    --route-3: 262 83% 58%;
-    --route-4: 346 87% 43%;
-    --route-5: 36 100% 66%;
-    --route-6: 172 66% 50%;
-    --depot: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 214 84% 56%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 86% 28%));
-    --gradient-card: linear-gradient(135deg, hsl(222 20% 12%), hsl(222 25% 15%));
-    --gradient-hero: linear-gradient(135deg, hsl(222 15% 8%), hsl(217.2 32.6% 17.5%));
+    /* Custom design tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(214 84% 56%), hsl(214 100% 70%));
+    --gradient-accent: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 50%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 98%));
+    
+    --shadow-elegant: 0 10px 30px -10px hsl(214 84% 56% / 0.3);
+    --shadow-glow: 0 0 40px hsl(214 100% 70% / 0.4);
+    --shadow-card: 0 4px 12px -2px hsl(215 20% 15% / 0.08);
+    
+    --animation-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-    /* Shadows */
-    --shadow-elegant: 0 10px 30px -10px hsl(142 76% 36% / 0.3);
-    --shadow-glow: 0 0 40px hsl(142 86% 28% / 0.2);
-
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -82,8 +81,9 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 214 84% 56%;
+    --primary-foreground: 215 20% 15%;
+    --primary-glow: 214 100% 70%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -91,15 +91,27 @@
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 142 76% 36%;
     --accent-foreground: 210 40% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 214 84% 56%;
+
+    /* Custom design tokens - dark mode */
+    --gradient-primary: linear-gradient(135deg, hsl(214 84% 56%), hsl(214 100% 70%));
+    --gradient-accent: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 50%));
+    --gradient-subtle: linear-gradient(180deg, hsl(222.2 84% 4.9%), hsl(217.2 32.6% 17.5%));
+    
+    --shadow-elegant: 0 10px 30px -10px hsl(214 84% 56% / 0.4);
+    --shadow-glow: 0 0 40px hsl(214 100% 70% / 0.5);
+    --shadow-card: 0 4px 12px -2px hsl(0 0% 0% / 0.3);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -109,61 +121,6 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-
-  /* Custom VRP components */
-  .gradient-primary {
-    background: var(--gradient-primary);
-  }
-
-  .gradient-card {
-    background: var(--gradient-card);
-  }
-
-  .gradient-hero {
-    background: var(--gradient-hero);
-  }
-
-  .shadow-elegant {
-    box-shadow: var(--shadow-elegant);
-  }
-
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
-  }
-
-  .route-color-1 { color: hsl(var(--route-1)); }
-  .route-color-2 { color: hsl(var(--route-2)); }
-  .route-color-3 { color: hsl(var(--route-3)); }
-  .route-color-4 { color: hsl(var(--route-4)); }
-  .route-color-5 { color: hsl(var(--route-5)); }
-  .route-color-6 { color: hsl(var(--route-6)); }
-
-  .route-bg-1 { background-color: hsl(var(--route-1)); }
-  .route-bg-2 { background-color: hsl(var(--route-2)); }
-  .route-bg-3 { background-color: hsl(var(--route-3)); }
-  .route-bg-4 { background-color: hsl(var(--route-4)); }
-  .route-bg-5 { background-color: hsl(var(--route-5)); }
-  .route-bg-6 { background-color: hsl(var(--route-6)); }
-
-  /* Graph animations */
-  @keyframes pulse-route {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; }
-  }
-
-  @keyframes draw-line {
-    from { stroke-dashoffset: 1000; }
-    to { stroke-dashoffset: 0; }
-  }
-
-  .route-line {
-    stroke-dasharray: 5, 5;
-    animation: draw-line 2s ease-in-out;
-  }
-
-  .route-node {
-    animation: pulse-route 2s infinite;
-  }
 }
 
 @layer base {
@@ -172,10 +129,6 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
-  }
-
-  html {
-    scroll-behavior: smooth;
+    @apply bg-background text-foreground;
   }
 }

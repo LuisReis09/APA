@@ -3,7 +3,7 @@ import copy
 import random
 
 # ---------- Leitura dos dados ----------
-estacoes, caminhoes, capmax_caminhao, necessidades, matriz = LerDados("../exemplos/n17_q10.txt")
+estacoes, caminhoes, capmax_caminhao, necessidades, matriz = LerDados("../exemplos/n54_q30.txt")
 print("DADOS DE ENTRADA")
 print("Estações:", estacoes)
 print("Caminhões:", caminhoes)
@@ -311,6 +311,16 @@ def perturbacao_newroute(rotas, qtd_elementos):
 
     return rotas
 
+def perturbacao_inversao(rotas):
+    """
+        Escolhe aleatoriamente uma rota pra ser invertida.
+        Altera rotas por referência.
+    """
+
+    rota_escolhida = random.randint(0, len(rotas) - 1)
+    rotas[rota_escolhida] = rotas[rota_escolhida][::-1]
+    return rotas
+
 
 def pertubacao(rotas, opcao, grau_perturbacao=1):
     """
@@ -329,6 +339,9 @@ def pertubacao(rotas, opcao, grau_perturbacao=1):
         case 4:
             # Opção 4: cria uma nova rota com até (2 * grau_perturbacao) estações retiradas de rotas existentes
             return perturbacao_newroute(rotas, 2 * grau_perturbacao)
+        case 5:
+            # Opção 5: inverte uma rota inteira
+            return perturbacao_inversao(rotas)
         case _:
             return rotas
 
@@ -353,7 +366,7 @@ def ILS(rotas, max_iteracoes, max_sem_melhora):
     while iteracoes < max_iteracoes and sem_melhora < max_sem_melhora:
 
         grau_perturbacao = (sem_melhora // (max_sem_melhora // 5)) + 1
-        opcao_perturbacao = random.randint(1, 4)  # Escolhe uma das 4 opções de perturbação
+        opcao_perturbacao = random.randint(1, 5)  # Escolhe uma das 4 opções de perturbação
 
         solucao_perturbada = pertubacao(copy.deepcopy(rotas), opcao_perturbacao, grau_perturbacao)
         solucao_perturbada = melhorar_solucao(solucao_perturbada)

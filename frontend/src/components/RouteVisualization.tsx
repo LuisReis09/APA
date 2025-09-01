@@ -1,227 +1,166 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Route as RouteIcon, MapPin, TrendingUp, Loader2, Truck } from "lucide-react";
-import RouteGraphFlow from "./RouteGraphFlow";
-
-interface Route {
-  id: number;
-  path: number[];
-  cost: number;
-  load: number;
-}
+import { Route, MapPin } from "lucide-react";
+import {
+  ReactFlow,
+  Node,
+  Edge,
+  Background,
+  Controls,
+  MiniMap,
+  useNodesState,
+  useEdgesState,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import { useEffect } from "react";
 
 interface RouteVisualizationProps {
-  greedyResults?: {
-    nearestNeighbor: Route[];
-    cheapestInsertion: Route[];
-  };
-  optimizationResults?: {
-    localSearch?: Route[];
-    vnd?: Route[];
-    ils?: Route[];
-  };
-  isProcessing: boolean;
+  title: string;
+  routes: Array<{
+    id: number;
+    nodes: number[];
+    color: string;
+  }>;
 }
 
-const RouteVisualization = ({ greedyResults, optimizationResults, isProcessing }: RouteVisualizationProps) => {
-  if (isProcessing) {
-    return (
-      <Card className="bg-gradient-card border-border shadow-elegant">
-        <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
-          <div className="text-center">
-            <p className="font-medium text-foreground">Processando...</p>
-            <p className="text-sm text-muted-foreground">Aguarde enquanto os algoritmos são executados</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+export const RouteVisualization = ({ title, routes }: RouteVisualizationProps) => {
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  if (!greedyResults) return null;
+  useEffect(() => {
+    if (!routes?.length) return;
 
-  const calculateTotalCost = (routes: Route[]) => {
-    return routes.reduce((sum, route) => sum + route.cost, 0);
-  };
+    // Criar nós únicos de todas as rotas
+    const allNodes = new Set<number>();
+    routes.forEach(route => {
+      route.nodes.forEach(nodeId => allNodes.add(nodeId));
+    });
 
-  const calculateTotalLoad = (routes: Route[]) => {
-    return routes.reduce((sum, route) => sum + route.load, 0);
-  };
+    // Posicionar nós em círculo para melhor visualização
+    const nodeArray = Array.from(allNodes);
+    const centerX = 300;
+    const centerY = 200;
+    const radius = 150;
 
-  const calculateGap = (cost1: number, cost2: number) => {
-    return Math.abs((cost1 - cost2) / Math.min(cost1, cost2) * 100);
-  };
+    const flowNodes: Node[] = nodeArray.map((nodeId, index) => {
+      const angle = (index * 2 * Math.PI) / nodeArray.length;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+
+      return {
+        id: nodeId.toString(),
+        position: { x, y },
+        data: { 
+          label: nodeId === 0 ? "Depósito" : `Est. ${nodeId}` 
+        },
+        type: nodeId === 0 ? 'depot' : 'station',
+        style: {
+          backgroundColor: nodeId === 0 ? 'hsl(var(--primary))' : 'hsl(var(--card))',
+          color: nodeId === 0 ? 'hsl(var(--primary-foreground))' : 'hsl(var(--card-foreground))',
+          border: '2px solid hsl(var(--border))',
+          borderRadius: '50%',
+          width: nodeId === 0 ? 60 : 40,
+          height: nodeId === 0 ? 60 : 40,
+          fontSize: '10px',
+          fontWeight: 'bold'
+        }
+      };
+    });
+
+    // Criar arestas para cada rota
+    const flowEdges: Edge[] = [];
+    routes.forEach((route, routeIndex) => {
+      for (let i = 0; i < route.nodes.length - 1; i++) {
+        const sourceId = route.nodes[i].toString();
+        const targetId = route.nodes[i + 1].toString();
+        
+        flowEdges.push({
+          id: `route-${routeIndex}-${i}`,
+          source: sourceId,
+          target: targetId,
+          type: 'smoothstep',
+          style: {
+            stroke: route.color,
+            strokeWidth: 3,
+          },
+          markerEnd: {
+            type: 'arrowclosed',
+            color: route.color,
+          },
+          label: `R${route.id}`,
+          labelStyle: {
+            fontSize: '10px',
+            fontWeight: 'bold',
+            fill: route.color,
+          }
+        });
+      }
+    });
+
+    setNodes(flowNodes);
+    setEdges(flowEdges);
+  }, [routes, setNodes, setEdges]);
 
   return (
-    <Card className="border bg-gradient-card border-border shadow-elegant">
+    <Card className="shadow-card">
       <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <RouteIcon className="h-5 w-5 text-primary" />
-          <span>Visualização das Rotas</span>
+        <CardTitle className="flex items-center gap-2">
+          <Route className="w-5 h-5 text-primary" />
+          {title}
         </CardTitle>
-        <CardDescription>
-          Resultados dos algoritmos aplicados ao problema VRP
-        </CardDescription>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {routes?.map((route) => (
+            <Badge 
+              key={route.id} 
+              variant="outline"
+              style={{ borderColor: route.color, color: route.color }}
+            >
+              <MapPin className="w-3 h-3 mr-1" />
+              Rota {route.id}
+            </Badge>
+          ))}
+        </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="greedy" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="greedy">Algoritmos Gulosos</TabsTrigger>
-            <TabsTrigger value="optimization" disabled={!optimizationResults}>
-              Otimização
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="greedy" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Nearest Neighbor */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="h-4 w-4 text-route-1" />
-                    <h3 className="font-semibold">Vizinho Mais Próximo</h3>
-                  </div>
-                  <Badge variant="outline">
-                    Custo: {calculateTotalCost(greedyResults.nearestNeighbor).toFixed(2)}
-                  </Badge>
-                </div>
-                
-                <RouteGraphFlow routes={greedyResults.nearestNeighbor} />
-                
-                <div className="space-y-2">
-                  {greedyResults.nearestNeighbor.map((route) => (
-                    <div key={route.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                      <div className="flex items-center space-x-2">
-                        <Truck className={`h-4 w-4 route-color-${route.id}`} />
-                        <span className="text-sm">Rota {route.id}: {route.path.join(' → ')}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Carga: {route.load} | Custo: {route.cost.toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
-                  <div className="pt-2 border-t border-border">
-                    <div className="flex justify-between text-sm">
-                      <span>Carga Total:</span>
-                      <span className="font-medium">{calculateTotalLoad(greedyResults.nearestNeighbor)}</span>
-                    </div>
-                  </div>
-                </div>
+        <div className="h-96 w-full border rounded-lg overflow-hidden">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            fitView
+            attributionPosition="bottom-left"
+          >
+            <Background />
+            <Controls />
+            <MiniMap />
+          </ReactFlow>
+        </div>
+        
+        {/* Route Text Display */}
+        <div className="mt-4 space-y-3">
+          <h4 className="font-semibold text-sm">Rotas encontradas:</h4>
+          <div className="space-y-2">
+            {routes?.map((route) => (
+              <div key={route.id} className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: route.color }}
+                />
+                <span className="text-sm font-mono">
+                  Rota {route.id}: {route.nodes.join(" → ")}
+                </span>
               </div>
+            ))}
+          </div>
+        </div>
 
-              {/* Cheapest Insertion */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <TrendingUp className="h-4 w-4 text-route-2" />
-                    <h3 className="font-semibold">Inserção Mais Barata</h3>
-                  </div>
-                  <Badge variant="outline">
-                    Custo: {calculateTotalCost(greedyResults.cheapestInsertion).toFixed(2)}
-                  </Badge>
-                </div>
-                
-                <RouteGraphFlow routes={greedyResults.cheapestInsertion} />
-                
-                <div className="space-y-2">
-                  {greedyResults.cheapestInsertion.map((route) => (
-                    <div key={route.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                      <div className="flex items-center space-x-2">
-                        <Truck className={`h-4 w-4 route-color-${route.id}`} />
-                        <span className="text-sm">Rota {route.id}: {route.path.join(' → ')}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Carga: {route.load} | Custo: {route.cost.toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
-                  <div className="pt-2 border-t border-border">
-                    <div className="flex justify-between text-sm">
-                      <span>Carga Total:</span>
-                      <span className="font-medium">{calculateTotalLoad(greedyResults.cheapestInsertion)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Comparison */}
-            <Card className="bg-muted/20">
-              <CardContent className="pt-4">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Gap entre algoritmos</p>
-                    <p className="text-lg font-semibold text-primary">
-                      {calculateGap(
-                        calculateTotalCost(greedyResults.nearestNeighbor),
-                        calculateTotalCost(greedyResults.cheapestInsertion)
-                      ).toFixed(2)}%
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Melhor solução</p>
-                    <p className="text-lg font-semibold">
-                      {calculateTotalCost(greedyResults.nearestNeighbor) < calculateTotalCost(greedyResults.cheapestInsertion) 
-                        ? "Vizinho Mais Próximo" 
-                        : "Inserção Mais Barata"
-                      }
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Diferença de custo</p>
-                    <p className="text-lg font-semibold text-accent">
-                      {Math.abs(
-                        calculateTotalCost(greedyResults.nearestNeighbor) - 
-                        calculateTotalCost(greedyResults.cheapestInsertion)
-                      ).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="optimization" className="space-y-6">
-            {optimizationResults && (
-              <div className="space-y-6">
-                {Object.entries(optimizationResults).map(([algorithm, routes]) => {
-                  if (!routes) return null;
-                  
-                  return (
-                    <div key={algorithm} className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold capitalize">{algorithm.replace(/([A-Z])/g, ' $1').trim()}</h3>
-                        <Badge variant="outline">
-                          Custo: {calculateTotalCost(routes).toFixed(2)}
-                        </Badge>
-                      </div>
-                      
-                      <RouteGraphFlow routes={routes} />
-                      
-                      <div className="space-y-2">
-                        {routes.map((route) => (
-                          <div key={route.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                            <div className="flex items-center space-x-2">
-                              <Truck className={`h-4 w-4 route-color-${route.id}`} />
-                              <span className="text-sm">Rota {route.id}: {route.path.join(' → ')}</span>
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              Carga: {route.load} | Custo: {route.cost.toFixed(2)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+        <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
+          <p>• O <strong>Depósito</strong> é representado pelo nó central maior</p>
+          <p>• Cada cor representa uma rota diferente</p>
+          <p>• As setas indicam a direção do percurso</p>
+        </div>
       </CardContent>
     </Card>
   );
 };
-
-export default RouteVisualization;
