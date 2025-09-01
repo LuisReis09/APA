@@ -34,6 +34,24 @@ int main(){
         }
     });
 
+    /**
+     * @brief
+     * Recebe do front o valor ótimo (ou null), o máximo de iterações e o máximo de iterações sem melhora
+     * O back deve guardar essas informações, para utilizá-las nas funções de processamento.
+    */
+    server.Post("/configuracoes", [](const httplib::Request& req, httplib::Response& res){
+        res.set_header("Access-Control-Allow-Origin", "*");
+
+        try{
+
+        }catch (exception& e){
+            cout << "Error: " << e.what() << endl;
+            res.status = 400;
+            string json_response = R"({"error": "bad request!"})";
+            res.set_content(json_response, "application/json");
+        }
+    });
+
 
     /**
      * @brief
