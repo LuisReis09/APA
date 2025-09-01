@@ -3,7 +3,7 @@ import copy
 import random
 
 # ---------- Leitura dos dados ----------
-estacoes, caminhoes, capmax_caminhao, necessidades, matriz = LerDados("exemplo3.txt")
+estacoes, caminhoes, capmax_caminhao, necessidades, matriz = LerDados("../exemplos/exemplo3.txt")
 print("DADOS DE ENTRADA")
 print("Estações:", estacoes)
 print("Caminhões:", caminhoes)
@@ -76,6 +76,7 @@ def calcula_custo_insercao(rota, ind, estacao):
 
 
 # ---------- Algoritmo principal ----------
+# ---------- Vizinho mais proximo ---------
 def execute(estacoes_restantes=estacoes_restantes, rotas=rotas, caminhoes_restantes=caminhoes_restantes):
     for estacao in estacoes_restantes:
         menor_custo = float("inf")
@@ -93,17 +94,13 @@ def execute(estacoes_restantes=estacoes_restantes, rotas=rotas, caminhoes_restan
                             melhor_config = (ind_rota, rota_testada, ind, arestas)
 
         # Decide onde inserir ou criar nova rota
-        if melhor_config and menor_custo <= (matriz[0][estacao] + matriz[estacao][0]):
+        if (melhor_config and menor_custo <= (matriz[0][estacao] + matriz[estacao][0])) or caminhoes_restantes == 0:
             ind_rota, rota_final, ind_aresta, arestas = melhor_config
             nova_rota = rota_final[:ind_aresta] + [(arestas[0], estacao), (estacao, arestas[1])] + rota_final[ind_aresta+1:]
             rotas[ind_rota] = nova_rota
         else:
-            if caminhoes_restantes > 0:
-                rotas.append([(0, estacao), (estacao, 0)])
-                caminhoes_restantes -= 1
-            else:
-                print(f"Não foi possível inserir a estação {estacao} em nenhuma rota e não há caminhões restantes.")
-                return False
+            rotas.append([(0, estacao), (estacao, 0)])
+            caminhoes_restantes -= 1
 
     return rotas
 
@@ -125,65 +122,104 @@ def arestas_para_rotas(rotas_arestas):
 
 def melhorar_solucao(rotas):
     """
-        Tenta posicionar melhor as estações nas rotas para reduzir o custo total.
-        Reaplicando o algoritmo de inserção mais barata nas rotas,
-        avaliando também a rota destino invertida (reverse).
+    Tenta reposicionar melhor as estações nas rotas para reduzir custo total.
+    Mantém depósitos nas pontas e aplica inserção mais barata.
     """
 
     for ind_rota_origem, rota in enumerate(rotas):
-        for estacao in rota[1:-1]:  # ignora depósitos (0 no início e fim)
+        for estacao in rota[1:-1]:  # ignora depósitos nas pontas
 
-            for ind_rota, rota_testada in enumerate(rotas):
-                for pos in range(1, len(rota_testada)):  # posições de inserção
+            for ind_rota_destino, rota_destino in enumerate(rotas):
+                # posições de inserção: ignorando primeiro e último
+                for pos in range(1, len(rota_destino) - 1):
 
-                    # ignora depósitos e mesma estação
-                    if estacao == 0 or estacao in rota_testada:
+                    if estacao == 0:  # nunca mover depósitos
                         continue
 
-                    # remove a estação da origem
+                    # cópias para teste
                     nova_rota_origem = rota[:]
-                    nova_rota_origem.remove(estacao)
+                    nova_rota_destino = rota_destino[:]
 
-                    # duas versões da rota destino: normal e invertida
-                    candidatos = []
+                    if ind_rota_origem == ind_rota_destino:
+                        # reposicionamento na própria rota
+                        nova_rota_destino.remove(estacao)
+                    else:
+                        # mover para outra rota
+                        nova_rota_origem.remove(estacao)
 
-                    # versão normal
-                    rota_normal = rota_testada[:]
-                    rota_normal.insert(pos, estacao)
-                    candidatos.append(rota_normal)
+                    # insere a estação na posição válida
+                    nova_rota_destino.insert(pos, estacao)
 
-                    # versão invertida
-                    rota_reversa = rota_testada[::-1]
-                    rota_reversa.insert(pos, estacao)
-                    candidatos.append(rota_reversa[::-1])  # volta p/ ordem original
+                    # checa viabilidade
+                    if not verifica_rota(nova_rota_destino) or not verifica_rota(nova_rota_origem):
+                        continue
 
-                    for nova_rota in candidatos:
-                        if verifica_rota(nova_rota) and verifica_rota(nova_rota_origem):
-                            try:
-                                if ind_rota_origem == ind_rota:
-                                    custo_atual = SomaCusto([rota])
-                                    custo_novo = SomaCusto([nova_rota])
-                                else:
-                                    custo_atual = SomaCusto([rota, rota_testada])
-                                    custo_novo = SomaCusto([nova_rota_origem, nova_rota])
-                            except Exception as e:
-                                print("Movendo estação", estacao, "da rota", rota, "para rota", rota_testada)
-                                print("Erro ao calcular custo:", e)
-                                continue
+                    # calcula custos
+                    if ind_rota_origem == ind_rota_destino:
+                        custo_atual = SomaCusto([rota])
+                        custo_novo = SomaCusto([nova_rota_destino])
+                    else:
+                        custo_atual = SomaCusto([rota, rota_destino])
+                        custo_novo = SomaCusto([nova_rota_origem, nova_rota_destino])
 
-                            if custo_novo < custo_atual:
-                                if ind_rota_origem == ind_rota:
-                                    rotas[ind_rota] = nova_rota
-                                else:
-                                    rotas[ind_rota] = nova_rota
-                                    if nova_rota_origem == [0, 0]:
-                                        del rotas[ind_rota_origem]
-                                    else:
-                                        rotas[ind_rota_origem] = nova_rota_origem
-
-                                return melhorar_solucao(rotas)
+                    # aplica mudança se melhora
+                    if custo_novo < custo_atual:
+                        rotas[ind_rota_destino] = nova_rota_destino
+                        if ind_rota_origem != ind_rota_destino:
+                            rotas[ind_rota_origem] = nova_rota_origem
+                        return melhorar_solucao(rotas)
 
     return rotas
+
+# def melhorar_solucao(rotas):
+#     """
+#         Tenta posicionar melhor as estações nas rotas para reduzir o custo total.
+#         Reaplicando o algoritmo de inserção mais barata nas rotas.
+#     """
+
+#     for ind_rota_origem, rota in enumerate(rotas):
+#         for estacao in rota[1:-1]:  # ignora depósitos (0 no início e fim)
+
+#             for ind_rota, rota_testada in enumerate(rotas):
+
+#                 for pos in range(1, len(rota_testada)):  # posições de inserção
+
+#                     if estacao == 0:
+#                         continue
+
+
+#                     # remove a estação da origem
+#                     nova_rota_origem = rota[:]
+#                     nova_rota_origem.remove(estacao)
+
+#                     if not verifica_rota(nova_rota_origem):
+#                         continue
+
+#                     rota_inserida = nova_rota_origem[:] if rota_testada == rota else rota_testada[:]
+
+#                     # versão inserida
+#                     rota_inserida.insert(pos, estacao)
+
+#                     if ind_rota_origem == ind_rota:
+#                         custo_atual = SomaCusto([rota])
+#                         custo_novo = SomaCusto([rota_inserida])
+#                     else:
+#                         custo_atual = SomaCusto([rota, rota_testada])
+#                         custo_novo = SomaCusto([nova_rota_origem, rota_inserida])
+
+#                     if custo_novo < custo_atual and verifica_rota(rota_inserida):
+#                         if ind_rota_origem == ind_rota:
+#                             rotas[ind_rota] = rota_inserida
+#                         else:
+#                             rotas[ind_rota] = rota_inserida
+#                             if nova_rota_origem == [0, 0]:
+#                                 del rotas[ind_rota_origem]
+#                             else:
+#                                 rotas[ind_rota_origem] = nova_rota_origem
+
+#                         return melhorar_solucao(rotas)
+
+#     return rotas
 
 def perturbacao_switch(rotas, trocas_a_realizar):
 
@@ -331,7 +367,7 @@ def ILS(rotas, max_iteracoes, max_sem_melhora):
 
 print("Iniciando busca gulosa...")
 rotas_guloso, custo = BuscaGulosa2(matriz, capmax_caminhao, necessidades, caminhoes)
-print("Custo inicial:", custo)
+print("Custo inicial:", VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_guloso))
 rotas_guloso = melhorar_solucao(rotas_guloso)
 print("Rotas melhora-guloso:", rotas_guloso)
 print("Custo melhora-guloso:", VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_guloso))
@@ -349,10 +385,10 @@ print("Custo IMBl:", custo_total, "\n")
 
 rotas_finais = melhorar_solucao(rotas_finais)
 print("Rotas IMB-melhorado:", rotas_finais)
-custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais)
+custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais, show_warnings=True)
 print("Custo IMB-melhorado:", custo_total)
 
-rotas_finais = ILS(rotas_finais, 1000, 100)
+rotas_finais = ILS(rotas_finais, 1000, 50)
 print("Rotas finais IMB:", rotas_finais)
 custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais)
 print("Custo total IMB:", custo_total)

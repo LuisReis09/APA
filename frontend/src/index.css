@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* VRP Dark Theme Design System */
+
+@layer base {
+  :root {
+    /* Dark theme as default for VRP app */
+    --background: 222 15% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 20% 12%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 20% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 142 76% 36%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 142 86% 28%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 142 76% 36%;
+
+    /* VRP specific colors */
+    --route-1: 142 76% 36%;
+    --route-2: 217 91% 60%;
+    --route-3: 262 83% 58%;
+    --route-4: 346 87% 43%;
+    --route-5: 36 100% 66%;
+    --route-6: 172 66% 50%;
+    --depot: 0 0% 100%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 86% 28%));
+    --gradient-card: linear-gradient(135deg, hsl(222 20% 12%), hsl(222 25% 15%));
+    --gradient-hero: linear-gradient(135deg, hsl(222 15% 8%), hsl(217.2 32.6% 17.5%));
+
+    /* Shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(142 76% 36% / 0.3);
+    --shadow-glow: 0 0 40px hsl(142 86% 28% / 0.2);
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Custom VRP components */
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .route-color-1 { color: hsl(var(--route-1)); }
+  .route-color-2 { color: hsl(var(--route-2)); }
+  .route-color-3 { color: hsl(var(--route-3)); }
+  .route-color-4 { color: hsl(var(--route-4)); }
+  .route-color-5 { color: hsl(var(--route-5)); }
+  .route-color-6 { color: hsl(var(--route-6)); }
+
+  .route-bg-1 { background-color: hsl(var(--route-1)); }
+  .route-bg-2 { background-color: hsl(var(--route-2)); }
+  .route-bg-3 { background-color: hsl(var(--route-3)); }
+  .route-bg-4 { background-color: hsl(var(--route-4)); }
+  .route-bg-5 { background-color: hsl(var(--route-5)); }
+  .route-bg-6 { background-color: hsl(var(--route-6)); }
+
+  /* Graph animations */
+  @keyframes pulse-route {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes draw-line {
+    from { stroke-dashoffset: 1000; }
+    to { stroke-dashoffset: 0; }
+  }
+
+  .route-line {
+    stroke-dasharray: 5, 5;
+    animation: draw-line 2s ease-in-out;
+  }
+
+  .route-node {
+    animation: pulse-route 2s infinite;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}

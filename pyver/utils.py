@@ -334,7 +334,7 @@ def BuscaGulosa2(matriz, capmax_caminhao, necessidades, caminhoes):
     return rotas, custo_total
 
 
-def VerificaSolucao(matriz: list[list[int]], necessidades: list[int], cap_max: int, rotas: list[list[int]]):
+def VerificaSolucao(matriz: list[list[int]], necessidades: list[int], cap_max: int, rotas: list[list[int]], show_warnings=False):
     """
         Verifica se as rotas passadas são possíveis
             - Nenhuma estação visitada mais de uma vez
@@ -354,10 +354,14 @@ def VerificaSolucao(matriz: list[list[int]], necessidades: list[int], cap_max: i
                 soma_carga += necessidades[rota[i]]
 
                 if abs(soma_carga) > cap_max:
+                    if show_warnings:
+                        print("Capacidade máxima excedida na rota:", rota)
                     return False
                 
                 if rota[i] != 0:
                     if visitados[rota[i] - 1]:
+                        if show_warnings:
+                            print("Estação visitada mais de uma vez:", rota[i], "na rota:", rota)
                         return False
                     else:
                         visitados[rota[i] - 1] =  1
@@ -365,6 +369,8 @@ def VerificaSolucao(matriz: list[list[int]], necessidades: list[int], cap_max: i
                 custo_total += matriz[rota[i-1]][rota[i]]
 
     if not visitados.all():
+        if show_warnings:
+            print("Nem todas as estações foram visitadas. Estações não visitadas:", np.where(visitados == 0)[0] + 1)
         return False
 
     
