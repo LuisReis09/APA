@@ -1,8 +1,12 @@
 #ifndef UTILS_H
 #define UTILS_H
+#include "structures.h"
+#include <string>
 
+using namespace std;
 
 Problema LerDados(string filePath);
+<<<<<<< HEAD
 
 /**
  * Recebe um `Problema p` e o mostra no terminal com um título `p_name`
@@ -59,7 +63,14 @@ int SomaCustoRota(Problema p, Rota r);
 * @return `int` que representa a soma dos custos das rotas
 */
 int SomaCusto(Problema p, Rota rotas[]);
+=======
+int VerificaSolucao(vector<vector<int>> matriz, vector<int> necessidades, int cap_max, vector<Rota> rotas);
+>>>>>>> 639e0c8c1f8daa6652f49496ee987dd2ba6dce85
 
+pair<int, int> MelhoresVertices(Problema p);
+
+Problema ProblemaAleatorio(int n, int m, int c, int max);
+void PrintProblema(Problema p, string p_name);
 
 /** 
 * @param problema Usado para verificar as demandas
