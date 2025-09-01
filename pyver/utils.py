@@ -64,6 +64,9 @@ def LerDados(caminho_arquivo = "exemplo1.txt"):
         for i in range(estacoes + 1):
             linha = list(map(int, f.readline().strip().split()))
             matriz[i] = linha
+
+    if len(necessidades) == estacoes:
+        necessidades = [0] + necessidades
             
     return estacoes, caminhoes, capmax_caminhao, necessidades, matriz
     

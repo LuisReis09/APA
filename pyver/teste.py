@@ -3,7 +3,7 @@ import copy
 import random
 
 # ---------- Leitura dos dados ----------
-estacoes, caminhoes, capmax_caminhao, necessidades, matriz = LerDados("../exemplos/exemplo3.txt")
+estacoes, caminhoes, capmax_caminhao, necessidades, matriz = LerDados("../exemplos/n17_q10.txt")
 print("DADOS DE ENTRADA")
 print("Estações:", estacoes)
 print("Caminhões:", caminhoes)
@@ -138,14 +138,14 @@ def melhorar_solucao(rotas):
 
                     # cópias para teste
                     nova_rota_origem = rota[:]
-                    nova_rota_destino = rota_destino[:]
 
                     if ind_rota_origem == ind_rota_destino:
-                        # reposicionamento na própria rota
-                        nova_rota_destino.remove(estacao)
+                        nova_rota_origem.remove(estacao)
+                        nova_rota_destino = nova_rota_origem
                     else:
                         # mover para outra rota
                         nova_rota_origem.remove(estacao)
+                        nova_rota_destino = rota_destino[:]
 
                     # insere a estação na posição válida
                     nova_rota_destino.insert(pos, estacao)
@@ -222,81 +222,87 @@ def melhorar_solucao(rotas):
 #     return rotas
 
 def perturbacao_switch(rotas, trocas_a_realizar):
-
-    # Se tiver mais de uma rota calculada:
+    """
+    Troca estações entre rotas ou dentro da mesma rota.
+    Altera rotas por referência.
+    """
     qtd_rotas = len(rotas)
-    if qtd_rotas > 1:
-        while trocas_a_realizar:
-            rota_origem = random.randint(0, qtd_rotas - 1)
-            rota_destino = random.randint(0, qtd_rotas - 1)
-            if len(rotas[rota_origem]) > 3:
-                estacao_1 = random.randint(1, len(rotas[rota_origem]) - 2)
-            else:
-                estacao_1 = 1
-
-            if len(rotas[rota_destino]) > 3:
-                estacao_2 = random.randint(1, len(rotas[rota_destino]) - 2)
-            else:
-                estacao_2 = 1
-                
-            rotas[rota_origem][estacao_1], rotas[rota_destino][estacao_2] = rotas[rota_destino][estacao_2], rotas[rota_origem][estacao_1]
-            trocas_a_realizar -= 1
-
+    if qtd_rotas == 0:
         return rotas
 
-    else:   
-        while trocas_a_realizar:
-            estacao_1 = random.randint(1, len(rotas[0]) - 2)
-            estacao_2 = random.randint(1, len(rotas[0]) - 2)
-            rotas[0][estacao_1], rotas[0][estacao_2] = rotas[0][estacao_2], rotas[0][estacao_1]
+    while trocas_a_realizar > 0:
+        if qtd_rotas > 1:
+            rota_origem, rota_destino = random.sample(range(qtd_rotas), 2)
+        else:
+            rota_origem = rota_destino = 0
+
+        if len(rotas[rota_origem]) < 3 or len(rotas[rota_destino]) < 3:
             trocas_a_realizar -= 1
-
-        return rotas
-
-
-def perturbacao_relocate(rotas, trocas_a_realizar, qtd_elementos_trocados, reverso=False):
-    while trocas_a_realizar:
-        rota_origem = random.randint(0, len(rotas) - 1)
-        rota_destino = random.randint(0, len(rotas) - 1)
-
-        max_index = len(rotas[rota_origem]) - 1 - qtd_elementos_trocados
-        
-        if max_index <= 1:
             continue
 
-        indice_retirada = random.randint(1, max_index)
+        pos1 = random.randint(1, len(rotas[rota_origem]) - 2)
+        pos2 = random.randint(1, len(rotas[rota_destino]) - 2)
 
-        elementos_retirados = rotas[rota_origem][indice_retirada:indice_retirada + qtd_elementos_trocados]
-        del rotas[rota_origem][indice_retirada:indice_retirada + qtd_elementos_trocados]
-        if reverso:
-            # Em C++, como será lista encadeada, é só ir inserindo pegando do fim por início
-            elementos_retirados.reverse()
-
-        indice_insercao = random.randint(1, len(rotas[rota_destino]) - 1)
-        rotas[rota_destino][indice_insercao:indice_insercao] = elementos_retirados
+        rotas[rota_origem][pos1], rotas[rota_destino][pos2] = \
+            rotas[rota_destino][pos2], rotas[rota_origem][pos1]
 
         trocas_a_realizar -= 1
 
     return rotas
 
+
+def perturbacao_relocate(rotas, trocas_a_realizar, qtd_elementos_trocados, reverso=False):
+    """
+    Remove um bloco de elementos de uma rota e insere em outra.
+    Altera rotas por referência.
+    """
+    while trocas_a_realizar > 0 and rotas:
+        rota_origem = random.randint(0, len(rotas) - 1)
+        rota_destino = random.randint(0, len(rotas) - 1)
+
+        if len(rotas[rota_origem]) <= qtd_elementos_trocados + 1:
+            trocas_a_realizar -= 1
+            continue
+
+        max_index = len(rotas[rota_origem]) - 1 - qtd_elementos_trocados
+        indice_retirada = random.randint(1, max_index)
+
+        elementos = rotas[rota_origem][indice_retirada:indice_retirada + qtd_elementos_trocados]
+        del rotas[rota_origem][indice_retirada:indice_retirada + qtd_elementos_trocados]
+
+        if reverso:
+            elementos.reverse()
+
+        indice_insercao = random.randint(1, len(rotas[rota_destino]) - 1)
+        rotas[rota_destino][indice_insercao:indice_insercao] = elementos
+
+        if len(rotas[rota_origem]) <= 2:
+            rotas.pop(rota_origem)
+
+        trocas_a_realizar -= 1
+
+    return rotas
+
+
 def perturbacao_newroute(rotas, qtd_elementos):
+    """
+    Retira elementos de rotas válidas e cria uma nova rota.
+    Altera rotas por referência.
+    """
     elementos_retirados = []
 
     while qtd_elementos > 0:
-        # filtra rotas válidas (tamanho > 2 para ter elementos entre os depósitos)
         rotas_validas = [i for i, r in enumerate(rotas) if len(r) > 2]
         if not rotas_validas:
-            break  # não há mais nada para retirar
+            break
 
         rota_origem = random.choice(rotas_validas)
         indice_retirada = random.randint(1, len(rotas[rota_origem]) - 2)
 
-        elementos_retirados.append(rotas[rota_origem][indice_retirada])
-        del rotas[rota_origem][indice_retirada]
+        elementos_retirados.append(rotas[rota_origem].pop(indice_retirada))
 
-        # remove rota se só sobrar depósitos
-        if len(rotas[rota_origem]) == 2:
-            del rotas[rota_origem]
+        if len(rotas[rota_origem]) <= 2:
+            rotas.pop(rota_origem)
 
         qtd_elementos -= 1
 
@@ -308,23 +314,23 @@ def perturbacao_newroute(rotas, qtd_elementos):
 
 def pertubacao(rotas, opcao, grau_perturbacao=1):
     """
-        Realiza uma perturbação na solução atual para escapar de ótimos locais, com base na `opcao` escolhida.
-        O `grau_perturbacao` define a intensidade da perturbação.
+    Aplica perturbações para escapar de ótimos locais.
     """
-
     match opcao:
-        # Opção 1: switch de até (2^grau_perturbacao) estações entre rotas diferentes
-        case 1: return perturbacao_switch(rotas, 2**grau_perturbacao)
-
-        # Opção 2: realocações de (grau_pertubacao) elementos (2 * grau_pertubacao) vezes
-        case 2: return perturbacao_relocate(rotas, grau_perturbacao, grau_perturbacao < 1)
-
-        # Opção 3: realocações de (grau_perturbacao) elementos reversamente (grau_perturbacao) vezes
-        case 3: return perturbacao_relocate(rotas, grau_perturbacao, grau_perturbacao, reverso=True)
-
-        # Opção 4: pega (2 * grau_perturbacao) elementos de rotas aleatórias e cria uma nova rota com elas
-        # OBS.: Note que precisa ter caminhões sobrando para criar a nova rota
-        case 4: return perturbacao_newroute(rotas, 2 * grau_perturbacao)
+        case 1:
+            # Opção 1: switch de até (2^grau_perturbacao) estações entre rotas diferentes
+            return perturbacao_switch(rotas, 2**grau_perturbacao)
+        case 2:
+            # Opção 2: relocate de blocos de (grau_perturbacao) estações entre rotas diferentes
+            return perturbacao_relocate(rotas, grau_perturbacao, grau_perturbacao)
+        case 3:
+            # Opção 3: relocate de blocos de (grau_perturbacao) estações entre rotas diferentes, invertendo a ordem
+            return perturbacao_relocate(rotas, grau_perturbacao, grau_perturbacao, reverso=True)
+        case 4:
+            # Opção 4: cria uma nova rota com até (2 * grau_perturbacao) estações retiradas de rotas existentes
+            return perturbacao_newroute(rotas, 2 * grau_perturbacao)
+        case _:
+            return rotas
 
 
 
@@ -380,7 +386,7 @@ rotas_finais = execute()
 rotas_finais = arestas_para_rotas(rotas_finais)
 print("\nRotas IMB:", rotas_finais)
 custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais)
-print("Custo IMBl:", custo_total, "\n")
+print("Custo IMB:", custo_total, "\n")
 
 
 rotas_finais = melhorar_solucao(rotas_finais)
@@ -388,7 +394,7 @@ print("Rotas IMB-melhorado:", rotas_finais)
 custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais, show_warnings=True)
 print("Custo IMB-melhorado:", custo_total)
 
-rotas_finais = ILS(rotas_finais, 1000, 50)
+rotas_finais = ILS(rotas_finais, 1000, 100)
 print("Rotas finais IMB:", rotas_finais)
 custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais)
 print("Custo total IMB:", custo_total)
