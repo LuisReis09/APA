@@ -3,7 +3,7 @@ import copy
 import random
 
 # ---------- Leitura dos dados ----------
-estacoes, caminhoes, capmax_caminhao, necessidades, matriz = LerDados("../exemplos/n58_q30.txt")
+estacoes, caminhoes, capmax_caminhao, necessidades, matriz = LerDados("../exemplos/n20_q20.txt")
 print("DADOS DE ENTRADA")
 print("Estações:", estacoes)
 print("Caminhões:", caminhoes)
@@ -338,8 +338,8 @@ def pertubacao(rotas, opcao, grau_perturbacao=1):
     """
     match opcao:
         case 1:
-            # Opção 1: switch de até (2^grau_perturbacao) estações entre rotas diferentes
-            return perturbacao_switch(rotas, 2**grau_perturbacao)
+            # Opção 1: switch de até (2 * grau_perturbacao) estações entre rotas diferentes
+            return perturbacao_switch(rotas, 3*grau_perturbacao)
         case 2:
             # Opção 2: relocate de blocos de (grau_perturbacao) estações entre rotas diferentes
             return perturbacao_relocate(rotas, grau_perturbacao, grau_perturbacao)
@@ -355,7 +355,9 @@ def pertubacao(rotas, opcao, grau_perturbacao=1):
         case _:
             return rotas
 
-
+import numpy as np
+import pandas as pd
+treino = np.zeros((5, 7), dtype=int)  # Matriz para registrar o treino das perturbações
 
 def ILS(rotas, max_iteracoes, max_sem_melhora):
     # Também deve receber a instância do Problema
@@ -375,7 +377,7 @@ def ILS(rotas, max_iteracoes, max_sem_melhora):
     """
     while iteracoes < max_iteracoes and sem_melhora < max_sem_melhora:
 
-        grau_perturbacao = (sem_melhora // (max_sem_melhora // 6)) + 1
+        grau_perturbacao = (sem_melhora // (max_sem_melhora // 7)) + 1
         opcao_perturbacao = random.randint(1, 5)  # Escolhe uma das 4 opções de perturbação
 
         solucao_perturbada = pertubacao(copy.deepcopy(rotas), opcao_perturbacao, grau_perturbacao)
@@ -386,6 +388,8 @@ def ILS(rotas, max_iteracoes, max_sem_melhora):
             rotas = solucao_perturbada
             sem_melhora = 0
             print(f"Melhoria geral encontrada: {custo_atual} -> {custo_novo}")
+            treino[opcao_perturbacao-1][grau_perturbacao-1] += 1
+
         else:
             sem_melhora += 1
 
@@ -423,3 +427,11 @@ rotas_finais = ILS(rotas_finais, 5000, 150)
 print("Rotas finais IMB:", rotas_finais)
 custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais)
 print("Custo total IMB:", custo_total)
+
+print("\nTreino ILS (opção de perturbação x grau de perturbação):")
+df_treino = pd.DataFrame(
+    treino,
+    index=["Switch", "Relocate", "Relocate Inverso", "Nova Rota", "Inversão"],
+    columns=[1, 2, 3, 4, 5, 6, 7]
+)
+print(df_treino)
