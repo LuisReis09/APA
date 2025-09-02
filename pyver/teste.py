@@ -1,9 +1,9 @@
-from utils import LerDados, MelhoresVertices, VerificaSolucao, BuscaGulosa2
+from utils import LerDados, MelhoresVertices, VerificaSolucao,  BuscaGulosa2
 import copy
 import random
 
 # ---------- Leitura dos dados ----------
-estacoes, caminhoes, capmax_caminhao, necessidades, matriz = LerDados("../exemplos/n54_q30.txt")
+estacoes, caminhoes, capmax_caminhao, necessidades, matriz = LerDados("../exemplos/n58_q30.txt")
 print("DADOS DE ENTRADA")
 print("Estações:", estacoes)
 print("Caminhões:", caminhoes)
@@ -36,6 +36,16 @@ def calcula_demanda(rota):
             demanda_total += necessidades[aresta[0]]
             if abs(demanda_total) > capmax_caminhao:
                 return False
+    return True
+
+def calcula_demandas(rotas):
+    for rota in rotas:
+        demanda_total = 0
+        for estacao in rota[1:-1]:  # Ignora depósitos
+            demanda_total += necessidades[estacao]
+            if abs(demanda_total) > capmax_caminhao:
+                return False
+            
     return True
 
 def SomaCusto(rotas):
@@ -365,14 +375,14 @@ def ILS(rotas, max_iteracoes, max_sem_melhora):
     """
     while iteracoes < max_iteracoes and sem_melhora < max_sem_melhora:
 
-        grau_perturbacao = (sem_melhora // (max_sem_melhora // 5)) + 1
+        grau_perturbacao = (sem_melhora // (max_sem_melhora // 6)) + 1
         opcao_perturbacao = random.randint(1, 5)  # Escolhe uma das 4 opções de perturbação
 
         solucao_perturbada = pertubacao(copy.deepcopy(rotas), opcao_perturbacao, grau_perturbacao)
         solucao_perturbada = melhorar_solucao(solucao_perturbada)
         custo_atual = SomaCusto(rotas)
         custo_novo  = SomaCusto(solucao_perturbada)
-        if custo_novo < custo_atual and VerificaSolucao(matriz, necessidades, capmax_caminhao, solucao_perturbada):
+        if custo_novo < custo_atual and calcula_demandas(solucao_perturbada):
             rotas = solucao_perturbada
             sem_melhora = 0
             print(f"Melhoria geral encontrada: {custo_atual} -> {custo_novo}")
@@ -390,7 +400,8 @@ print("Custo inicial:", VerificaSolucao(matriz, necessidades, capmax_caminhao, r
 rotas_guloso = melhorar_solucao(rotas_guloso)
 print("Rotas melhora-guloso:", rotas_guloso)
 print("Custo melhora-guloso:", VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_guloso))
-rotas_guloso = ILS(rotas_guloso, 1000, 100)
+rotas_guloso = [rota for rota in rotas_guloso if len(rota) > 2]  # Remove rotas vazias
+rotas_guloso = ILS(rotas_guloso, 5000, 150)
 print("Rotas finais guloso:", rotas_guloso)
 custo_final = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_guloso)
 print("Custo final guloso:", custo_final)
@@ -407,7 +418,8 @@ print("Rotas IMB-melhorado:", rotas_finais)
 custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais, show_warnings=True)
 print("Custo IMB-melhorado:", custo_total)
 
-rotas_finais = ILS(rotas_finais, 1000, 100)
+rotas_finais = [rota for rota in rotas_finais if len(rota) > 2]  # Remove rotas vazias
+rotas_finais = ILS(rotas_finais, 5000, 150)
 print("Rotas finais IMB:", rotas_finais)
 custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais)
 print("Custo total IMB:", custo_total)
