@@ -509,21 +509,43 @@ Solucao VizinhoMaisProximo(vector<vector<int>> matriz, int capmax_caminhao, vect
         route.custo_total_d2 = 0;
 
         No *no_atual = route.rota_i;
-        No *novo_no;
+        no_atual->soma_demandas_d1 = 0;
+        no_atual->soma_demandas_d2 = 0;
+
         for (int index_rota = 1; index_rota < rota.size() - 1; index_rota++)
         {
             // Construção de um novo nó e inserção na Rota
+
+            No *novo_no;
+            novo_no->soma_demandas_d1 = no_atual->soma_demandas_d1;
+            novo_no->soma_demandas_d2 = no_atual->soma_demandas_d2;
+
             novo_no->estacao = rota[index_rota];
 
             no_atual->proximo = novo_no;
-            route.custo_total_d1 += matriz[no_atual->estacao][index_rota];
+            no_atual->custo_d1 = matriz[no_atual->estacao][novo_no->estacao];
+            route.custo_total_d1 += no_atual->custo_d1;
+
+            if (index_rota != 1)
+            { // Nesse caso em que index_rota == 1, no_atual é nó de inicio, logo, não tem anterior
+                no_atual->custo_d2 = matriz[no_atual->anterior->estacao][no_atual->estacao];
+                no_atual->anterior->soma_demandas_d2 += necessidades[novo_no->estacao];
+            }
+
+            novo_no->anterior = no_atual;
+            route.custo_total_d2 += matriz[index_rota][no_atual->estacao];
+
+            novo_no->soma_demandas_d1 += necessidades[novo_no->estacao];
+            no_atual->soma_demandas_d2 += necessidades[novo_no->estacao];
+
+            // soma de d2 em rota_i sempre será igual ao somatorio de d2
+            route.rota_i->soma_demandas_d2 += novo_no->soma_demandas_d1;
 
             no_atual = novo_no;
         }
-        novo_no->proximo = route.rota_f;
-
-        // Está faltando calcular o custo_total_d2 da rota, bem como
-        // soma_demandas_d1, d2, custo_d1 e custo_d2
+        no_atual->proximo = route.rota_f;
+        route.rota_f->anterior = no_atual;
+        route.rota_f->soma_demandas_d1 = route.rota_i->soma_demandas_d2;
 
         rotas_solucao.push_back(route);
     }

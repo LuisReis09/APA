@@ -19,10 +19,11 @@ class No
 {
 public:
     int estacao;
-    No *proximo; // Ponteiro para próximo nó
+    No *proximo;  // Ponteiro para próximo nó
+    No *anterior; // Ponteiro para o nó anterior
     int soma_demandas_d1;
     int soma_demandas_d2;
-    int custo_d1, custo_d2;
+    int custo_d1, custo_d2; // Custo d1: Daquele nó para o proximo  ---- Custo d2: Daquele nó para o anterior
 };
 
 class Rota
