@@ -70,15 +70,17 @@ int main(){
      * {
      *      success: true,
      *      vizinho_mais_proximo: [
-     *          {id: 1, path: [[0, 1, 7, 0], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0], cost: 115.8, load: 30 },
+     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
+     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
      *          ...
      *      ],
+     *     tempo_vizinho_mais_proximo: 123.45, // em ms
      *      insercao_mais_barata: [
-     *          {id: 1, path: [[0, 1, 7, 0], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0], cost: 115.8, load: 30 },
+     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
+     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
      *          ...
      *      ],
+     *     tempo_insercao_mais_barata: 123.45, // em ms
      * }
      *
      */
@@ -101,15 +103,17 @@ int main(){
      * {
      *      success: true,
      *      vizinho_mais_proximo: [
-     *          {id: 1, path: [[0, 1, 7, 0], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0], cost: 115.8, load: 30 },
+     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
+     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
      *          ...
      *      ],
+     *      tempo_vizinho_mais_proximo: 123.45, // em ms
      *      insercao_mais_barata: [
-     *          {id: 1, path: [[0, 1, 7, 0], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0], cost: 115.8, load: 30 },
+     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
+     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
      *          ...
      *      ],
+     *      tempo_insercao_mais_barata: 123.45, // em ms
      * }
      */
     server.Get("/melhorarGulosos", [](const httplib::Request&, httplib::Response& res){
@@ -132,15 +136,17 @@ int main(){
      * {
      *      success: true,
      *      vizinho_mais_proximo: [
-     *          {id: 1, path: [[0, 1, 7, 0], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0], cost: 115.8, load: 30 },
+     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
+     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
      *          ...
      *      ],
+     *      tempo_vizinho_mais_proximo: 123.45, // em ms
      *      insercao_mais_barata: [
-     *          {id: 1, path: [[0, 1, 7, 0], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0], cost: 115.8, load: 30 },
+     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
+     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
      *          ...
      *      ],
+     *     tempo_insercao_mais_barata: 123.45, // em ms
      * }
      */
     server.Get("/aplicarVND", [](const httplib::Request&, httplib::Response& res){
@@ -162,15 +168,17 @@ int main(){
      * {
      *      success: true,
      *      vizinho_mais_proximo: [
-     *          {id: 1, path: [[0, 1, 7, 0], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0], cost: 115.8, load: 30 },
+     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
+     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
      *          ...
      *      ],
+     *      tempo_vizinho_mais_proximo: 123.45, // em ms
      *      insercao_mais_barata: [
-     *          {id: 1, path: [[0, 1, 7, 0], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0], cost: 115.8, load: 30 },
+     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
+     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
      *          ...
      *      ],
+     *     tempo_insercao_mais_barata: 123.45, // em ms
      * }
      */
     server.Post("/aplicarILS", [](const httplib::Request&, httplib::Response& res){
