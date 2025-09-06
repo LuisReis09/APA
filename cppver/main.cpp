@@ -4,11 +4,9 @@
 #include <utility>
 
 int main(){
-    Problema p = ProblemaAleatorio(5, 3, 8, 20);
-
-    PrintProblema(p, "Problema p");
-
-    pair<int, int> trianguloInicial = MelhoresVertices(p);
+    SetProblema(ProblemaAleatorio(5, 3, 8, 20));
+    PrintProblema("Problema p");
+    pair<int, int> trianguloInicial = MelhoresVertices();
 
     cout << "Triangulo inicial: " << endl;
     cout << 0 << " -> ";

@@ -29,7 +29,7 @@ public:
 typedef enum{
     INICIO_FIM,
     FIM_INICIO
-} Direcao_Rota;
+} DirecaoRota;
 
 class Rota
 {
@@ -37,7 +37,7 @@ public:
     No *rota_i; // Início da lista encadeada
     No *rota_f; // Fim da lista encadeada
     int custo_total_d1, custo_total_d2;
-    Direcao_Rota direcao_atual;
+    DirecaoRota direcao_atual;
 };
 
 class Solucao

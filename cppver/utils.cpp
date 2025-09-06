@@ -10,21 +10,18 @@
 #include <utility>
 #include <map>
 #include <algorithm>
-#include "structures.h"
 #include "utils.h"
 using namespace std;
 
-// Instância de Problema que será utilizada por todas as funções que envolverem problema
-// A fim de reduzir a empilhagem e desempilhagem do mesmo parametro múltiplas vezes.
 Problema p;
 
-/**
- * Função que inicializa a instância principal de problema
- * @param Problema que será copiado para a instância
- */
+// seeds pra função de problema aleatorio
+mt19937 gen(time(0));
+
 void SetProblema(Problema prob){
     p = prob;
 }
+
 void SetProblema(
     int qnt_veiculos,
     int capacidade_max,
@@ -201,7 +198,7 @@ bool ValidaDemanda(Rota rota)
 {
     int demanda_total = 0;
 
-    if(rota.direcao_atual == Direcao_Rota::INICIO_FIM){
+    if(rota.direcao_atual == DirecaoRota::INICIO_FIM){
         No *aux = rota.rota_i->proximo; // pula a garagem (se primeiro valor da rota é a garagem)
         // Enquanto não voltar pra garagem (na qual estação vale 0) e houver Nos na rota
         while (aux && aux->estacao)
@@ -233,7 +230,7 @@ int SomaCustoRota(Rota rota)
 {
     int custo_total = 0;
 
-    if(rota.direcao_atual == Direcao_Rota::INICIO_FIM){
+    if(rota.direcao_atual == DirecaoRota::INICIO_FIM){
         No *aux = rota.rota_i;
         if (!aux) return -1;
         while (aux->proximo)
@@ -253,13 +250,13 @@ int SomaCustoRota(Rota rota)
     return custo_total;
 }
 
-int SomaCusto(Rota rotas[])
+int SomaCusto(vector<Rota> rotas)
 {
     int custo_total = 0;
 
-    for (int i = 0; i < p.qnt_veiculos; i++)
+    for (int i = 0; i < rotas.size(); i++)
     {   
-        if(rotas[i].direcao_atual == Direcao_Rota::INICIO_FIM){
+        if(rotas[i].direcao_atual == DirecaoRota::INICIO_FIM){
             No *aux = rotas[i].rota_i;
             if (!aux) continue;
             while (aux->proximo)
@@ -285,7 +282,7 @@ bool VerificaNovaDemanda(Rota rota, int antecessor, int novaEstacao)
 {
     int demanda_total = 0;
 
-    if(rota.direcao_atual == Direcao_Rota::INICIO_FIM){
+    if(rota.direcao_atual == DirecaoRota::INICIO_FIM){
         No *aux = rota.rota_i;
         // segue enquanto há um proximo e ainda não chegou na estação dada
         while (aux)
@@ -345,7 +342,7 @@ bool VerificaNovaDemanda(Rota rota, int antecessor, int novaEstacao)
 
 int CustoInsercao(Rota rota, int antecessor, int novaEstacao)
 {
-    if(rota.direcao_atual == Direcao_Rota::INICIO_FIM){
+    if(rota.direcao_atual == DirecaoRota::INICIO_FIM){
         No *aux = rota.rota_i;
         while (aux)
         {
@@ -380,8 +377,6 @@ int CustoInsercao(Rota rota, int antecessor, int novaEstacao)
 
 Problema ProblemaAleatorio(int n, int m, int c, int max)
 {
-    random_device rd;
-    mt19937 gen(rd());
     uniform_int_distribution<> random_demanda(-c, c);
     uniform_int_distribution<> random_custo(1, max);
 
@@ -428,7 +423,7 @@ void PrintProblema(string p_name)
     return;
 }
 
-Solucao VizinhoMaisProximo(vector<int> necessidades, int qtd_caminhoes)
+Solucao VizinhoMaisProximo()
 {
     /*
         Implementa o algoritmo de vizinho mais próximo para cada conjunto
@@ -444,7 +439,7 @@ Solucao VizinhoMaisProximo(vector<int> necessidades, int qtd_caminhoes)
     for (int i = 1; i < p.matriz_custo[0].size(); i++)
         restam_visitar.push_back(i);
 
-    for (int i = 0; i < qtd_caminhoes; i++)
+    for (int i = 0; i < p.qnt_veiculos; i++)
     {
         necessidades_rotas.push_back(0);
         vector<int> inicio = {0};
@@ -562,7 +557,7 @@ Solucao VizinhoMaisProximo(vector<int> necessidades, int qtd_caminhoes)
     // Construção do Objeto Solução e do array de rotas
     Solucao solucao_encontrada;
     solucao_encontrada.custo_total = custo_total;
-    solucao_encontrada.veiculos_usados = qtd_caminhoes;
+    solucao_encontrada.veiculos_usados = p.qnt_veiculos;
     solucao_encontrada.veiculos_disponiveis = 0;
 
     vector<int> rota_vazia = {0, 0};
@@ -608,7 +603,7 @@ Solucao VizinhoMaisProximo(vector<int> necessidades, int qtd_caminhoes)
             if (index_rota != 1)
             { // Nesse caso em que index_rota == 1, no_atual é nó de inicio, logo, não tem anterior
                 no_atual->custo_d2 = p.matriz_custo[no_atual->anterior->estacao][no_atual->estacao];
-                no_atual->anterior->soma_demandas_d2 += necessidades[novo_no->estacao];
+                no_atual->anterior->soma_demandas_d2 += p.demandas[novo_no->estacao];
             }
 
             novo_no->anterior = no_atual;
@@ -645,10 +640,10 @@ int TestaConjunto(int conjunto)
     {
         if (conjunto & 1)
         {
-            distGalpao += problema.matriz_custo[0][index];
+            distGalpao += p.matriz_custo[0][index];
 
             if (last == 0)
-                distEstacoes += problema.matriz_custo[last][index];
+                distEstacoes += p.matriz_custo[last][index];
             last = index;
         }
         index++;
@@ -662,9 +657,9 @@ vector<int> CalculaMelhorConjunto()
 
     int diff_teste = 0;
     float diff_atual = -INFINITY;
-    int melhor_conjunto = 0, mask_teste = (1 << (problema.qnt_veiculos)) - 1;
+    int melhor_conjunto = 0, mask_teste = (1 << (p.qnt_veiculos)) - 1;
 
-    while (mask_teste < (1 << problema.qnt_estacoes))
+    while (mask_teste < (1 << p.qnt_estacoes))
     {
         int diff_teste = TestaConjunto(mask_teste);
 

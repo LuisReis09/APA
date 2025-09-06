@@ -28,6 +28,7 @@ caminhoes_restantes = caminhoes
 estacoes_restantes = [estacao+1 for estacao in range(estacoes)]  # +1 pq 0 é o depósito
 
 # ---------- Funções auxiliares ----------
+# calcula = verifica, nos arquivos cpp
 def calcula_demanda(rota):
     """Calcula a demanda acumulada da rota, retornando False se ultrapassar a capacidade."""
     demanda_total = 0
