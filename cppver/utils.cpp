@@ -8,9 +8,41 @@
 #include <cstdlib>
 #include <cmath>
 #include <utility>
+#include <map>
+#include <algorithm>
 #include "structures.h"
 #include "utils.h"
 using namespace std;
+
+// Instância de Problema que será utilizada por todas as funções que envolverem problema
+// A fim de reduzir a empilhagem e desempilhagem do mesmo parametro múltiplas vezes.
+Problema p;
+
+/**
+ * Função que inicializa a instância principal de problema
+ * @param Problema que será copiado para a instância
+ */
+void SetProblema(Problema prob){
+    p = prob;
+}
+void SetProblema(
+    int qnt_veiculos,
+    int capacidade_max,
+    vector<int> demandas,
+    int qnt_estacoes,
+    int veiculos_disponiveis,
+    vector<vector<int>> matriz_custo
+){
+    p.capacidade_max = capacidade_max;
+    p.demandas = demandas;
+    p.matriz_custo = matriz_custo;
+    p.qnt_estacoes = qnt_estacoes;
+    p.qnt_veiculos = qnt_veiculos;
+    p.veiculos_disponiveis = veiculos_disponiveis;
+}
+Problema GetProblema(){
+    return p;
+}
 
 Problema LerDados(string filePath)
 {
@@ -47,41 +79,39 @@ Problema LerDados(string filePath)
     while (iss >> valor)
         problema_iniciado.demandas.push_back(valor);
 
-    // // Linha em branco
-    // getline(MyFile, aux);
-    
-    // Falta ler a matriz de custo 
+    // Linha em branco
+    getline(MyFile, aux);
 
+    // Leitura da matriz de custo
+    int index = 0;
+    problema_iniciado.matriz_custo.resize(problema_iniciado.qnt_estacoes + 1);
+
+    while (getline(MyFile, aux))
+    {
+        aux.erase(aux.find_last_not_of(" \n\r\t") + 1);
+        istringstream iss(aux);
+        int valor;
+
+        while (iss >> valor)
+            problema_iniciado.matriz_custo[index].push_back(valor);
+        index++;
+    }
+
+    // Fechamento de arquivo
     MyFile.close();
 
     return problema_iniciado;
 }
 
-/**
- * Função auxiliar para objetos Rotas que calculam seu tamanho, uma vez que a rota é similar a uma linked list
-*/
-int contaTamRota(Rota rota){
-
-    int counter = 0;    // Contador
-    No* no_atual = rota.rota_i;   // Ponto de partida
-    while(no_atual->proximo != NULL){  // Enquanto haver um nó próximo ao nó atual, incrementar counter
-        counter++;
-        no_atual = no_atual->proximo;
-    }
-    
-    return counter; // Retorna a quantia de nós naquela rota
-}
-
-int VerificaSolucao(vector<vector<int>> matriz, vector<int> necessidades, int cap_max, vector<Rota> rotas)
+int VerificaSolucao(vector<Rota> rotas)
 {
     /*
         Verifica se as rotas passadas são possiveis
-
     */
 
     // Inicialização de visitados
     vector<int> visitados;
-    for (int i : matriz[0])
+    for (int i : p.matriz_custo[0])
         visitados.push_back(0);
 
     int custo_total = 0;
@@ -90,69 +120,76 @@ int VerificaSolucao(vector<vector<int>> matriz, vector<int> necessidades, int ca
     {
         int soma_carga = 0;
 
-        if (route.rota_i->estacao == 0 && route.rota_i->proximo->estacao == 0){
+        if (route.rota_i->estacao == 0 && route.rota_i->proximo->estacao == 0)
+        {
 
             // Este loop itera por todos os nós de uma rota
-            No* no_atual = route.rota_i->proximo;  // Primeiro nó é o nó após a garagem
-            while(no_atual->proximo != NULL){
-                soma_carga += necessidades[no_atual->estacao];
-                
-                // Checagem se a carga é possível
-                if (abs(soma_carga) > cap_max){
-                    return 0;
-                }
+            No *no_atual = route.rota_i->proximo; // Primeiro nó é o nó após a garagem
+            No *no_anterior = route.rota_i;
+            while (no_atual->proximo != NULL)
+            {
+                soma_carga += p.demandas[no_atual->estacao];
 
-                // if(no_atual->estacao != 0){
-                //     if(visitad)
-                // }
-                
+                // Checagem se a carga é possível
+                if (abs(soma_carga) > p.capacidade_max)
+                    return 0;
+
+                if (no_atual->estacao != 0)
+                {
+                    if (visitados[no_atual->estacao - 1])
+                    {
+                        return 0;
+                    }
+                    else
+                    {
+                        visitados[no_atual->estacao - 1] = 1;
+                    }
+                }
+                custo_total += p.matriz_custo[no_anterior->estacao][no_atual->estacao];
+                no_anterior = no_atual;
+                no_atual = no_atual->proximo;
             }
         }
     }
+
+    // Se nenhuma das estações foi visitada:
+    for (int k = 0; k < visitados.size(); k++)
+    {
+        if (!visitados[k])
+            return 0;
+    }
+
+    return custo_total;
 }
 
-/**
- * ## Melhores Vértices
- * ---
- * @param Problema_p 
- * 
- * Problema que contém atributos necessários para o cálculo, tais como:
- * 
- *  - `vector<vector<int>> matriz_custo`;
- * 
- *  - `vector<int> demandas`;
- * 
- *  - `int capacidade_max`. 
- * 
- * ---
- * @return
- * - `pair<int, int> vertices`: Vertices que, juntamente com a garagem, formam
- * melhor triângulo inicial para inserção mais barata. Considerando que, para que 
- * eles sejam bons, a distância entre os três deve ser a maior possível.
- * 
- */
-pair<int, int> MelhoresVertices(Problema p){
+pair<int, int> MelhoresVertices()
+{
     int qtd_estacoes = p.matriz_custo.size() - 1;
     pair<int, int> melhores_vertices;
     int maior_distancia = 0;
 
-    for(int i = 0; i < qtd_estacoes; i++){
-        for(int j = i+1; j < qtd_estacoes; j++){
-            if(abs(p.demandas[i] + p.demandas[j]) > p.capacidade_max)
+    for (int i = 0; i < qtd_estacoes; i++)
+    {
+        for (int j = i + 1; j < qtd_estacoes; j++)
+        {
+            if (abs(p.demandas[i] + p.demandas[j]) > p.capacidade_max)
                 continue;
-            
+
             // direcao 1: garagem -> i -> j -> galpao
-            int distancia1 = p.matriz_custo[0][i+1] + p.matriz_custo[i+1][j+1] + p.matriz_custo[j+1][0];
+            int distancia1 = p.matriz_custo[0][i + 1] + p.matriz_custo[i + 1][j + 1] + p.matriz_custo[j + 1][0];
 
             // direcao 2: garagem -> j -> i -> galpao
-            int distancia2 = p.matriz_custo[0][j+1] + p.matriz_custo[j+1][i+1] + p.matriz_custo[i+1][0];
-            
-            if(distancia1 > distancia2 && distancia1 > maior_distancia){
+            int distancia2 = p.matriz_custo[0][j + 1] + p.matriz_custo[j + 1][i + 1] + p.matriz_custo[i + 1][0];
+
+            if (distancia1 > distancia2 && distancia1 > maior_distancia)
+            {
                 maior_distancia = distancia1;
-                melhores_vertices = make_pair(i+1, j+1);
-            }else if(distancia2 > maior_distancia){
+                melhores_vertices = make_pair(i + 1, j + 1);
+            }
+            else if (distancia2 > maior_distancia)
+            {
                 maior_distancia = distancia2;
-                melhores_vertices = make_pair(j+1, i+1);
+                melhores_vertices = make_pair(j + 1, i + 1);
             }
         }
     }
@@ -160,19 +197,189 @@ pair<int, int> MelhoresVertices(Problema p){
     return melhores_vertices;
 }
 
-/*
-* # Problema Aletório:
-* ---
-* ### Parâmetros:
-*   - `int n`:    Quantidade de estações de bicicletas
-*   - `int m`:    Quantidade de caminhões 
-*   - `int c`:    Capacidade máxima de cada caminhão
-*   - `int max`:  Custo máximo entre as estações
-* ---
-* ### Retorno:
-*   - `Problema p`: Um  objeto contendo um problema aleatório, repeitando as condições estabelecidas.
-*/
-Problema ProblemaAleatorio(int n, int m, int c, int max){
+bool ValidaDemanda(Rota rota)
+{
+    int demanda_total = 0;
+
+    if(rota.direcao_atual == Direcao_Rota::INICIO_FIM){
+        No *aux = rota.rota_i->proximo; // pula a garagem (se primeiro valor da rota é a garagem)
+        // Enquanto não voltar pra garagem (na qual estação vale 0) e houver Nos na rota
+        while (aux && aux->estacao)
+        {
+            demanda_total += p.demandas[aux->estacao-1];
+            if (abs(demanda_total) > p.capacidade_max)
+                return false;
+            aux = aux->proximo;
+        }
+    }else{
+        // se a rota já tiver sido findada (possui a estacao 0, garagem, no fim)
+        // atribui o anterior para começar a avaliar as demandas
+        // se não, inicia pelo último elemento, que não é a garagem, portanto, possui demanda
+        No* aux = rota.rota_f->estacao ? rota.rota_f : rota.rota_f->anterior;
+
+        // enquanto não chegar na garagem, onde a rota DEVE iniciar
+        while(aux->estacao){
+            demanda_total +=p.demandas[aux->estacao-1];
+            if(abs(demanda_total) > p.capacidade_max)
+                return false;
+            aux = aux->anterior;
+        }
+    }
+
+    return true;
+}
+
+int SomaCustoRota(Rota rota)
+{
+    int custo_total = 0;
+
+    if(rota.direcao_atual == Direcao_Rota::INICIO_FIM){
+        No *aux = rota.rota_i;
+        if (!aux) return -1;
+        while (aux->proximo)
+        {
+            custo_total += p.matriz_custo[aux->estacao][aux->proximo->estacao];
+            aux = aux->proximo;
+        }
+    }else{
+        No *aux = rota.rota_f;
+        if(!aux) return -1;
+        while(aux->anterior){
+            custo_total += p.matriz_custo[aux->estacao][aux->anterior->estacao];
+            aux = aux->anterior;
+        }
+    }
+
+    return custo_total;
+}
+
+int SomaCusto(Rota rotas[])
+{
+    int custo_total = 0;
+
+    for (int i = 0; i < p.qnt_veiculos; i++)
+    {   
+        if(rotas[i].direcao_atual == Direcao_Rota::INICIO_FIM){
+            No *aux = rotas[i].rota_i;
+            if (!aux) continue;
+            while (aux->proximo)
+            {
+                custo_total += p.matriz_custo[aux->estacao][aux->proximo->estacao];
+                aux = aux->proximo;
+            }
+        }else{
+            No *aux = rotas[i].rota_f;
+            if (!aux) continue;
+            while (aux->anterior)
+            {
+                custo_total += p.matriz_custo[aux->estacao][aux->anterior->estacao];
+                aux = aux->anterior;
+            }
+        }
+    }
+
+    return custo_total;
+}
+
+bool VerificaNovaDemanda(Rota rota, int antecessor, int novaEstacao)
+{
+    int demanda_total = 0;
+
+    if(rota.direcao_atual == Direcao_Rota::INICIO_FIM){
+        No *aux = rota.rota_i;
+        // segue enquanto há um proximo e ainda não chegou na estação dada
+        while (aux)
+        {
+            demanda_total += p.demandas[aux->estacao-1];
+            if (aux->estacao == antecessor)
+                break;
+            aux = aux->proximo;
+        }
+        // se acabou a rota e não chegou no indice passado
+        if (!aux)
+            return false;
+    
+        // verifica se após a inserção da nova demanda, a soma continua válida
+        demanda_total += p.demandas[novaEstacao-1];
+        if (abs(demanda_total) > p.capacidade_max)
+            return false;
+    
+        // para o resto da rota, verifica sua validade após a inserção da nova demanda
+        while (aux)
+        {
+            demanda_total += p.demandas[aux->estacao-1];
+            if (abs(demanda_total) > p.capacidade_max)
+                return false;
+            aux = aux->proximo;
+        }
+    }else{
+        No *aux = rota.rota_f;
+        // segue enquanto há um proximo e ainda não chegou na estação dada
+        while (aux)
+        {
+            demanda_total += p.demandas[aux->estacao-1];
+            if (aux->estacao == antecessor)
+                break;
+            aux = aux->anterior;
+        }
+        // se acabou a rota e não chegou no indice passado
+        if (!aux)
+            return false;
+    
+        // verifica se após a inserção da nova demanda, a soma continua válida
+        demanda_total += p.demandas[novaEstacao-1];
+        if (abs(demanda_total) > p.capacidade_max)
+            return false;
+    
+        // para o resto da rota, verifica sua validade após a inserção da nova demanda
+        while (aux)
+        {
+            demanda_total += p.demandas[aux->estacao-1];
+            if (abs(demanda_total) > p.capacidade_max)
+                return false;
+            aux = aux->anterior;
+        }
+    }
+    return true;
+}
+
+int CustoInsercao(Rota rota, int antecessor, int novaEstacao)
+{
+    if(rota.direcao_atual == Direcao_Rota::INICIO_FIM){
+        No *aux = rota.rota_i;
+        while (aux)
+        {
+            if (aux->estacao == antecessor)
+            {
+                if (!aux->proximo)
+                return -1; // tentando inserir no fim da rota (que presumivelmente já voltou pra garagem e o último valor é 0)
+                int novo_custo = p.matriz_custo[aux->estacao][novaEstacao] + p.matriz_custo[novaEstacao][aux->proximo->estacao];
+                return novo_custo - p.matriz_custo[aux->estacao][aux->proximo->estacao];
+            }
+            aux = aux->proximo;
+        }
+    }else{
+        No *aux = rota.rota_f;
+        while (aux)
+        {
+            if (aux->estacao == antecessor)
+            {
+                if (!aux->anterior)
+                    return -1; // tentando inserir no fim da rota (que presumivelmente já voltou pra garagem e o último valor é 0)
+                int novo_custo = p.matriz_custo[aux->estacao][novaEstacao] + p.matriz_custo[novaEstacao][aux->anterior->estacao];
+                return novo_custo - p.matriz_custo[aux->estacao][aux->anterior->estacao];
+            }
+            aux = aux->anterior;
+        }
+    }
+
+    // se já passou do 0, ao final ou inicio da rota, não é possível inserir
+    // foi passado um antecessor que não está na rota
+    return -1;
+}
+
+Problema ProblemaAleatorio(int n, int m, int c, int max)
+{
     random_device rd;
     mt19937 gen(rd());
     uniform_int_distribution<> random_demanda(-c, c);
@@ -184,38 +391,311 @@ Problema ProblemaAleatorio(int n, int m, int c, int max){
     problema.veiculos_disponiveis = m;
     problema.qnt_veiculos = m;
     problema.capacidade_max = c;
-    
+
     problema.demandas.resize(n);
-    for(int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
         problema.demandas[i] = random_demanda(gen);
-    
-    
+
     problema.matriz_custo.resize(n, vector<int>(n));
-    for(int i = 0; i < n; i++)
-        for(int j = 0; j < n; j++)
-            problema.matriz_custo[i][j] = (i!=j) ? random_custo(gen) : 0;
-            
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            problema.matriz_custo[i][j] = (i != j) ? random_custo(gen) : 0;
+
     return problema;
 }
 
-
-/**
- * Recebe um `Problema p` e o mostra no terminal com um título `p_name`
- */
-void PrintProblema(Problema p, string p_name){
-    cout << endl << p_name << endl << endl;
+void PrintProblema(string p_name)
+{
+    cout << endl
+         << p_name << endl
+         << endl;
     cout << p.qnt_estacoes << endl;
     cout << p.qnt_veiculos << endl;
-    cout << p.capacidade_max << endl << endl;
+    cout << p.capacidade_max << endl
+         << endl;
 
-    for(int demanda: p.demandas)
+    for (int demanda : p.demandas)
         cout << demanda << " ";
-    cout << endl << endl;
+    cout << endl
+         << endl;
 
-    for(vector<int> custos_linha: p.matriz_custo){
-        for(int custo: custos_linha)
+    for (vector<int> custos_linha : p.matriz_custo)
+    {
+        for (int custo : custos_linha)
             cout << custo << " ";
         cout << endl;
     }
     return;
+}
+
+Solucao VizinhoMaisProximo(vector<int> necessidades, int qtd_caminhoes)
+{
+    /*
+        Implementa o algoritmo de vizinho mais próximo para cada conjunto
+        Retorna a lista de rotas (listas de índices) e o custo total
+    */
+
+    vector<vector<int>> rotas;
+    vector<int> necessidades_rotas;
+    int custo_total = 0;
+
+    // Inicialização das estações que precisam ser visitadas
+    vector<int> restam_visitar;
+    for (int i = 1; i < p.matriz_custo[0].size(); i++)
+        restam_visitar.push_back(i);
+
+    for (int i = 0; i < qtd_caminhoes; i++)
+    {
+        necessidades_rotas.push_back(0);
+        vector<int> inicio = {0};
+        rotas.push_back(inicio);
+    }
+
+    // Monta fila de prioridade por rota
+    // tipo {{1, 2}, {3, 4}}
+    map<int, int> fila;
+
+    // Para que uma estação seja visitavel, as somas das necessidades
+    // Devem estar entre [-p.capacidade_max, p.capacidade_max]
+    for (int estacao : restam_visitar)
+        fila[estacao] = p.matriz_custo[0][estacao]; // {id_estacao : custo}
+
+    // Cada rota guarda sua fila de prioridade de inserções possíveis
+    // Caso haja conflito de interesses, a inserção mais barata global
+    // Estrutura do tipo: {1, {2, 5}}
+    map<int, map<int, int>> fila_prioridade; // Se trata de um mapa de mapas
+
+    // Cada fila de prioridade recebe uma cópia de fila
+    for (int r = 0; r < rotas.size(); r++)
+        fila_prioridade[r] = fila; // Estrutura do tipo {id_rota : {{1, 2}, {3, 4} }}
+
+    vector<int> rotas_a_atualizar;
+    for (int id_rota = 0; id_rota < rotas.size(); id_rota++)
+        rotas_a_atualizar.push_back(id_rota);
+
+    // Enquanto houver estações para visitar
+    while (restam_visitar.size() != 0)
+    {
+        // Melhor rota é definida com
+        // 1. Menor custo de inserção
+        // 2. Mais perto de carga 0
+        // encontra a melhor rota em rotas_a_atualizar
+        auto melhor_it = std::min_element(
+            rotas_a_atualizar.begin(),
+            rotas_a_atualizar.end(),
+            [&](int a, int b)
+            {
+                // pega o primeiro par (estacao, custo) de cada fila de prioridade
+                auto it_a = fila_prioridade[a].begin();
+                auto it_b = fila_prioridade[b].begin();
+
+                int valor_a = it_a->second; // equivalente a next(iter(dict.values()))
+                int valor_b = it_b->second;
+
+                // critério 1: menor custo
+                if (valor_a != valor_b)
+                    return valor_a < valor_b;
+
+                // critério 2: mais perto de 0
+                int crit_a = std::abs(necessidades_rotas[a] + it_a->first); // equivalente a next(iter(dict.keys()))
+                int crit_b = std::abs(necessidades_rotas[b] + it_b->first);
+                return crit_a < crit_b;
+            });
+
+        int melhor_rota = (melhor_it != rotas_a_atualizar.end()) ? *melhor_it : -1;
+
+        // Seleciona a estação de menor custo : Necessario achar o indice
+        int index_menorCusto;
+        auto it = min_element( // Retorna o par chave : valor
+            fila_prioridade[melhor_rota].begin(),
+            fila_prioridade[melhor_rota].end(),
+            [](const auto &a, const auto &b)
+            { return a.second < b.second; });
+
+        int estacao_escolhida = fila_prioridade[melhor_rota][it->second]; // Supõe se que os elementos de menor custo vem primeiro
+        int custo_escolhido = fila_prioridade[melhor_rota][estacao_escolhida];
+
+        rotas[melhor_rota].push_back(estacao_escolhida);
+        necessidades_rotas[melhor_rota] += p.demandas[estacao_escolhida];
+
+        custo_total += custo_escolhido;
+
+        // Removendo por valor
+        restam_visitar.erase(
+            remove(restam_visitar.begin(),
+                   restam_visitar.end(),
+                   estacao_escolhida),
+            restam_visitar.end());
+
+        // Para a rota que acabou de inserir, é necessário reajustar sua fila de prioridades, considerando a nova estação final
+        map<int, int> ajuste;
+        for (int estacao : restam_visitar)
+        {
+            if (std::abs(necessidades_rotas[melhor_rota] + p.demandas[estacao]) <= p.capacidade_max)
+                ajuste[estacao] = p.matriz_custo[estacao_escolhida][estacao];
+        }
+        fila_prioridade[melhor_rota] = ajuste;
+
+        // Remove a estação escolhida de todas as filas
+        for (int i : rotas_a_atualizar)
+            fila_prioridade[i].erase(estacao_escolhida);
+
+        rotas_a_atualizar.erase(
+            std::remove_if(
+                rotas_a_atualizar.begin(),
+                rotas_a_atualizar.end(),
+                [&](int i)
+                {
+                    return fila_prioridade[i].empty();
+                    // remove se o mapa dessa rota estiver vazio
+                }),
+            rotas_a_atualizar.end());
+    }
+
+    // Finalmente, cada rota deve retornar ao galpão
+    for (vector<int> rota : rotas)
+    {
+        custo_total += p.matriz_custo[rota[rota.size() - 1]][0];
+        rota.push_back(0);
+    }
+
+    // Construção do Objeto Solução e do array de rotas
+    Solucao solucao_encontrada;
+    solucao_encontrada.custo_total = custo_total;
+    solucao_encontrada.veiculos_usados = qtd_caminhoes;
+    solucao_encontrada.veiculos_disponiveis = 0;
+
+    vector<int> rota_vazia = {0, 0};
+    vector<Rota> rotas_solucao;
+    for (vector<int> rota : rotas)
+    {
+        if (rota == rota_vazia)
+        {
+            solucao_encontrada.veiculos_usados--;
+            solucao_encontrada.veiculos_disponiveis++;
+        }
+
+        // Construção do objeto Rota
+        Rota route;
+        No *inicio;
+        No *fim;
+        inicio->estacao = 0;
+        fim->estacao = 0;
+
+        route.rota_i = inicio;
+        route.rota_f = fim;
+        route.custo_total_d1 = 0;
+        route.custo_total_d2 = 0;
+
+        No *no_atual = route.rota_i;
+        no_atual->soma_demandas_d1 = 0;
+        no_atual->soma_demandas_d2 = 0;
+
+        for (int index_rota = 1; index_rota < rota.size() - 1; index_rota++)
+        {
+            // Construção de um novo nó e inserção na Rota
+
+            No *novo_no;
+            novo_no->soma_demandas_d1 = no_atual->soma_demandas_d1;
+            novo_no->soma_demandas_d2 = no_atual->soma_demandas_d2;
+
+            novo_no->estacao = rota[index_rota];
+
+            no_atual->proximo = novo_no;
+            no_atual->custo_d1 = p.matriz_custo[no_atual->estacao][novo_no->estacao];
+            route.custo_total_d1 += no_atual->custo_d1;
+
+            if (index_rota != 1)
+            { // Nesse caso em que index_rota == 1, no_atual é nó de inicio, logo, não tem anterior
+                no_atual->custo_d2 = p.matriz_custo[no_atual->anterior->estacao][no_atual->estacao];
+                no_atual->anterior->soma_demandas_d2 += necessidades[novo_no->estacao];
+            }
+
+            novo_no->anterior = no_atual;
+            route.custo_total_d2 += p.matriz_custo[index_rota][no_atual->estacao];
+
+            novo_no->soma_demandas_d1 += p.demandas[novo_no->estacao];
+            no_atual->soma_demandas_d2 += p.demandas[novo_no->estacao];
+
+            // soma de d2 em rota_i sempre será igual ao somatorio de d2
+            route.rota_i->soma_demandas_d2 += novo_no->soma_demandas_d1;
+
+            no_atual = novo_no;
+        }
+        no_atual->proximo = route.rota_f;
+        route.rota_f->anterior = no_atual;
+        route.rota_f->soma_demandas_d1 = route.rota_i->soma_demandas_d2;
+
+        rotas_solucao.push_back(route);
+    }
+
+    solucao_encontrada.rotas = rotas_solucao;
+
+    return solucao_encontrada;
+}
+
+int TestaConjunto(int conjunto)
+{
+    int distGalpao = 0;
+    int distEstacoes = 0;
+
+    int index = 1, last = 0;
+
+    while (conjunto)
+    {
+        if (conjunto & 1)
+        {
+            distGalpao += problema.matriz_custo[0][index];
+
+            if (last == 0)
+                distEstacoes += problema.matriz_custo[last][index];
+            last = index;
+        }
+        index++;
+        conjunto >>= 1;
+    }
+    return distEstacoes - distGalpao;
+}
+
+vector<int> CalculaMelhorConjunto()
+{
+
+    int diff_teste = 0;
+    float diff_atual = -INFINITY;
+    int melhor_conjunto = 0, mask_teste = (1 << (problema.qnt_veiculos)) - 1;
+
+    while (mask_teste < (1 << problema.qnt_estacoes))
+    {
+        int diff_teste = TestaConjunto(mask_teste);
+
+        if (diff_teste > diff_atual)
+        {
+            diff_atual = diff_teste;
+            melhor_conjunto = mask_teste;
+        }
+
+        // Gera o próximo conjunto de bits com a mesma quantia de bits 1
+        // Utilizando o algoritmo de Gosper
+
+        // Passo 1: Isola o bit mais esquerdo que estiver ligado
+        int c = mask_teste & -mask_teste;
+
+        // Passo 2: Soma o valor isolado ao conjunto atual.
+        int r = mask_teste + c;
+
+        // Passo 3: Reorganiza os bits mais à direito ao bit isolado, mantendo a quantia de bits
+        mask_teste = (((r ^ mask_teste) >> 2) / c) | r;
+    }
+
+    vector<int> indices;
+    int i = 1;
+    while (melhor_conjunto)
+    {
+        if (melhor_conjunto & 1)
+            indices.push_back(i);
+        i++;
+        melhor_conjunto >>= 1;
+    }
+
+    return indices;
 }
