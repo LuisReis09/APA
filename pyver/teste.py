@@ -87,7 +87,11 @@ def calcula_custo_insercao(rota, ind, estacao):
 
 
 # ---------- Algoritmo principal ----------
+<<<<<<< Updated upstream
 # ---------- Insercao mais Barata ---------
+=======
+# ---------- Inserção mais barata ---------
+>>>>>>> Stashed changes
 def execute(estacoes_restantes=estacoes_restantes, rotas=rotas, caminhoes_restantes=caminhoes_restantes):
     for estacao in estacoes_restantes:
         menor_custo = float("inf")
@@ -97,6 +101,8 @@ def execute(estacoes_restantes=estacoes_restantes, rotas=rotas, caminhoes_restan
             # Verifica a rota normal e a invertida
             for rota_testada in [rota, [(y, x) for (x, y) in reversed(rota)]]:
                 for ind, arestas in enumerate(rota_testada):
+
+                    # SUBSTITUIR POR VERSAO OTIMIZADA
                     custo = calcula_custo_insercao(rota_testada, ind, estacao)
 
                     if custo < menor_custo:

@@ -12,6 +12,10 @@ interface DataInputProps {
   onDataSubmit: (data: any) => void;
 }
 
+async function LerArquivo(file: File){
+  return await file.text();
+}
+
 export const DataInput = ({ onDataSubmit }: DataInputProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [optimalValue, setOptimalValue] = useState("");
@@ -21,9 +25,29 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const selectedFile = acceptedFiles[0];
-    if (selectedFile && selectedFile.name.endsWith('.txt')) {
+    (LerArquivo(selectedFile).then((res) => console.log(res)))
+
       setFile(selectedFile);
-      setError("");
+      if (selectedFile && selectedFile.name.endsWith('.txt')) {
+
+        fetch("http://localhost:4000/carregarArquivo", {
+          method: "POST",
+          body: JSON.stringify({
+            "input": LerArquivo(file).then(res => res)
+          })
+      })
+      .then(response => {
+        if (!response.ok) throw new Error("Erro ao carregar arquivo");
+        return response.json();
+      })
+      .then(data => {
+        if(!data.success){
+          throw new Error(data.message);
+        }
+      })
+      .catch(error => {
+        setError(error.message);
+      })
     } else {
       setError("Por favor, selecione um arquivo .txt válido");
     }
@@ -43,6 +67,11 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
       return;
     }
 
+    const numberRegex = /^[0-9]+$/;
+    if(!numberRegex.test(maxIterations) || !numberRegex.test(maxIterationsWithoutImprovement)){
+      setError("Por favor, selecione valores válidos para as iterações.")
+    }
+
     const data = {
       file,
       optimalValue: optimalValue ? parseFloat(optimalValue) : null,
@@ -50,8 +79,18 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
       maxIterationsWithoutImprovement: parseInt(maxIterationsWithoutImprovement)
     };
 
-    onDataSubmit(data);
-    setError("");
+    fetch("http://localhost:4000/configuracoes", {
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json"
+        },
+      body: JSON.stringify({
+        valor_otimo: data.optimalValue,
+        maximo_iteracoes: data.maxIterations,
+        maximo_iteracoes_sem_melhora: data.maxIterationsWithoutImprovement
+      })
+    })
+    .then()
   };
 
   return (

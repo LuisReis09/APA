@@ -6,7 +6,8 @@
 
 using namespace std;
 
-int main(){
+int main()
+{
     httplib::Server server;
     Problema p;
 
@@ -16,15 +17,19 @@ int main(){
      * O programa irá avaliar se a entrada do usuário está no formato esperado.
      * - Se tiver, guarda a instância do problema e retorna sucesso.
      * - Se não estiver, notifica a razão.
-     * 
+     *
      * @returns:
        - success: booleano indicando se a entrada foi válida
        - message: indicando a mensagem de sucesso ou a razão do erro.
     */
-    server.Post("/carregarArquivo", [](const httplib::Request& req, httplib::Response& res) {
+    server.Post("/carregarArquivo", [](const httplib::Request &req, httplib::Response &res)
+                {
         res.set_header("Access-Control-Allow-Origin", "*");
         try{
-            // passar req.body para a função de leitura
+
+            cout << req.body;
+            cout << req.get_param_value("input");
+            // LerDados(req.body);
 
             RespostaLeitura leitura = LerDadosStr(req.body);
             if(!leitura.success){
@@ -42,27 +47,27 @@ int main(){
             res.status = 400;
             string json_response = R"({"success": false, "message": ")" + string(e.what()) + R"("})";
             res.set_content(json_response, "application/json");
-        }
-    });
+        } });
 
     /**
      * @brief
      * Recebe do front o valor ótimo (ou null), o máximo de iterações e o máximo de iterações sem melhora
      * O back deve guardar essas informações, para utilizá-las nas funções de processamento.
-    */
-    server.Post("/configuracoes", [](const httplib::Request& req, httplib::Response& res){
+     */
+    server.Post("/configuracoes", [](const httplib::Request &req, httplib::Response &res)
+                {
         res.set_header("Access-Control-Allow-Origin", "*");
 
         try{
+            cout << req.body;
+            cout << req.get_param_value("valor_otimo");
 
         }catch (exception& e){
             cout << "Error: " << e.what() << endl;
             res.status = 400;
             string json_response = R"({"error": "bad request!"})";
             res.set_content(json_response, "application/json");
-        }
-    });
-
+        } });
 
     /**
      * @brief
@@ -70,14 +75,14 @@ int main(){
      * A partir disso, o back usará a instância do problema pra rodar os seguintes algoritmos gulosos:
         - Vizinho mais próximo
         - Inserção mais barata
-     
+
      *
      * @returns Exemplo:
      * {
      *      success: false,
      *      message: "falha ao ..."
      * }
-     * 
+     *
      * {
      *      success: true,
      *      vizinho_mais_proximo: [
@@ -95,22 +100,21 @@ int main(){
      * }
      *
      */
-    server.Get("/processarGulosos", [](const httplib::Request&, httplib::Response& res) {
-        res.set_header("Access-Control-Allow-Origin", "*");
-    });
+    server.Get("/processarGulosos", [](const httplib::Request &, httplib::Response &res)
+               { res.set_header("Access-Control-Allow-Origin", "*"); });
 
     /**
      * @brief
      * Essa função é chamada quando o usuário seleciona a opção "melhorar rotas"
      * A função de melhorar rotas funcionará como uma busca local para as saídas dos algoritmos vizinho mais próximo e inserção mais barata.
      * Ela consiste de tentar realocações na mesma ou em outras rotas, que melhore o custo, sem impossibilitar a sequência de cargas.
-     * 
+     *
      * @returns:
      * {
      *      success: false,
      *      message: "falha ao ..."
      * }
-     * 
+     *
      * {
      *      success: true,
      *      vizinho_mais_proximo: [
@@ -127,23 +131,21 @@ int main(){
      *      tempo_insercao_mais_barata: 123.45, // em ms
      * }
      */
-    server.Get("/melhorarGulosos", [](const httplib::Request&, httplib::Response& res){
-        res.set_header("Access-Control-Allow-Origin", "*");
-    });
-
+    server.Get("/melhorarGulosos", [](const httplib::Request &, httplib::Response &res)
+               { res.set_header("Access-Control-Allow-Origin", "*"); });
 
     /**
      * @brief
      * Essa função é chamada quando o usuário seleciona a opção "VND"
      * A função de VND aplicará movimentos de vizinhança para encontrar melhores soluções para o que já temos.
-     * 
-     * 
+     *
+     *
      * @returns:
      * {
      *      success: false,
      *      message: "falha ao ..."
      * }
-     * 
+     *
      * {
      *      success: true,
      *      vizinho_mais_proximo: [
@@ -160,22 +162,21 @@ int main(){
      *     tempo_insercao_mais_barata: 123.45, // em ms
      * }
      */
-    server.Get("/aplicarVND", [](const httplib::Request&, httplib::Response& res){
-        res.set_header("Access-Control-Allow-Origin", "*");
-    });
+    server.Get("/aplicarVND", [](const httplib::Request &, httplib::Response &res)
+               { res.set_header("Access-Control-Allow-Origin", "*"); });
 
     /**
      * @brief
      * Essa função é chamada quando o usuário seleciona a opção "ILS"
      * A função de ILS aplicará perturbações para encontrar melhores soluções para o que já temos.
-     * 
-     * 
+     *
+     *
      * @returns:
      * {
      *      success: false,
      *      message: "falha ao ..."
      * }
-     * 
+     *
      * {
      *      success: true,
      *      vizinho_mais_proximo: [
@@ -192,10 +193,8 @@ int main(){
      *     tempo_insercao_mais_barata: 123.45, // em ms
      * }
      */
-    server.Post("/aplicarILS", [](const httplib::Request&, httplib::Response& res){
-        res.set_header("Access-Control-Allow-Origin", "*");
-    });
-
+    server.Post("/aplicarILS", [](const httplib::Request &, httplib::Response &res)
+                { res.set_header("Access-Control-Allow-Origin", "*"); });
 
     cout << "Back-end is running on http://localhost:4000" << endl;
     server.listen("localhost", 4000);

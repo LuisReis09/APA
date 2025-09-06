@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.embeddedhtml": "html",
         "array": "cpp",
         "chrono": "cpp",
         "forward_list": "cpp",
@@ -11,6 +12,11 @@
         "xstring": "cpp",
         "xtree": "cpp",
         "xutility": "cpp",
+<<<<<<< Updated upstream
         "stdexcept": "cpp"
+=======
+        "random": "cpp",
+        "algorithm": "cpp"
+>>>>>>> Stashed changes
     }
 }

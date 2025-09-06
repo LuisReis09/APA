@@ -8,11 +8,11 @@
 #include <cstdlib>
 #include <cmath>
 #include <utility>
+#include <thread>
 #include <map>
 #include <algorithm>
 #include "metodos.hpp"
 using namespace std;
-
 
 Solucao VizinhoMaisProximo()
 {
@@ -23,19 +23,21 @@ Solucao VizinhoMaisProximo()
 
     vector<vector<int>> rotas(p.qnt_veiculos, vector<int>(0));
     vector<int> necessidades_rotas(p.qnt_veiculos, 0);
+    vector<vector<int>> rotas(p.qnt_veiculos, vector<int>(0));
+    vector<int> necessidades_rotas(p.qnt_estacoes);
     int custo_total = 0;
-    
 
     // Inicialização das estações que precisam ser visitadas
-    vector<int> restam_visitar(p.qnt_estacoes);
-    for (int i = 0; i < p.qnt_estacoes; i++)
-        restam_visitar[i] = i+1;
+    vector<int> restam_visitar;
+    for (int i = 1; i < p.matriz_custo[0].size(); i++)
+        restam_visitar.push_back(i);
 
-    // for (int i = 0; i < p.qnt_veiculos; i++)
-    // {
-    //     vector<int> inicio = {0};
-    //     rotas.push_back(inicio);
-    // }
+    for (int i = 0; i < p.qnt_veiculos; i++)
+    {
+        necessidades_rotas.push_back(0);
+        vector<int> inicio = {0};
+        rotas.push_back(inicio);
+    }
 
     // Monta fila de prioridade por rota
     // tipo {{1, 2}, {3, 4}}
@@ -172,6 +174,7 @@ Solucao VizinhoMaisProximo()
         route.rota_f = fim;
         route.custo_total_d1 = 0;
         route.custo_total_d2 = 0;
+        route.rotaTam = 0;
 
         No *no_atual = route.rota_i;
         no_atual->soma_demandas_d1 = 0;
@@ -206,11 +209,15 @@ Solucao VizinhoMaisProximo()
             // soma de d2 em rota_i sempre será igual ao somatorio de d2
             route.rota_i->soma_demandas_d2 += novo_no->soma_demandas_d1;
 
+            route.rotaTam++;
             no_atual = novo_no;
         }
         no_atual->proximo = route.rota_f;
+        route.rotaTam++;
         route.rota_f->anterior = no_atual;
         route.rota_f->soma_demandas_d1 = route.rota_i->soma_demandas_d2;
+
+        route.custo_total_d1 >= route.custo_total_d2 ? route.direcao_atual = INICIO_FIM : route.direcao_atual = FIM_INICIO;
 
         rotas_solucao.push_back(route);
     }
@@ -218,4 +225,159 @@ Solucao VizinhoMaisProximo()
     solucao_encontrada.rotas = rotas_solucao;
 
     return solucao_encontrada;
+}
+
+vector<Rota> MelhorarSolucao(vector<Rota> rotas)
+{
+    int index_rota_origem = 0;
+    for (Rota rota : rotas)
+    {
+        // Itera por cada estação em rota
+
+        No *no_atual = rota.rota_i;
+        int index_rota_destino = 0;
+        while (no_atual->proximo != rota.rota_f)
+        {
+            int index_rota_destino = 0;
+            for (Rota rota_destino : rotas)
+            {
+                for (int pos = 1; pos < rota_destino.rotaTam - 1; pos++)
+                {
+                    if (no_atual->estacao == 0) // Nunca mover depositos
+                        continue;
+
+                    // Cópia para teste
+                    Rota nova_rota_origem = rota;
+                    Rota nova_rota_destino;
+
+                    // Remoção da estação atual pra nova_rota_origem
+                    No *no_aux = nova_rota_origem.rota_i;
+                    while (no_aux->proximo->estacao != no_atual->estacao)
+                        no_aux = no_aux->proximo;
+
+                    // Conecta o atual ao próximo do próximo, deixando o alvo sem conexões
+                    no_aux->proximo = no_aux->proximo->proximo;
+                    no_aux->proximo->anterior = no_aux;
+
+                    // Atualização dos dados deste nó : Custo d1 e d
+                    no_aux->custo_d1 = p.matriz_custo[no_aux->estacao][no_aux->proximo->estacao];
+                    no_aux->custo_d2 = p.matriz_custo[no_aux->proximo->estacao][no_aux->estacao];
+
+                    // Atualização dos dados : Todo nó depois (d1) e antes (d2) terá de ter sua acumulada de necessidade atualizada
+                    No *aux_d1 = no_aux->proximo;
+                    No *aux_d2 = no_aux->anterior;
+
+                    // Atualizando d1
+                    while (aux_d1->proximo != nova_rota_origem.rota_f)
+                    {
+                        aux_d1->soma_demandas_d1 -= p.demandas[no_atual->estacao];
+                        aux_d1 = aux_d1->proximo;
+                    }
+                    nova_rota_origem.rota_f->soma_demandas_d1 -= p.demandas[no_atual->estacao];
+
+                    // Atualizando d2
+                    while (aux_d2->anterior != nova_rota_origem.rota_i)
+                    {
+                        aux_d2->soma_demandas_d2 -= p.demandas[no_atual->estacao];
+                        aux_d2 = aux_d2->anterior;
+                    }
+
+                    index_rota_origem == index_rota_destino
+                        ? nova_rota_destino = nova_rota_origem
+                        : nova_rota_destino = rota_destino;
+
+                    // Inserção da estação na posição válida
+                    int index_atual = 1;
+                    No *noAux_Insert = nova_rota_destino.rota_i;
+                    while (index_atual < pos)
+                    {
+                        noAux_Insert = noAux_Insert->proximo;
+                        index_atual++;
+                    }
+
+                    // Ao sair deste while, noAux_Insert estara na posição pos
+                    No *novo;
+                    novo->estacao = no_atual->estacao;
+                    novo->proximo = noAux_Insert->proximo;
+                    novo->custo_d1 = p.matriz_custo[novo->estacao][novo->proximo->estacao];
+                    novo->custo_d2 = p.matriz_custo[novo->proximo->estacao][novo->estacao];
+
+                    novo->anterior = noAux_Insert;
+                    noAux_Insert->proximo = novo;
+
+                    // Checa viabilidade
+                    if (!ValidaDemanda(nova_rota_destino) || !ValidaDemanda(nova_rota_origem))
+                        continue;
+
+                    // Calculo de custos
+                    int custo_atual;
+                    int custo_novo;
+
+                    if (index_rota_destino == index_rota_origem)
+                    {
+                        rota.direcao_atual >= INICIO_FIM ? custo_atual = rota.custo_total_d1 : custo_atual = rota.custo_total_d2;
+                        custo_novo = SomaCustoRota(nova_rota_destino);
+                    }
+                    else
+                    {
+                        custo_atual = SomaCusto({rota, rota_destino});
+                        custo_novo = SomaCusto({nova_rota_origem, nova_rota_destino});
+                    }
+
+                    // Aplica a mudança se melhorou
+                    if (custo_novo < custo_atual)
+                    {
+                        rotas[index_rota_destino] = nova_rota_destino;
+                        if (index_rota_destino != index_rota_origem)
+                            rotas[index_rota_origem] = nova_rota_origem;
+                        return MelhorarSolucao(rotas);
+                    }
+                }
+                index_rota_destino++;
+            }
+
+            no_atual = no_atual->proximo;
+        }
+
+        index_rota_origem++;
+    }
+
+    return rotas;
+}
+
+Solucao InsercaoMaisBarata() // a terminar
+{
+    Solucao s;
+
+    vector<Rota> rotas(p.qnt_veiculos, Rota());
+
+    // rota inicial:
+    // 0 -> triang_inicial.first -> triang_inicial.second -> 0
+    pair<int, int> triang_inicial = MelhoresVertices();
+    // rotas[0].PushBack(triang_inicial.first);
+    // rotas[0].PushBack(triang_inicial.second);
+
+    // Faz uma lista de estações que não estão
+    // no triângulo inicial da primeira rota
+    vector<int> estacoes_restantes(p.qnt_estacoes - 2);
+    for (int i = 0; i < p.qnt_estacoes; i++)
+    {
+        if (i == triang_inicial.first || i == triang_inicial.second)
+            continue;
+        estacoes_restantes.push_back(i);
+    }
+
+    return s;
+}
+
+Solucao VND(Solucao solucao)
+{
+    // Para cada rota, cria uma thread de execução do VND
+
+    /**
+     * Movimentos de vizinhança escolhidos
+     * 1. Swap (Troca de dois elementos)
+     * 2. Re-insertion (Mover um elemento para outra posição)
+     * 3. 2-opt (Pegar uma fatia da solução e inverter)
+     */
 }

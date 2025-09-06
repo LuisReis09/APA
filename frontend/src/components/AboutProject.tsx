@@ -48,7 +48,7 @@ export const AboutProject = () => {
               <div>
                 <h4 className="font-semibold text-foreground">Período</h4>
                 <p className="text-sm text-muted-foreground">
-                  2024.1
+                  2025.1
                 </p>
               </div>
             </div>

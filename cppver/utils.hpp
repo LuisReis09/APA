@@ -2,7 +2,7 @@
 #define UTILS_H
 #include "structures.hpp"
 #include <string>
-
+#include <utility>
 using namespace std;
 
 typedef struct{
@@ -31,8 +31,7 @@ void SetProblema(
     vector<int> demandas,
     int qnt_estacoes,
     int veiculos_disponiveis,
-    vector<vector<int>> matriz_custo
-);
+    vector<vector<int>> matriz_custo);
 
 /**
  * @return Problema p: instância de problema que está sendo utilizada em todas as funções do arquivo.
@@ -121,9 +120,5 @@ int CustoInsercao(Rota r, int antecessor, int novaEstacao);
  *   - `Problema p`: Um  objeto contendo um problema aleatório, repeitando as condições estabelecidas.
  */
 Problema ProblemaAleatorio(int n, int m, int c, int max);
-
-int TestaConjunto(int conjunto);
-vector<int> CalculaMelhorConjunto();
-
 
 #endif
