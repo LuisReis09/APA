@@ -10,7 +10,7 @@
 #include <utility>
 #include <map>
 #include <algorithm>
-#include "utils.h"
+#include "utils.hpp"
 using namespace std;
 
 Problema p;
@@ -98,6 +98,74 @@ Problema LerDados(string filePath)
     MyFile.close();
 
     return problema_iniciado;
+}
+
+RespostaLeitura LerDadosStr(const string conteudo_arq){
+    istringstream input(conteudo_arq);
+
+    RespostaLeitura resultado;
+    string aux;
+
+    try {
+        Problema retorno;
+
+        // ---- Leitura básica ----
+        if (!(input >> retorno.qnt_estacoes) || retorno.qnt_estacoes <= 0)
+            throw runtime_error("Número inválido de estações.");
+
+        if (!(input >> retorno.qnt_veiculos) || retorno.qnt_veiculos <= 0)
+            throw runtime_error("Número inválido de veículos.");
+
+        if (!(input >> retorno.capacidade_max) || retorno.capacidade_max <= 0)
+            throw runtime_error("Capacidade máxima inválida.");
+
+        retorno.veiculos_disponiveis = retorno.qnt_veiculos;
+
+        getline(input, aux); // consome resto da linha
+
+        // ---- Demandas ----
+        retorno.demandas.resize(retorno.qnt_estacoes);
+        for (int i = 0; i < retorno.qnt_estacoes; i++) {
+            if (!(input >> retorno.demandas[i]))
+                throw runtime_error("Demandas incompletas no arquivo.");
+
+            if (abs(retorno.demandas[i]) > retorno.capacidade_max) {
+                throw runtime_error(
+                    "Demanda da estação " + to_string(i) +
+                    " excede a capacidade máxima de um veículo."
+                );
+            }
+        }
+
+        getline(input, aux); // consome resto da linha
+
+        // ---- Matriz de custos ----
+        retorno.matriz_custo.resize(retorno.qnt_estacoes + 1,
+                                    vector<int>(retorno.qnt_estacoes + 1));
+        for (int i = 0; i <= retorno.qnt_estacoes; i++) {
+            for (int j = 0; j <= retorno.qnt_estacoes; j++) {
+                if (!(input >> retorno.matriz_custo[i][j])) {
+                    throw runtime_error("Matriz de custo incompleta.");
+                }
+            }
+        }
+
+        // Dados extras?
+        int lixo;
+        if (input >> lixo) {
+            throw runtime_error("Dados extras encontrados no fim do arquivo.");
+        }
+
+        resultado.success = true;
+        resultado.message = "Leitura concluída com sucesso.";
+        resultado.problema = move(retorno);
+    }
+    catch (const exception& e) {
+        resultado.success = false;
+        resultado.message = e.what();
+    }
+
+    return resultado;
 }
 
 int VerificaSolucao(vector<Rota> rotas)
@@ -475,7 +543,7 @@ Solucao VizinhoMaisProximo()
         // 1. Menor custo de inserção
         // 2. Mais perto de carga 0
         // encontra a melhor rota em rotas_a_atualizar
-        auto melhor_it = std::min_element(
+        auto melhor_it = min_element(
             rotas_a_atualizar.begin(),
             rotas_a_atualizar.end(),
             [&](int a, int b)
@@ -492,8 +560,8 @@ Solucao VizinhoMaisProximo()
                     return valor_a < valor_b;
 
                 // critério 2: mais perto de 0
-                int crit_a = std::abs(necessidades_rotas[a] + it_a->first); // equivalente a next(iter(dict.keys()))
-                int crit_b = std::abs(necessidades_rotas[b] + it_b->first);
+                int crit_a = abs(necessidades_rotas[a] + it_a->first); // equivalente a next(iter(dict.keys()))
+                int crit_b = abs(necessidades_rotas[b] + it_b->first);
                 return crit_a < crit_b;
             });
 
@@ -526,7 +594,7 @@ Solucao VizinhoMaisProximo()
         map<int, int> ajuste;
         for (int estacao : restam_visitar)
         {
-            if (std::abs(necessidades_rotas[melhor_rota] + p.demandas[estacao]) <= p.capacidade_max)
+            if (abs(necessidades_rotas[melhor_rota] + p.demandas[estacao]) <= p.capacidade_max)
                 ajuste[estacao] = p.matriz_custo[estacao_escolhida][estacao];
         }
         fila_prioridade[melhor_rota] = ajuste;
@@ -536,7 +604,7 @@ Solucao VizinhoMaisProximo()
             fila_prioridade[i].erase(estacao_escolhida);
 
         rotas_a_atualizar.erase(
-            std::remove_if(
+            remove_if(
                 rotas_a_atualizar.begin(),
                 rotas_a_atualizar.end(),
                 [&](int i)

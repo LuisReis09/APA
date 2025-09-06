@@ -21,22 +21,21 @@ Solucao VizinhoMaisProximo()
         Retorna a lista de rotas (listas de índices) e o custo total
     */
 
-    vector<vector<int>> rotas;
-    vector<int> necessidades_rotas;
+    vector<vector<int>> rotas(p.qnt_veiculos, vector<int>(0));
+    vector<int> necessidades_rotas(p.qnt_veiculos, 0);
     int custo_total = 0;
     
 
     // Inicialização das estações que precisam ser visitadas
-    vector<int> restam_visitar;
-    for (int i = 1; i < p.matriz_custo[0].size(); i++)
-        restam_visitar.push_back(i);
+    vector<int> restam_visitar(p.qnt_estacoes);
+    for (int i = 0; i < p.qnt_estacoes; i++)
+        restam_visitar[i] = i+1;
 
-    for (int i = 0; i < p.qnt_veiculos; i++)
-    {
-        necessidades_rotas.push_back(0);
-        vector<int> inicio = {0};
-        rotas.push_back(inicio);
-    }
+    // for (int i = 0; i < p.qnt_veiculos; i++)
+    // {
+    //     vector<int> inicio = {0};
+    //     rotas.push_back(inicio);
+    // }
 
     // Monta fila de prioridade por rota
     // tipo {{1, 2}, {3, 4}}
@@ -61,7 +60,7 @@ Solucao VizinhoMaisProximo()
         rotas_a_atualizar.push_back(id_rota);
 
     // Enquanto houver estações para visitar
-    while (restam_visitar.size() != 0)
+    while (restam_visitar.size())
     {
         // Melhor rota é definida com
         // 1. Menor custo de inserção

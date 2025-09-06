@@ -1,7 +1,7 @@
 #ifndef METODOS_HPP
 #define METODOS_HPP
-#include "structures.h"
-#include "utils.h"
+#include "structures.hpp"
+#include "utils.hpp"
 
 /**
  * 
@@ -9,7 +9,7 @@
  * 
  * 
  */
-Solucao VizinhoMaisProximo(); // vulgo execute, no teste.py
+Solucao VizinhoMaisProximo(); // vulgo BuscaGulosa2, no utils.py
 
 /**
  * @brief Tenta reposicionar as estações entre as rotas para uma possível redução

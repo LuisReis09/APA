@@ -87,7 +87,7 @@ def calcula_custo_insercao(rota, ind, estacao):
 
 
 # ---------- Algoritmo principal ----------
-# ---------- Vizinho mais proximo ---------
+# ---------- Insercao mais Barata ---------
 def execute(estacoes_restantes=estacoes_restantes, rotas=rotas, caminhoes_restantes=caminhoes_restantes):
     for estacao in estacoes_restantes:
         menor_custo = float("inf")

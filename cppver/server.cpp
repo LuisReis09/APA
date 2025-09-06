@@ -1,10 +1,14 @@
 #include <bits/stdc++.h>
 #include "httplib.h"
+#include "structures.hpp"
+#include "utils.hpp"
+#include "metodos.hpp"
 
 using namespace std;
 
 int main(){
     httplib::Server server;
+    Problema p;
 
     /**
      * @brief
@@ -22,6 +26,13 @@ int main(){
         try{
             // passar req.body para a função de leitura
 
+            RespostaLeitura leitura = LerDadosStr(req.body);
+            if(!leitura.success){
+                throw runtime_error(leitura.message);
+            }
+
+            SetProblema(leitura.problema);
+
             res.status = 200;
             string json_response = R"({"success": true, "message": "Arquivo recebido e instanciado com sucesso!"})";
             res.set_content(json_response, "application/json");
@@ -29,7 +40,7 @@ int main(){
             // Se faltou parametro, avisa
             cout << "Error: " << e.what() << endl;
             res.status = 400;
-            string json_response = R"({"error": "bad request!"})";
+            string json_response = R"({"success": false, "message": ")" + string(e.what()) + R"("})";
             res.set_content(json_response, "application/json");
         }
     });

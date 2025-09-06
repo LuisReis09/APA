@@ -1,9 +1,16 @@
 #ifndef UTILS_H
 #define UTILS_H
-#include "structures.h"
+#include "structures.hpp"
 #include <string>
 
 using namespace std;
+
+typedef struct{
+    bool success;
+    string message;
+    Problema problema;
+} RespostaLeitura;
+
 
 /**
  * Instância de Problema que será utilizada por todas as funções que envolverem problema,
@@ -33,6 +40,7 @@ void SetProblema(
 Problema GetProblema();
 
 Problema LerDados(string filePath);
+RespostaLeitura LerDadosStr(const string conteudo_arq);
 
 /**
  * Mostra o problema da instância atual no terminal, exigindo um nome para o problema
