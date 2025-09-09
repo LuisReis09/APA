@@ -367,6 +367,49 @@ Solucao InsercaoMaisBarata() // a terminar
         estacoes_restantes.push_back(i);
     }
 
+    // Verifica onde é melhor inserir essa estação. 
+    // Se a relação do novo custo for negativa (diminui o custo total da rota) ou 0, insere nesta mesma rota;
+    // Se for positiva, tenta inserir em outra rota (se possível)
+
+    typedef {
+        int indice;
+        Rota rota;
+        int custo;
+    } Configuracao;
+
+    // para todas as estacoes restantes (que não foram inseridas no triangulo inical)
+    for(int estacao: estacoes_restantes){
+        int menor_custo = INFINITY;
+        Configuracao melhor_config = {NULL, NULL, NULL};
+
+        // para cada rota
+        // vai até caminhoes -1 para evitar inserir no fim, de fato (sujeito a alterações)
+        for(int iRota = 0; iRota < p.qnt_caminhoes - 1; iRota++){
+            // rota = rotas[iRota]
+
+            // PARA A ROTA NO SENTIDO INICIO-FIM
+            Rota rota = rotas[iRota];
+            Rota rota_reverse = rotas[iRota];
+            rota_reverse.direcao_atual = DirecaoRota:FIM_INICIO;
+
+            No* aux = rotas[iRota].rota_i;
+            
+            while(aux->proximo){
+                
+                // calcula o custo de insercao neste nó;
+                int custo_anterior = p.matriz_custo[aux->estacao][aux->proximo->estacao];
+                int custo_insercao = p.matriz_custo[aux->estacao][estacao] + p.matriz_custo[estacao][aux->proximo->estacao];
+                int custo = custo_anterior + custo_insercao;
+    
+                if(custo < menor_custo){
+                    if(VerificaDemanda(rota[i]))
+                }
+
+                
+            }
+        }
+    }
+
     return s;
 }
 
