@@ -345,17 +345,17 @@ vector<Rota> MelhorarSolucao(vector<Rota> rotas)
     return rotas;
 }
 
-Solucao InsercaoMaisBarata() // a terminar
+Solucao InsercaoMaisBarata() 
 {
     Solucao s;
-
     vector<Rota> rotas(p.qnt_veiculos, Rota());
-
+    
     // rota inicial:
     // 0 -> triang_inicial.first -> triang_inicial.second -> 0
     pair<int, int> triang_inicial = MelhoresVertices();
     // rotas[0].PushBack(triang_inicial.first);
     // rotas[0].PushBack(triang_inicial.second);
+    int caminhoes_restantes = p.qnt_veiculos - 1;
 
     // Faz uma lista de estações que não estão
     // no triângulo inicial da primeira rota
@@ -371,44 +371,105 @@ Solucao InsercaoMaisBarata() // a terminar
     // Se a relação do novo custo for negativa (diminui o custo total da rota) ou 0, insere nesta mesma rota;
     // Se for positiva, tenta inserir em outra rota (se possível)
 
-    typedef {
-        int indice;
+    typedef struct {
+        int i_rota;
         Rota rota;
-        int custo;
+        int indice;
+        DirecaoRota direcao;
     } Configuracao;
 
     // para todas as estacoes restantes (que não foram inseridas no triangulo inical)
     for(int estacao: estacoes_restantes){
         int menor_custo = INFINITY;
-        Configuracao melhor_config = {NULL, NULL, NULL};
+        Configuracao melhor_config = {-1, Rota(), -1, DirecaoRota::INICIO_FIM};
 
         // para cada rota
-        // vai até caminhoes -1 para evitar inserir no fim, de fato (sujeito a alterações)
-        for(int iRota = 0; iRota < p.qnt_caminhoes - 1; iRota++){
-            // rota = rotas[iRota]
-
+        for(int iRota = 0; iRota < rotas.size(); iRota++){
+            if(rotas[iRota].rota_i == nullptr) {
+                melhor_config.i_rota = iRota;
+                melhor_config.direcao = DirecaoRota::INICIO_FIM;
+                break;
+            }
             // PARA A ROTA NO SENTIDO INICIO-FIM
             Rota rota = rotas[iRota];
-            Rota rota_reverse = rotas[iRota];
-            rota_reverse.direcao_atual = DirecaoRota:FIM_INICIO;
 
             No* aux = rotas[iRota].rota_i;
-            
+            int i = 0;
             while(aux->proximo){
                 
                 // calcula o custo de insercao neste nó;
-                int custo_anterior = p.matriz_custo[aux->estacao][aux->proximo->estacao];
                 int custo_insercao = p.matriz_custo[aux->estacao][estacao] + p.matriz_custo[estacao][aux->proximo->estacao];
-                int custo = custo_anterior + custo_insercao;
+                int custo = custo_insercao - p.matriz_custo[aux->estacao][aux->proximo->estacao];
+                
+                if(custo < menor_custo){
+                    if(VerificaNovaDemanda(rotas[iRota], i, estacao)){
+                        menor_custo = custo;
+                        melhor_config = {
+                            iRota, 
+                            rotas[iRota], 
+                            i, 
+                            DirecaoRota::INICIO_FIM
+                        };
+                    }
+                }
+                
+                aux = aux->proximo;
+                i++;
+            }
+
+            // percorrer ao contrario tambem
+            aux = rotas[iRota].rota_f;
+            i = 0;
+            while(aux->anterior){
+                
+                // calcula o custo de insercao neste nó;
+                int custo_insercao = p.matriz_custo[aux->estacao][estacao] + p.matriz_custo[estacao][aux->anterior->estacao];
+                int custo = custo_insercao - p.matriz_custo[aux->estacao][aux->anterior->estacao];
     
                 if(custo < menor_custo){
-                    if(VerificaDemanda(rota[i]))
+                    if(VerificaNovaDemanda(rotas[iRota], i, estacao)){
+                        menor_custo = custo;
+                        melhor_config = {
+                            iRota, 
+                            rotas[iRota], 
+                            i, 
+                            DirecaoRota::FIM_INICIO
+                        };
+                    }
                 }
 
-                
+                aux = aux->anterior;
+                i++;
             }
+            
+
+        }
+        if(
+            melhor_config.indice == -1 
+            &&
+            menor_custo <= (p.matriz_custo[0][estacao] + p.matriz_custo[estacao][0])
+            || 
+            caminhoes_restantes == 0
+        ){
+            // inserção da melhor configuração na rota definida
+            rotas[melhor_config.i_rota].direcao_atual = melhor_config.direcao;
+            rotas[melhor_config.i_rota].InsertAt(melhor_config.indice, estacao);
+        }else{
+            // inserção no inicio, pois é uma nova rota
+            rotas[melhor_config.i_rota].InsertBegin(estacao);
         }
     }
+
+    for(Rota rota: rotas){
+        if(rota.direcao_atual == DirecaoRota::INICIO_FIM)
+            s.custo_total += rota.custo_total_d1;
+        else    
+            s.custo_total += rota.custo_total_d2;
+    }
+
+    s.rotas = rotas;
+    s.veiculos_disponiveis = caminhoes_restantes;
+    s.veiculos_usados = p.qnt_veiculos - caminhoes_restantes;
 
     return s;
 }
