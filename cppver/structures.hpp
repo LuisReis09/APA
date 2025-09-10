@@ -22,13 +22,8 @@ public:
     int estacao;
     No *proximo;  // Ponteiro para próximo nó
     No *anterior; // Ponteiro para o nó anterior
-    int soma_demandas_d1;
-    int soma_demandas_d2;
-    int custo_d1, custo_d2; // Custo d1: Daquele nó para o proximo  ---- Custo d2: Daquele nó para o anterior
 
-    No(int e = 0) : estacao(e), proximo(nullptr), anterior(nullptr),
-                    soma_demandas_d1(0), soma_demandas_d2(0),
-                    custo_d1(0), custo_d2(0) {}
+    No(int e = 0) : estacao(e), proximo(nullptr), anterior(nullptr) {}
 };
 
 typedef enum
@@ -43,13 +38,17 @@ public:
     No *rota_i; // Início da lista encadeada
     No *rota_f; // Fim da lista encadeada
     int custo_total_d1, custo_total_d2;
-    int rotaTam;
+    int rotaTam; // Número de estações na rota (excluindo os depósitos)
     DirecaoRota direcao_atual;
 
     // Construtor padrão
-    Rota() : rota_i(nullptr), rota_f(nullptr),
-             custo_total_d1(0), custo_total_d2(0),
-             rotaTam(0), direcao_atual(INICIO_FIM) {}
+    Rota() : custo_total_d1(0), custo_total_d2(0),
+             rotaTam(0), direcao_atual(INICIO_FIM) {
+                rota_i = new No(0); // Nó inicial (depósito)
+                rota_f = new No(0); // Nó final (depósito)
+                rota_i->proximo = rota_f;
+                rota_f->anterior = rota_i;
+             }
 
     // Construtor de cópia (deep copy)
     Rota(const Rota &other)
@@ -78,64 +77,138 @@ public:
         return *this;
     }
 
-    void PushBack(int estacao)
+    void InsertBegin(int estacao)
     {
-        No *no_estacao = new No();
-        no_estacao->estacao = estacao;
+        No *novo = new No(estacao);
+        novo->proximo = rota_i->proximo;
+        novo->anterior = rota_i;
+        rota_i->proximo->anterior = novo;
+        rota_i->proximo = novo;
+        rotaTam++;
 
-        if (this->rota_i == nullptr)
+        // Retira o custo matriz[0][rota_i->proximo->estacao] do custo_total_d1
+        // E incrementa o custo do galpão até a nova estação + o custo da nova estação até a antiga primeira estação
+        custo_total_d1 -= p.matriz_custo[0][novo->proximo->estacao];
+        custo_total_d1 += p.matriz_custo[0][estacao] + p.matriz_custo[estacao][novo->proximo->estacao];
+
+        // Retira o custo matriz[rota_i->proximo->estacao][0] do custo_total_d2
+        // E incrementa o custo da antiga primeira estação até a nova estação + o custo da nova estação até o galpão
+        custo_total_d2 -= p.matriz_custo[novo->proximo->estacao][0];
+        custo_total_d2 += p.matriz_custo[novo->proximo->estacao][estacao] + p.matriz_custo[estacao][0];
+
+        // Agora temos a estação inserida e o novo custo atualizado
+    }
+
+    void InsertEnd(int estacao)
+    {
+        No *novo = new No(estacao);
+        novo->anterior = rota_f->anterior;
+        novo->proximo = rota_f;
+        rota_f->anterior->proximo = novo;
+        rota_f->anterior = novo;
+        rotaTam++;
+
+        // Retira o custo matriz[rota_f->anterior->estacao][0] do custo_total_d1
+        // E incrementa o custo da antiga última estação até a nova estação + o custo da nova estação até o galpão
+        custo_total_d1 -= p.matriz_custo[novo->anterior->estacao][0];
+        custo_total_d1 += p.matriz_custo[novo->anterior->estacao][estacao] + p.matriz_custo[estacao][0];
+
+        // Retira o custo matriz[0][rota_f->anterior->estacao] do custo_total_d2
+        // E incrementa o custo do galpão até a nova estação + o custo da nova estação até a antiga última estação
+        custo_total_d2 -= p.matriz_custo[0][novo->anterior->estacao];
+        custo_total_d2 += p.matriz_custo[0][estacao] + p.matriz_custo[estacao][novo->anterior->estacao];
+
+        // Agora temos a estação inserida e o novo custo atualizado
+    }
+
+    void InsertAt(int posicao, int estacao)
+    {
+        if (posicao < 1 || posicao > (rotaTam+1))
+            return; // Posição inválida
+
+        // Se a posição for mais perto do início, percorre a partir do início
+        // Caso contrário, percorre a partir do fim
+
+        No *novo = new No(estacao);
+        No *atual;
+
+        if (posicao <= rotaTam / 2)
         {
-            this->rota_i = new No(0);
-            this->rota_f = new No(0);
-            this->rotaTam = 0;
-            this->direcao_atual = DirecaoRota::INICIO_FIM;
-        }
+            atual = rota_i->proximo;
+            for (int i = 1; i < posicao; i++)
+                atual = atual->proximo;
 
-        if (this->rota_f->anterior == nullptr)
-        {
-            this->rota_i->proximo = no_estacao;
-            no_estacao->anterior = this->rota_i;
-            this->rota_f->anterior = no_estacao;
-            no_estacao->proximo = this->rota_f;
-
-            no_estacao->custo_d1 = p.matriz_custo[estacao][0];
-            no_estacao->custo_d2 = p.matriz_custo[0][estacao];
-
-            no_estacao->soma_demandas_d1 =
-                no_estacao->soma_demandas_d2 = p.demandas[estacao - 1];
-
-            this->custo_total_d1 = no_estacao->custo_d2 + no_estacao->custo_d1;
-            this->custo_total_d2 = no_estacao->custo_d1 + no_estacao->custo_d2;
-
-            no_estacao->anterior->custo_d2 += p.matriz_custo[0][no_estacao->estacao] + p.matriz_custo[no_estacao->estacao][0];
-            no_estacao->proximo->custo_d2 += p.matriz_custo[0][no_estacao->estacao];
+            // Quando eu chego na posição que eu quero, a estação vai ser o novo elemento daquela posição
+            // Ou seja, o atual que está na posição posicao vai ser empurrado para frente, ficando na posição posicao + 1
+            novo->proximo = atual;
+            novo->anterior = atual->anterior;
+            atual->anterior->proximo = novo;
+            atual->anterior = novo;
+            rotaTam++;
         }
         else
         {
+            atual = rota_f->anterior;
+            for (int i = rotaTam; i > posicao; i--)
+                atual = atual->anterior;
 
-            No *aux = this->rota_f->anterior;
-            aux->proximo = no_estacao;
-            no_estacao->anterior = aux;
-            this->rota_f->anterior = no_estacao;
-            no_estacao->proximo = this->rota_f;
-
-            // valores de custo e demanda do nó inserido
-            no_estacao->custo_d1 = p.matriz_custo[estacao][no_estacao->proximo->estacao];
-            no_estacao->custo_d2 = p.matriz_custo[no_estacao->anterior->estacao][estacao];
-
-            no_estacao->soma_demandas_d1 = no_estacao->anterior->soma_demandas_d1 + p.demandas[estacao - 1];
-            no_estacao->soma_demandas_d2 = p.demandas[estacao - 1];
-
-            // valores de custo e demanda dos nós afetados (a terminar)
-            no_estacao->anterior->custo_d2 += p.matriz_custo[0][no_estacao->estacao] + p.matriz_custo[no_estacao->estacao][no_estacao->anterior->estacao];
-            no_estacao->proximo->custo_d2 += p.matriz_custo[0][no_estacao->estacao];
-
-            // valores de custo da rota atualizados(a terminar)
-            int custo_da_insercao;
-            this->custo_total_d1;
+            // Quando eu chego na posição que eu quero, a estação vai ser o novo elemento daquela posição
+            // Ou seja, o atual que está na posição posicao vai ser empurrado para frente, ficando na posição posicao + 1
+            novo->proximo = atual;
+            novo->anterior = atual->anterior;
+            atual->anterior->proximo = novo;
+            atual->anterior = novo;
+            rotaTam++;
         }
 
-        this->rotaTam++;
+        // Atualiza custos da direcao INICIO_FIM
+        custo_total_d1 -= p.matriz_custo[novo->anterior->estacao][atual->estacao];
+        custo_total_d1 += p.matriz_custo[novo->anterior->estacao][estacao] + p.matriz_custo[estacao][atual->estacao];
+
+        // Atualiza custos da direcao FIM_INICIO
+        custo_total_d2 -= p.matriz_custo[atual->estacao][novo->anterior->estacao];
+        custo_total_d2 += p.matriz_custo[atual->estacao][estacao] + p.matriz_custo[estacao][novo->anterior->estacao];
+    }
+
+    void RemoveAt(int posicao){
+        if (posicao < 1 || posicao > rotaTam)
+            return; // Posição inválida
+
+        No *atual;
+
+        if (posicao <= rotaTam / 2)
+        {
+            atual = rota_i->proximo;
+            for (int i = 1; i < posicao; i++)
+                atual = atual->proximo;
+
+            atual->anterior->proximo = atual->proximo;
+            atual->proximo->anterior = atual->anterior;
+            rotaTam--;
+
+        }
+        else
+        {
+            atual = rota_f->anterior;
+            for (int i = rotaTam; i > posicao; i--)
+                atual = atual->anterior;
+
+            atual->anterior->proximo = atual->proximo;
+            atual->proximo->anterior = atual->anterior;
+            rotaTam--;
+        }
+
+        // Atualiza custos da direcao INICIO_FIM
+        custo_total_d1 -= p.matriz_custo[atual->anterior->estacao][atual->estacao];
+        custo_total_d1 -= p.matriz_custo[atual->estacao][atual->proximo->estacao];
+        custo_total_d1 += p.matriz_custo[atual->anterior->estacao][atual->proximo->estacao];
+
+        // Atualiza custos da direcao FIM_INICIO
+        custo_total_d2 -= p.matriz_custo[atual->proximo->estacao][atual->estacao];
+        custo_total_d2 -= p.matriz_custo[atual->estacao][atual->anterior->estacao];
+        custo_total_d2 += p.matriz_custo[atual->proximo->estacao][atual->anterior->estacao];
+
+        delete atual; // Libera memória do nó removido
     }
 
     // Destrutor
