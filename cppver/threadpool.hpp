@@ -158,6 +158,21 @@
                 pthread_mutex_unlock(&mtx);
             }
 
+            template <typename T>
+            void setSharedVar(T* var){
+                pthread_mutex_lock(&sh_mtx);
+                shared_var = static_cast<void*>(var);
+                pthread_mutex_unlock(&sh_mtx);
+            }
+
+            template <typename T>
+            T* getSharedVar(){
+                pthread_mutex_lock(&sh_mtx);
+                T* var = static_cast<T*>(shared_var);
+                pthread_mutex_unlock(&sh_mtx);
+                return var;
+            }
+
             ~ThreadPool(){
                 kill = 1;
                 StopAllThreads();
