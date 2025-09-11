@@ -2,6 +2,7 @@
 #define UTILS_H
 #include "structures.hpp"
 #include <string>
+#include <ctime>
 #include <utility>
 using namespace std;
 
@@ -120,5 +121,14 @@ int CustoInsercao(Rota r, int antecessor, int novaEstacao);
  *   - `Problema p`: Um  objeto contendo um problema aleatório, repeitando as condições estabelecidas.
  */
 Problema ProblemaAleatorio(int n, int m, int c, int max);
+
+/**
+
+ *
+ * ---
+ * @return `
+ */
+clock_t ComecarCronometro();
+float getDuracao(clock_t cronometro_inicio);
 
 #endif

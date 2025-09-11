@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <random>
+#include <thread>
 #include <chrono>
 #include <cstdlib>
 #include <cmath>
@@ -170,55 +171,9 @@ Solucao VizinhoMaisProximo()
         inicio->estacao = 0;
         fim->estacao = 0;
 
-        route.rota_i = inicio;
-        route.rota_f = fim;
-        route.custo_total_d1 = 0;
-        route.custo_total_d2 = 0;
-        route.rotaTam = 0;
-
-        No *no_atual = route.rota_i;
-        no_atual->soma_demandas_d1 = 0;
-        no_atual->soma_demandas_d2 = 0;
-
-        for (int index_rota = 1; index_rota < rota.size() - 1; index_rota++)
-        {
-            // Construção de um novo nó e inserção na Rota
-
-            No *novo_no;
-            novo_no->soma_demandas_d1 = no_atual->soma_demandas_d1;
-            novo_no->soma_demandas_d2 = no_atual->soma_demandas_d2;
-
-            novo_no->estacao = rota[index_rota];
-
-            no_atual->proximo = novo_no;
-            no_atual->custo_d1 = p.matriz_custo[no_atual->estacao][novo_no->estacao];
-            route.custo_total_d1 += no_atual->custo_d1;
-
-            if (index_rota != 1)
-            { // Nesse caso em que index_rota == 1, no_atual é nó de inicio, logo, não tem anterior
-                no_atual->custo_d2 = p.matriz_custo[no_atual->anterior->estacao][no_atual->estacao];
-                no_atual->anterior->soma_demandas_d2 += p.demandas[novo_no->estacao];
-            }
-
-            novo_no->anterior = no_atual;
-            route.custo_total_d2 += p.matriz_custo[index_rota][no_atual->estacao];
-
-            novo_no->soma_demandas_d1 += p.demandas[novo_no->estacao];
-            no_atual->soma_demandas_d2 += p.demandas[novo_no->estacao];
-
-            // soma de d2 em rota_i sempre será igual ao somatorio de d2
-            route.rota_i->soma_demandas_d2 += novo_no->soma_demandas_d1;
-
-            route.rotaTam++;
-            no_atual = novo_no;
+        for(int index = 1 ; index < rota.size() - 1; index++){
+            route.InsertEnd(rota[index]);
         }
-        no_atual->proximo = route.rota_f;
-        route.rotaTam++;
-        route.rota_f->anterior = no_atual;
-        route.rota_f->soma_demandas_d1 = route.rota_i->soma_demandas_d2;
-
-        route.custo_total_d1 >= route.custo_total_d2 ? route.direcao_atual = INICIO_FIM : route.direcao_atual = FIM_INICIO;
-
         rotas_solucao.push_back(route);
     }
 
@@ -251,60 +206,23 @@ vector<Rota> MelhorarSolucao(vector<Rota> rotas)
                     Rota nova_rota_destino;
 
                     // Remoção da estação atual pra nova_rota_origem
-                    No *no_aux = nova_rota_origem.rota_i;
-                    while (no_aux->proximo->estacao != no_atual->estacao)
-                        no_aux = no_aux->proximo;
+                    // Achando a posição do alvo
+                    
 
-                    // Conecta o atual ao próximo do próximo, deixando o alvo sem conexões
-                    no_aux->proximo = no_aux->proximo->proximo;
-                    no_aux->proximo->anterior = no_aux;
-
-                    // Atualização dos dados deste nó : Custo d1 e d
-                    no_aux->custo_d1 = p.matriz_custo[no_aux->estacao][no_aux->proximo->estacao];
-                    no_aux->custo_d2 = p.matriz_custo[no_aux->proximo->estacao][no_aux->estacao];
-
-                    // Atualização dos dados : Todo nó depois (d1) e antes (d2) terá de ter sua acumulada de necessidade atualizada
-                    No *aux_d1 = no_aux->proximo;
-                    No *aux_d2 = no_aux->anterior;
-
-                    // Atualizando d1
-                    while (aux_d1->proximo != nova_rota_origem.rota_f)
-                    {
-                        aux_d1->soma_demandas_d1 -= p.demandas[no_atual->estacao];
-                        aux_d1 = aux_d1->proximo;
+                    No* aux = nova_rota_origem.rota_i; int posicao = 0;
+                    while (aux->estacao != no_atual->estacao){
+                        posicao++;
+                        aux = aux->proximo;
                     }
-                    nova_rota_origem.rota_f->soma_demandas_d1 -= p.demandas[no_atual->estacao];
-
-                    // Atualizando d2
-                    while (aux_d2->anterior != nova_rota_origem.rota_i)
-                    {
-                        aux_d2->soma_demandas_d2 -= p.demandas[no_atual->estacao];
-                        aux_d2 = aux_d2->anterior;
-                    }
+                    nova_rota_origem.RemoveAt(posicao);
 
                     index_rota_origem == index_rota_destino
                         ? nova_rota_destino = nova_rota_origem
                         : nova_rota_destino = rota_destino;
 
                     // Inserção da estação na posição válida
-                    int index_atual = 1;
-                    No *noAux_Insert = nova_rota_destino.rota_i;
-                    while (index_atual < pos)
-                    {
-                        noAux_Insert = noAux_Insert->proximo;
-                        index_atual++;
-                    }
-
-                    // Ao sair deste while, noAux_Insert estara na posição pos
-                    No *novo;
-                    novo->estacao = no_atual->estacao;
-                    novo->proximo = noAux_Insert->proximo;
-                    novo->custo_d1 = p.matriz_custo[novo->estacao][novo->proximo->estacao];
-                    novo->custo_d2 = p.matriz_custo[novo->proximo->estacao][novo->estacao];
-
-                    novo->anterior = noAux_Insert;
-                    noAux_Insert->proximo = novo;
-
+                    nova_rota_destino.InsertAt(posicao, no_atual->estacao);
+                    
                     // Checa viabilidade
                     if (!ValidaDemanda(nova_rota_destino) || !ValidaDemanda(nova_rota_origem))
                         continue;
@@ -353,8 +271,8 @@ Solucao InsercaoMaisBarata()
     // rota inicial:
     // 0 -> triang_inicial.first -> triang_inicial.second -> 0
     pair<int, int> triang_inicial = MelhoresVertices();
-    // rotas[0].PushBack(triang_inicial.first);
-    // rotas[0].PushBack(triang_inicial.second);
+    rotas[0].InsertEnd(triang_inicial.first);
+    rotas[0].InsertEnd(triang_inicial.second);
     int caminhoes_restantes = p.qnt_veiculos - 1;
 
     // Faz uma lista de estações que não estão
@@ -381,13 +299,25 @@ Solucao InsercaoMaisBarata()
     // para todas as estacoes restantes (que não foram inseridas no triangulo inical)
     for(int estacao: estacoes_restantes){
         int menor_custo = INFINITY;
-        Configuracao melhor_config = {-1, Rota(), -1, DirecaoRota::INICIO_FIM};
+        Configuracao melhor_config = {
+            -1, 
+            Rota(), 
+            -1, 
+            DirecaoRota::INICIO_FIM
+        };
 
+        // Ultima rota verificada
+        Configuracao ultima_config = {
+            rotas.size() -1,
+            Rota(),
+            -1, 
+            DirecaoRota::INICIO_FIM
+        };
         // para cada rota
         for(int iRota = 0; iRota < rotas.size(); iRota++){
             if(rotas[iRota].rota_i == nullptr) {
-                melhor_config.i_rota = iRota;
-                melhor_config.direcao = DirecaoRota::INICIO_FIM;
+                ultima_config.i_rota = iRota;
+                ultima_config.direcao = DirecaoRota::INICIO_FIM;
                 break;
             }
             // PARA A ROTA NO SENTIDO INICIO-FIM
@@ -441,12 +371,9 @@ Solucao InsercaoMaisBarata()
                 aux = aux->anterior;
                 i++;
             }
-            
 
         }
         if(
-            melhor_config.indice == -1 
-            &&
             menor_custo <= (p.matriz_custo[0][estacao] + p.matriz_custo[estacao][0])
             || 
             caminhoes_restantes == 0
@@ -456,7 +383,7 @@ Solucao InsercaoMaisBarata()
             rotas[melhor_config.i_rota].InsertAt(melhor_config.indice, estacao);
         }else{
             // inserção no inicio, pois é uma nova rota
-            rotas[melhor_config.i_rota].InsertBegin(estacao);
+            rotas[ultima_config.i_rota].InsertBegin(estacao);
         }
     }
 
@@ -474,14 +401,96 @@ Solucao InsercaoMaisBarata()
     return s;
 }
 
+Rota VND_Swap(Rota const r){
+    /* 
+        Aplicar testes de swap na rota e retornar a melhor rota encontrada 
+        ou a mesma que recebeu, caso não haja melhora
+     */
+}
+
+Rota VND_Re_Insertion(Rota const r){
+    /* 
+        Aplicar testes de re-insertion na rota e retornar a melhor rota encontrada 
+        ou a mesma que recebeu, caso não haja melhora
+     */
+}
+
+Rota VND_TwoOpt(Rota const r){
+    /* 
+        Aplicar testes de 2-opt na rota e retornar a melhor rota encontrada 
+        ou a mesma que recebeu, caso não haja melhora
+     */
+}
+
 Solucao VND(Solucao solucao)
 {
+    int n_rotas = solucao.rotas.size();
+    VND_attr attr[n_rotas];
+    
+    // inicializa os atributos de cada rota
+    for(int i = 0; i < n_rotas; i++){
+        attr[i].solucao = solucao;
+        attr[i].i_rota = i;
+        attr[i].rota_retorno = solucao.rotas[i];
+    }
+    
     // Para cada rota, cria uma thread de execução do VND
+    for(int i = 0; i < n_rotas; ){
+        // uma thread para cada attr[i]
+    }
 
+    // espera as rotas de cada thread
+}
+
+void* VND(void* atributos){
     /**
-     * Movimentos de vizinhança escolhidos
+     * Movimentos de vizinhança escolhidos (constante NUM_VND_STRUCTURES define quantas são)
      * 1. Swap (Troca de dois elementos)
      * 2. Re-insertion (Mover um elemento para outra posição)
      * 3. 2-opt (Pegar uma fatia da solução e inverter)
      */
+
+    VND_attr* attr = (VND_attr*) atributos;
+
+    // criando um vetor de estruturas:
+    vector<function<Rota(Rota)>> estruturas_VND = {
+        VND_Swap,
+        VND_Re_Insertion,
+        VND_TwoOpt
+    };
+
+    // inicia percorrendo as estruturas da primeira (k = 0) até a ultima, while k <= NUM_VND_STRUCTURES
+    int k = 0;
+
+    // dependendo da direção, a condicional dentro do loop é diferente
+    // para fins de otimização, faz-se a verificação uma única vez, fora do loop
+    if(attr->solucao.rotas[attr->i_rota].direcao_atual == DirecaoRota::INICIO_FIM){
+        // usa o custo_total na direcao d1
+        while(k < NUM_VND_STRUCTURES){
+            // chama uma estrutura de vizinhança k e retorna o valor para nova_rota
+            Rota nova_rota = estruturas_VND[k](attr->rota_retorno);
+            
+            if(nova_rota.custo_total_d1 < attr->rota_retorno.custo_total_d1){
+                k = 0;
+                // essa atribuição ainda tem problemas. criar operador move na classe rota
+                attr->rota_retorno = move(nova_rota); // move evita fazer a cópia da rota
+            }else
+                k++;
+        }
+    }
+    else{
+        // usa o custo_total na direcao d2
+        while(k < NUM_VND_STRUCTURES){
+            // chama uma estrutura de vizinhança k e retorna o valor para nova_rota
+            Rota nova_rota = estruturas_VND[k](attr->rota_retorno);
+            
+            if(nova_rota.custo_total_d2 < attr->rota_retorno.custo_total_d2){
+                k = 0;
+                attr->rota_retorno = move(nova_rota);
+            }else
+                k++;
+        }
+    }
+
+    return nullptr;
 }

@@ -278,4 +278,10 @@ public:
     vector<Rota> rotas;
 };
 
+typedef struct{
+    Solucao solucao;
+    int i_rota;
+    Rota rota_retorno;
+} VND_attr;
+
 #endif

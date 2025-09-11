@@ -385,7 +385,7 @@ def ILS(rotas, max_iteracoes, max_sem_melhora):
     while iteracoes < max_iteracoes and sem_melhora < max_sem_melhora:
 
         grau_perturbacao = (sem_melhora // (max_sem_melhora // 7)) + 1
-        opcao_perturbacao = random.randint(1, 5)  # Escolhe uma das 4 opções de perturbação
+        opcao_perturbacao = random.randint(1, 5)  # Escolhe uma das 5 opções de perturbação
 
         solucao_perturbada = pertubacao(copy.deepcopy(rotas), opcao_perturbacao, grau_perturbacao)
         solucao_perturbada = melhorar_solucao(solucao_perturbada)

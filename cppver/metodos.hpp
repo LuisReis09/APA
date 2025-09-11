@@ -3,6 +3,7 @@
 #include "structures.hpp"
 #include "utils.hpp"
 
+const int NUM_VND_STRUCTURES = 3;
 /**
  *  @brief
  *  A partir de um triângulo inicial, contendo os 3 pontos mais distantes entre si, sendo um deles obrigatoriamente o galpão:
