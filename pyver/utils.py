@@ -64,6 +64,9 @@ def LerDados(caminho_arquivo = "exemplo1.txt"):
         for i in range(estacoes + 1):
             linha = list(map(int, f.readline().strip().split()))
             matriz[i] = linha
+
+    if len(necessidades) == estacoes:
+        necessidades = [0] + necessidades
             
     return estacoes, caminhoes, capmax_caminhao, necessidades, matriz
     
@@ -167,90 +170,90 @@ def MelhoresVertices(matriz, necessidades, capmax_caminhao):
 
 
 
-def BuscaGulosa(matriz, capmax_caminhao, necessidades, caminhoes):
-    """
-        Implementa o algoritmo de vizinho mais próximo para cada conjunto
-        Retorna a lista de rotas (listas de índices) e o custo total
-    """
+# def BuscaGulosa(matriz, capmax_caminhao, necessidades, caminhoes):
+#     """
+#         Implementa o algoritmo de vizinho mais próximo para cada conjunto
+#         Retorna a lista de rotas (listas de índices) e o custo total
+#     """
 
-    rotas = []
-    necessidades_rotas = []
-    custo_total = 0
-    restam_visitar = [estacao for estacao in range(1, matriz.shape[0])]
+#     rotas = []
+#     necessidades_rotas = []
+#     custo_total = 0
+#     restam_visitar = [estacao for estacao in range(1, matriz.shape[0])]
 
-    for _ in range(caminhoes):
-        rotas.append([0])
-        necessidades_rotas.append(0)
+#     for _ in range(caminhoes):
+#         rotas.append([0])
+#         necessidades_rotas.append(0)
 
     
-    # Cada rota guarda sua fila de prioridade de inserções possíveis
-    # Caso haja conflito de interesses, a inserção mais barata global é escolhida
+#     # Cada rota guarda sua fila de prioridade de inserções possíveis
+#     # Caso haja conflito de interesses, a inserção mais barata global é escolhida
 
-    while restam_visitar:
-        fila_prioridade = {}
+#     while restam_visitar:
+#         fila_prioridade = {}
 
-        # Monta a fila de prioridades para cada rota
-        for i, rota in enumerate(rotas):
-            fila_prioridade[i] = {}
+#         # Monta a fila de prioridades para cada rota
+#         for i, rota in enumerate(rotas):
+#             fila_prioridade[i] = {}
 
-            # Para a estação ser possível de visitar, as somas das necessidades tem que pertencer ao range [-capmax_caminhao, capmax_caminhao]
-            for estacao in restam_visitar:
-                if abs(necessidades_rotas[i] + necessidades[estacao]) <= capmax_caminhao:
-                    fila_prioridade[i][estacao] = matriz[rota[-1]][estacao]
+#             # Para a estação ser possível de visitar, as somas das necessidades tem que pertencer ao range [-capmax_caminhao, capmax_caminhao]
+#             for estacao in restam_visitar:
+#                 if abs(necessidades_rotas[i] + necessidades[estacao]) <= capmax_caminhao:
+#                     fila_prioridade[i][estacao] = matriz[rota[-1]][estacao]
 
-            # Ordena a fila de prioridades pelo custo de inserção (menor primeiro)
-            fila_prioridade[i] = dict(sorted(fila_prioridade[i].items(), key=lambda x: x[1]))
+#             # Ordena a fila de prioridades pelo custo de inserção (menor primeiro)
+#             fila_prioridade[i] = dict(sorted(fila_prioridade[i].items(), key=lambda x: x[1]))
 
-        # Filtra as rotas que ainda possuem estações possíveis de visitar
-        rotas_a_atualizar = [i for i in range(len(rotas)) if fila_prioridade[i]]
+#         # Filtra as rotas que ainda possuem estações possíveis de visitar
+#         rotas_a_atualizar = [i for i in range(len(rotas)) if fila_prioridade[i]]
 
-        if not rotas_a_atualizar:   # Se nenhuma rota consegue inserir mais
-            break
+#         if not rotas_a_atualizar:   # Se nenhuma rota consegue inserir mais
+#             break
 
-        while rotas_a_atualizar and restam_visitar:
+#         while rotas_a_atualizar and restam_visitar:
 
-            # Definimos a melhor rota em dois critérios: 
-                # 1. menor custo de inserção
-                # 2. mais perto de carga 0 (menor valor absoluto da soma das necessidades), para evitar que fique sem opções de inserção
-            melhor_rota = min(
-                rotas_a_atualizar,
-                key=lambda x: (
-                    next(iter(fila_prioridade[x].values())),
-                    abs(necessidades_rotas[x] + next(iter(fila_prioridade[x].keys())))  # mais perto de 0
-                )
-            )
+#             # Definimos a melhor rota em dois critérios: 
+#                 # 1. menor custo de inserção
+#                 # 2. mais perto de carga 0 (menor valor absoluto da soma das necessidades), para evitar que fique sem opções de inserção
+#             melhor_rota = min(
+#                 rotas_a_atualizar,
+#                 key=lambda x: (
+#                     next(iter(fila_prioridade[x].values())),
+#                     abs(necessidades_rotas[x] + next(iter(fila_prioridade[x].keys())))  # mais perto de 0
+#                 )
+#             )
 
-            # Seleciona a estação de menor custo
-            estacao_escolhida = next(iter(fila_prioridade[melhor_rota]))
-            custo_escolhido = fila_prioridade[melhor_rota][estacao_escolhida]
+#             # Seleciona a estação de menor custo
+#             estacao_escolhida = next(iter(fila_prioridade[melhor_rota]))
+#             custo_escolhido = fila_prioridade[melhor_rota][estacao_escolhida]
 
-            rotas[melhor_rota].append(estacao_escolhida)
-            necessidades_rotas[melhor_rota] += necessidades[estacao_escolhida]
+#             rotas[melhor_rota].append(estacao_escolhida)
+#             necessidades_rotas[melhor_rota] += necessidades[estacao_escolhida]
 
-            custo_total += custo_escolhido
+#             custo_total += custo_escolhido
 
-            restam_visitar.remove(estacao_escolhida)
+#             restam_visitar.remove(estacao_escolhida)
 
-            # Para a rota que acabou de inserir, é necessário reajustar sua fila de prioridades, considerando a nova estação final
-            fila_prioridade[melhor_rota] = {
-                estacao: matriz[estacao_escolhida][estacao]
-                for estacao in restam_visitar
-                if abs(necessidades_rotas[melhor_rota] + necessidades[estacao]) <= capmax_caminhao
-            }
-            fila_prioridade[melhor_rota] = dict(sorted(fila_prioridade[melhor_rota].items(), key=lambda x: x[1]))
+#             # Para a rota que acabou de inserir, é necessário reajustar sua fila de prioridades, considerando a nova estação final
+#             fila_prioridade[melhor_rota] = {
+#                 estacao: matriz[estacao_escolhida][estacao]
+#                 for estacao in restam_visitar
+#                 if abs(necessidades_rotas[melhor_rota] + necessidades[estacao]) <= capmax_caminhao
+#             }
+#             fila_prioridade[melhor_rota] = dict(sorted(fila_prioridade[melhor_rota].items(), key=lambda x: x[1]))
 
-            # Remove estação escolhida de todas as filas
-            for i in rotas_a_atualizar:
-                fila_prioridade[i].pop(estacao_escolhida, None)
+#             # Remove estação escolhida de todas as filas
+#             for i in rotas_a_atualizar:
+#                 fila_prioridade[i].pop(estacao_escolhida, None)
 
-            rotas_a_atualizar = [i for i in rotas_a_atualizar if fila_prioridade[i]]
+#             rotas_a_atualizar = [i for i in rotas_a_atualizar if fila_prioridade[i]]
 
-    # Finalmente, cada rota deve retornar ao galpão
-    for i, rota in enumerate(rotas):
-        custo_total += matriz[rota[-1]][0]
-        rota.append(0)
+#     # Finalmente, cada rota deve retornar ao galpão
+#     for i, rota in enumerate(rotas):
+#         custo_total += matriz[rota[-1]][0]
+#         rota.append(0)
 
-    return rotas, custo_total
+#     return rotas, custo_total
 
 import heapq
 
@@ -334,7 +337,7 @@ def BuscaGulosa2(matriz, capmax_caminhao, necessidades, caminhoes):
     return rotas, custo_total
 
 
-def VerificaSolucao(matriz: list[list[int]], necessidades: list[int], cap_max: int, rotas: list[list[int]]):
+def VerificaSolucao(matriz: list[list[int]], necessidades: list[int], cap_max: int, rotas: list[list[int]], show_warnings=False):
     """
         Verifica se as rotas passadas são possíveis
             - Nenhuma estação visitada mais de uma vez
@@ -354,10 +357,14 @@ def VerificaSolucao(matriz: list[list[int]], necessidades: list[int], cap_max: i
                 soma_carga += necessidades[rota[i]]
 
                 if abs(soma_carga) > cap_max:
+                    if show_warnings:
+                        print("Capacidade máxima excedida na rota:", rota)
                     return False
                 
                 if rota[i] != 0:
                     if visitados[rota[i] - 1]:
+                        if show_warnings:
+                            print("Estação visitada mais de uma vez:", rota[i], "na rota:", rota)
                         return False
                     else:
                         visitados[rota[i] - 1] =  1
@@ -365,6 +372,8 @@ def VerificaSolucao(matriz: list[list[int]], necessidades: list[int], cap_max: i
                 custo_total += matriz[rota[i-1]][rota[i]]
 
     if not visitados.all():
+        if show_warnings:
+            print("Nem todas as estações foram visitadas. Estações não visitadas:", np.where(visitados == 0)[0] + 1)
         return False
 
     

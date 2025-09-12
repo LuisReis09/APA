@@ -8,9 +8,40 @@
 #include <cstdlib>
 #include <cmath>
 #include <utility>
-#include "structures.h"
-#include "utils.h"
+#include <map>
+#include <algorithm>
+#include "utils.hpp"
 using namespace std;
+
+Problema p;
+
+// seeds pra função de problema aleatorio
+mt19937 gen(time(0));
+
+void SetProblema(Problema prob)
+{
+    p = prob;
+}
+
+void SetProblema(
+    int qnt_veiculos,
+    int capacidade_max,
+    vector<int> demandas,
+    int qnt_estacoes,
+    int veiculos_disponiveis,
+    vector<vector<int>> matriz_custo)
+{
+    p.capacidade_max = capacidade_max;
+    p.demandas = demandas;
+    p.matriz_custo = matriz_custo;
+    p.qnt_estacoes = qnt_estacoes;
+    p.qnt_veiculos = qnt_veiculos;
+    p.veiculos_disponiveis = veiculos_disponiveis;
+}
+Problema GetProblema()
+{
+    return p;
+}
 
 Problema LerDados(string filePath)
 {
@@ -47,41 +78,107 @@ Problema LerDados(string filePath)
     while (iss >> valor)
         problema_iniciado.demandas.push_back(valor);
 
-    // // Linha em branco
-    // getline(MyFile, aux);
-    
-    // Falta ler a matriz de custo 
+    // Linha em branco
+    getline(MyFile, aux);
 
+    // Leitura da matriz de custo
+    int index = 0;
+    problema_iniciado.matriz_custo.resize(problema_iniciado.qnt_estacoes + 1);
+
+    while (getline(MyFile, aux))
+    {
+        aux.erase(aux.find_last_not_of(" \n\r\t") + 1);
+        istringstream iss(aux);
+        int valor;
+
+        while (iss >> valor)
+            problema_iniciado.matriz_custo[index].push_back(valor);
+        index++;
+    }
+
+    // Fechamento de arquivo
     MyFile.close();
 
     return problema_iniciado;
 }
 
-/**
- * Função auxiliar para objetos Rotas que calculam seu tamanho, uma vez que a rota é similar a uma linked list
-*/
-int contaTamRota(Rota rota){
+RespostaLeitura LerDadosStr(const string conteudo_arq){
+    istringstream input(conteudo_arq);
 
-    int counter = 0;    // Contador
-    No* no_atual = rota.rota_i;   // Ponto de partida
-    while(no_atual->proximo != NULL){  // Enquanto haver um nó próximo ao nó atual, incrementar counter
-        counter++;
-        no_atual = no_atual->proximo;
+    RespostaLeitura resultado;
+    string aux;
+
+    try {
+        Problema retorno;
+
+        // ---- Leitura básica ----
+        if (!(input >> retorno.qnt_estacoes) || retorno.qnt_estacoes <= 0)
+            throw runtime_error("Número inválido de estações.");
+
+        if (!(input >> retorno.qnt_veiculos) || retorno.qnt_veiculos <= 0)
+            throw runtime_error("Número inválido de veículos.");
+
+        if (!(input >> retorno.capacidade_max) || retorno.capacidade_max <= 0)
+            throw runtime_error("Capacidade máxima inválida.");
+
+        retorno.veiculos_disponiveis = retorno.qnt_veiculos;
+
+        getline(input, aux); // consome resto da linha
+
+        // ---- Demandas ----
+        retorno.demandas.resize(retorno.qnt_estacoes);
+        for (int i = 0; i < retorno.qnt_estacoes; i++) {
+            if (!(input >> retorno.demandas[i]))
+                throw runtime_error("Demandas incompletas no arquivo.");
+
+            if (abs(retorno.demandas[i]) > retorno.capacidade_max) {
+                throw runtime_error(
+                    "Demanda da estação " + to_string(i) +
+                    " excede a capacidade máxima de um veículo."
+                );
+            }
+        }
+
+        getline(input, aux); // consome resto da linha
+
+        // ---- Matriz de custos ----
+        retorno.matriz_custo.resize(retorno.qnt_estacoes + 1,
+                                    vector<int>(retorno.qnt_estacoes + 1));
+        for (int i = 0; i <= retorno.qnt_estacoes; i++) {
+            for (int j = 0; j <= retorno.qnt_estacoes; j++) {
+                if (!(input >> retorno.matriz_custo[i][j])) {
+                    throw runtime_error("Matriz de custo incompleta.");
+                }
+            }
+        }
+
+        // Dados extras?
+        int lixo;
+        if (input >> lixo) {
+            throw runtime_error("Dados extras encontrados no fim do arquivo.");
+        }
+
+        resultado.success = true;
+        resultado.message = "Leitura concluída com sucesso.";
+        resultado.problema = move(retorno);
     }
-    
-    return counter; // Retorna a quantia de nós naquela rota
+    catch (const exception& e) {
+        resultado.success = false;
+        resultado.message = e.what();
+    }
+
+    return resultado;
 }
 
-int VerificaSolucao(vector<vector<int>> matriz, vector<int> necessidades, int cap_max, vector<Rota> rotas)
+int VerificaSolucao(vector<Rota> rotas)
 {
     /*
         Verifica se as rotas passadas são possiveis
-
     */
 
     // Inicialização de visitados
     vector<int> visitados;
-    for (int i : matriz[0])
+    for (int i : p.matriz_custo[0])
         visitados.push_back(0);
 
     int custo_total = 0;
@@ -90,69 +187,76 @@ int VerificaSolucao(vector<vector<int>> matriz, vector<int> necessidades, int ca
     {
         int soma_carga = 0;
 
-        if (route.rota_i->estacao == 0 && route.rota_i->proximo->estacao == 0){
+        if (route.rota_i->estacao == 0 && route.rota_i->proximo->estacao == 0)
+        {
 
             // Este loop itera por todos os nós de uma rota
-            No* no_atual = route.rota_i->proximo;  // Primeiro nó é o nó após a garagem
-            while(no_atual->proximo != NULL){
-                soma_carga += necessidades[no_atual->estacao];
-                
-                // Checagem se a carga é possível
-                if (abs(soma_carga) > cap_max){
-                    return 0;
-                }
+            No *no_atual = route.rota_i->proximo; // Primeiro nó é o nó após a garagem
+            No *no_anterior = route.rota_i;
+            while (no_atual->proximo != NULL)
+            {
+                soma_carga += p.demandas[no_atual->estacao];
 
-                // if(no_atual->estacao != 0){
-                //     if(visitad)
-                // }
-                
+                // Checagem se a carga é possível
+                if (abs(soma_carga) > p.capacidade_max)
+                    return 0;
+
+                if (no_atual->estacao != 0)
+                {
+                    if (visitados[no_atual->estacao - 1])
+                    {
+                        return 0;
+                    }
+                    else
+                    {
+                        visitados[no_atual->estacao - 1] = 1;
+                    }
+                }
+                custo_total += p.matriz_custo[no_anterior->estacao][no_atual->estacao];
+                no_anterior = no_atual;
+                no_atual = no_atual->proximo;
             }
         }
     }
+
+    // Se nenhuma das estações foi visitada:
+    for (int k = 0; k < visitados.size(); k++)
+    {
+        if (!visitados[k])
+            return 0;
+    }
+
+    return custo_total;
 }
 
-/**
- * ## Melhores Vértices
- * ---
- * @param Problema_p 
- * 
- * Problema que contém atributos necessários para o cálculo, tais como:
- * 
- *  - `vector<vector<int>> matriz_custo`;
- * 
- *  - `vector<int> demandas`;
- * 
- *  - `int capacidade_max`. 
- * 
- * ---
- * @return
- * - `pair<int, int> vertices`: Vertices que, juntamente com a garagem, formam
- * melhor triângulo inicial para inserção mais barata. Considerando que, para que 
- * eles sejam bons, a distância entre os três deve ser a maior possível.
- * 
- */
-pair<int, int> MelhoresVertices(Problema p){
-    int qtd_estacoes = p.matriz_custo.size() - 1;
+pair<int, int> MelhoresVertices()
+{
+    int qtd_estacoes = p.qnt_estacoes;
     pair<int, int> melhores_vertices;
     int maior_distancia = 0;
 
-    for(int i = 0; i < qtd_estacoes; i++){
-        for(int j = i+1; j < qtd_estacoes; j++){
-            if(abs(p.demandas[i] + p.demandas[j]) > p.capacidade_max)
+    for (int i = 0; i < qtd_estacoes; i++)
+    {
+        for (int j = i + 1; j < qtd_estacoes; j++)
+        {
+            if (abs(p.demandas[i] + p.demandas[j]) > p.capacidade_max)
                 continue;
-            
+
             // direcao 1: garagem -> i -> j -> galpao
-            int distancia1 = p.matriz_custo[0][i+1] + p.matriz_custo[i+1][j+1] + p.matriz_custo[j+1][0];
+            int distancia1 = p.matriz_custo[0][i + 1] + p.matriz_custo[i + 1][j + 1] + p.matriz_custo[j + 1][0];
 
             // direcao 2: garagem -> j -> i -> galpao
-            int distancia2 = p.matriz_custo[0][j+1] + p.matriz_custo[j+1][i+1] + p.matriz_custo[i+1][0];
-            
-            if(distancia1 > distancia2 && distancia1 > maior_distancia){
+            int distancia2 = p.matriz_custo[0][j + 1] + p.matriz_custo[j + 1][i + 1] + p.matriz_custo[i + 1][0];
+
+            if (distancia1 > distancia2 && distancia1 > maior_distancia)
+            {
                 maior_distancia = distancia1;
-                melhores_vertices = make_pair(i+1, j+1);
-            }else if(distancia2 > maior_distancia){
+                melhores_vertices = make_pair(i + 1, j + 1);
+            }
+            else if (distancia2 > maior_distancia)
+            {
                 maior_distancia = distancia2;
-                melhores_vertices = make_pair(j+1, i+1);
+                melhores_vertices = make_pair(j + 1, i + 1);
             }
         }
     }
@@ -160,21 +264,210 @@ pair<int, int> MelhoresVertices(Problema p){
     return melhores_vertices;
 }
 
-/*
-* # Problema Aletório:
-* ---
-* ### Parâmetros:
-*   - `int n`:    Quantidade de estações de bicicletas
-*   - `int m`:    Quantidade de caminhões 
-*   - `int c`:    Capacidade máxima de cada caminhão
-*   - `int max`:  Custo máximo entre as estações
-* ---
-* ### Retorno:
-*   - `Problema p`: Um  objeto contendo um problema aleatório, repeitando as condições estabelecidas.
-*/
-Problema ProblemaAleatorio(int n, int m, int c, int max){
-    random_device rd;
-    mt19937 gen(rd());
+bool ValidaDemanda(Rota rota)
+{
+    int demanda_total = 0;
+
+    if (rota.direcao_atual == DirecaoRota::INICIO_FIM)
+    {
+        No *aux = rota.rota_i->proximo; // pula a garagem (se primeiro valor da rota é a garagem)
+        // Enquanto não voltar pra garagem (na qual estação vale 0) e houver Nos na rota
+        while (aux && aux->estacao)
+        {
+            demanda_total += p.demandas[aux->estacao - 1];
+            if (abs(demanda_total) > p.capacidade_max)
+                return false;
+            aux = aux->proximo;
+        }
+    }
+    else
+    {
+        // se a rota já tiver sido findada (possui a estacao 0, garagem, no fim)
+        // atribui o anterior para começar a avaliar as demandas
+        // se não, inicia pelo último elemento, que não é a garagem, portanto, possui demanda
+        No *aux = rota.rota_f->estacao ? rota.rota_f : rota.rota_f->anterior;
+
+        // enquanto não chegar na garagem, onde a rota DEVE iniciar
+        while (aux->estacao)
+        {
+            demanda_total += p.demandas[aux->estacao - 1];
+            if (abs(demanda_total) > p.capacidade_max)
+                return false;
+            aux = aux->anterior;
+        }
+    }
+
+    return true;
+}
+
+int SomaCustoRota(Rota rota)
+{
+    int custo_total = 0;
+
+    if (rota.direcao_atual == DirecaoRota::INICIO_FIM)
+    {
+        No *aux = rota.rota_i;
+        if (!aux)
+            return -1;
+        while (aux->proximo)
+        {
+            custo_total += p.matriz_custo[aux->estacao][aux->proximo->estacao];
+            aux = aux->proximo;
+        }
+    }
+    else
+    {
+        No *aux = rota.rota_f;
+        if (!aux)
+            return -1;
+        while (aux->anterior)
+        {
+            custo_total += p.matriz_custo[aux->estacao][aux->anterior->estacao];
+            aux = aux->anterior;
+        }
+    }
+
+    return custo_total;
+}
+
+int SomaCusto(vector<Rota> rotas)
+{
+    int custo_total = 0;
+
+    for (int i = 0; i < rotas.size(); i++)
+    {
+        if (rotas[i].direcao_atual == DirecaoRota::INICIO_FIM)
+        {
+            No *aux = rotas[i].rota_i;
+            if (!aux)
+                continue;
+            while (aux->proximo)
+            {
+                custo_total += p.matriz_custo[aux->estacao][aux->proximo->estacao];
+                aux = aux->proximo;
+            }
+        }
+        else
+        {
+            No *aux = rotas[i].rota_f;
+            if (!aux)
+                continue;
+            while (aux->anterior)
+            {
+                custo_total += p.matriz_custo[aux->estacao][aux->anterior->estacao];
+                aux = aux->anterior;
+            }
+        }
+    }
+
+    return custo_total;
+}
+
+bool VerificaNovaDemanda(Rota rota, int antecessor, int novaEstacao)
+{
+    int demanda_total = 0;
+
+    if (rota.direcao_atual == DirecaoRota::INICIO_FIM)
+    {
+        No *aux = rota.rota_i;
+        // segue enquanto há um proximo e ainda não chegou na estação dada
+        while (aux)
+        {
+            demanda_total += p.demandas[aux->estacao - 1];
+            if (aux->estacao == antecessor)
+                break;
+            aux = aux->proximo;
+        }
+        // se acabou a rota e não chegou no indice passado
+        if (!aux)
+            return false;
+
+        // verifica se após a inserção da nova demanda, a soma continua válida
+        demanda_total += p.demandas[novaEstacao - 1];
+        if (abs(demanda_total) > p.capacidade_max)
+            return false;
+
+        // para o resto da rota, verifica sua validade após a inserção da nova demanda
+        while (aux)
+        {
+            demanda_total += p.demandas[aux->estacao - 1];
+            if (abs(demanda_total) > p.capacidade_max)
+                return false;
+            aux = aux->proximo;
+        }
+    }
+    else
+    {
+        No *aux = rota.rota_f;
+        // segue enquanto há um proximo e ainda não chegou na estação dada
+        while (aux)
+        {
+            demanda_total += p.demandas[aux->estacao - 1];
+            if (aux->estacao == antecessor)
+                break;
+            aux = aux->anterior;
+        }
+        // se acabou a rota e não chegou no indice passado
+        if (!aux)
+            return false;
+
+        // verifica se após a inserção da nova demanda, a soma continua válida
+        demanda_total += p.demandas[novaEstacao - 1];
+        if (abs(demanda_total) > p.capacidade_max)
+            return false;
+
+        // para o resto da rota, verifica sua validade após a inserção da nova demanda
+        while (aux)
+        {
+            demanda_total += p.demandas[aux->estacao - 1];
+            if (abs(demanda_total) > p.capacidade_max)
+                return false;
+            aux = aux->anterior;
+        }
+    }
+    return true;
+}
+
+int CustoInsercao(Rota rota, int antecessor, int novaEstacao)
+{
+    if (rota.direcao_atual == DirecaoRota::INICIO_FIM)
+    {
+        No *aux = rota.rota_i;
+        while (aux)
+        {
+            if (aux->estacao == antecessor)
+            {
+                if (!aux->proximo)
+                    return -1; // tentando inserir no fim da rota (que presumivelmente já voltou pra garagem e o último valor é 0)
+                int novo_custo = p.matriz_custo[aux->estacao][novaEstacao] + p.matriz_custo[novaEstacao][aux->proximo->estacao];
+                return novo_custo - p.matriz_custo[aux->estacao][aux->proximo->estacao];
+            }
+            aux = aux->proximo;
+        }
+    }
+    else
+    {
+        No *aux = rota.rota_f;
+        while (aux)
+        {
+            if (aux->estacao == antecessor)
+            {
+                if (!aux->anterior)
+                    return -1; // tentando inserir no fim da rota (que presumivelmente já voltou pra garagem e o último valor é 0)
+                int novo_custo = p.matriz_custo[aux->estacao][novaEstacao] + p.matriz_custo[novaEstacao][aux->anterior->estacao];
+                return novo_custo - p.matriz_custo[aux->estacao][aux->anterior->estacao];
+            }
+            aux = aux->anterior;
+        }
+    }
+
+    // se já passou do 0, ao final ou inicio da rota, não é possível inserir
+    // foi passado um antecessor que não está na rota
+    return -1;
+}
+
+Problema ProblemaAleatorio(int n, int m, int c, int max)
+{
     uniform_int_distribution<> random_demanda(-c, c);
     uniform_int_distribution<> random_custo(1, max);
 
@@ -184,38 +477,49 @@ Problema ProblemaAleatorio(int n, int m, int c, int max){
     problema.veiculos_disponiveis = m;
     problema.qnt_veiculos = m;
     problema.capacidade_max = c;
-    
+
     problema.demandas.resize(n);
-    for(int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
         problema.demandas[i] = random_demanda(gen);
-    
-    
+
     problema.matriz_custo.resize(n, vector<int>(n));
-    for(int i = 0; i < n; i++)
-        for(int j = 0; j < n; j++)
-            problema.matriz_custo[i][j] = (i!=j) ? random_custo(gen) : 0;
-            
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            problema.matriz_custo[i][j] = (i != j) ? random_custo(gen) : 0;
+
     return problema;
 }
 
-
-/**
- * Recebe um `Problema p` e o mostra no terminal com um título `p_name`
- */
-void PrintProblema(Problema p, string p_name){
-    cout << endl << p_name << endl << endl;
+void PrintProblema(string p_name)
+{
+    cout << endl
+         << p_name << endl
+         << endl;
     cout << p.qnt_estacoes << endl;
     cout << p.qnt_veiculos << endl;
-    cout << p.capacidade_max << endl << endl;
+    cout << p.capacidade_max << endl
+         << endl;
 
-    for(int demanda: p.demandas)
+    for (int demanda : p.demandas)
         cout << demanda << " ";
-    cout << endl << endl;
+    cout << endl
+         << endl;
 
-    for(vector<int> custos_linha: p.matriz_custo){
-        for(int custo: custos_linha)
+    for (vector<int> custos_linha : p.matriz_custo)
+    {
+        for (int custo : custos_linha)
             cout << custo << " ";
         cout << endl;
     }
     return;
+}
+
+// Função que inicia a cronometragem, retorna um objeto clock_t
+clock_t ComecarCronometro(){
+    clock_t inicio = clock();
+    return inicio;
+}
+float getDuracao(clock_t cronometro_inicio){
+    clock_t duracao = clock() - cronometro_inicio;
+    return (float)duracao / CLOCKS_PER_SEC;
 }
