@@ -401,18 +401,288 @@ Solucao InsercaoMaisBarata()
     return s;
 }
 
+/* 
+    Aplicar testes de swap na rota e retornar a melhor rota encontrada 
+    ou a mesma que recebeu, caso não haja melhora
+ */
 Rota VND_Swap(Rota const r){
-    /* 
-        Aplicar testes de swap na rota e retornar a melhor rota encontrada 
-        ou a mesma que recebeu, caso não haja melhora
-     */
+    Rota r_ret = Rota();
+    int melhor_custo = INFINITY;
+    int custo_anterior, custo_swap, novo_custo;
+
+    No *melhor_aux1 = nullptr, *melhor_aux2 = nullptr;
+    
+    // cria uma cópia da rota recebida, a qual será modificada e retornada, 
+    // de acordo com o algoritmo
+    {
+        No* aux = r.rota_i->proximo;
+        while(aux->proximo){
+            r_ret.InsertEnd(aux->estacao);
+            aux = aux->proximo;
+        }
+        r_ret.direcao_atual = r.direcao_atual;
+        r_ret.custo_total_d1 = r.custo_total_d1;
+        r_ret.custo_total_d2 = r.custo_total_d2;
+        r_ret.rotaTam = r.rotaTam;
+    }
+
+
+    if(r.direcao_atual == DirecaoRota::INICIO_FIM){
+        // começa do primeiro elemento, ignorando a garagem
+        No* aux1 = r_ret.rota_i->proximo;
+
+        if(!aux1) return r_ret;
+
+        // termina quando chegar na garagem
+        while(aux1->proximo){
+
+            // mesma lógica que a anterior, porém começando do próximo de aux1
+            No* aux2 = aux1->proximo;
+            if(!aux2){
+                // só há um elemento
+                if(aux1 == r_ret.rota_i->proximo)
+                    return r_ret;
+                break;
+            }
+            
+            while(aux2->proximo){
+
+                custo_anterior = p.matriz_custo[aux1->anterior->estacao][aux1->estacao] + 
+                                 p.matriz_custo[aux1->estacao][aux1->proximo->estacao];
+                custo_anterior += p.matriz_custo[aux2->anterior->estacao][aux2->estacao] + 
+                                  p.matriz_custo[aux2->estacao][aux2->proximo->estacao];
+
+                custo_swap = p.matriz_custo[aux1->anterior->estacao][aux2->estacao] + 
+                             p.matriz_custo[aux2->estacao][aux1->proximo->estacao];
+                custo_swap += p.matriz_custo[aux2->anterior->estacao][aux1->estacao] + 
+                              p.matriz_custo[aux1->estacao][aux2->proximo->estacao];
+
+                novo_custo = custo_swap - custo_anterior;
+
+                if(novo_custo < melhor_custo){
+                    // atualiza melhor custo
+                    melhor_custo = novo_custo;
+
+                    // guarda as estações
+                    melhor_aux1 = aux1;
+                    melhor_aux2 = aux2;
+                }
+                aux2 = aux2->proximo;
+            }
+            aux1 = aux1->proximo;
+        }
+
+        if(melhor_custo < 0){
+            int temp = melhor_aux1->estacao;
+            melhor_aux1->estacao = melhor_aux2->estacao;
+            melhor_aux2->estacao = temp;
+
+            r_ret.custo_total_d1 += melhor_custo;
+        }
+    }else{
+
+        // começa do primeiro elemento, ignorando a garagem
+        No* aux1 = r_ret.rota_i->anterior;
+
+        if(!aux1) return r_ret;
+
+        // termina quando chegar na garagem
+        while(aux1->anterior){
+
+            // mesma lógica que a anterior, porém começando do próximo de aux1
+            No* aux2 = aux1->anterior;
+            if(!aux2){
+                // só há um elemento
+                if(aux1 == r_ret.rota_f->anterior)
+                    return r_ret;
+                break;
+            }
+            
+            while(aux2->anterior){
+
+                custo_anterior = p.matriz_custo[aux1->proximo->estacao][aux1->estacao] + 
+                                 p.matriz_custo[aux1->estacao][aux1->anterior->estacao];
+                custo_anterior += p.matriz_custo[aux2->proximo->estacao][aux2->estacao] + 
+                                  p.matriz_custo[aux2->estacao][aux2->anterior->estacao];
+
+                custo_swap = p.matriz_custo[aux1->proximo->estacao][aux2->estacao] + 
+                             p.matriz_custo[aux2->estacao][aux1->anterior->estacao];
+                custo_swap += p.matriz_custo[aux2->proximo->estacao][aux1->estacao] + 
+                              p.matriz_custo[aux1->estacao][aux2->anterior->estacao];
+
+                novo_custo = custo_swap - custo_anterior;
+
+                if(novo_custo < melhor_custo){
+                    // atualiza melhor custo
+                    melhor_custo = novo_custo;
+
+                    // guarda as estações
+                    melhor_aux1 = aux1;
+                    melhor_aux2 = aux2;
+                }
+                aux2 = aux2->anterior;
+            }
+            aux1 = aux1->anterior;
+        }
+
+        if(melhor_custo < 0){
+            int temp = melhor_aux1->estacao;
+            melhor_aux1->estacao = melhor_aux2->estacao;
+            melhor_aux2->estacao = temp;
+
+            r_ret.custo_total_d2 += melhor_custo;
+        }
+
+    }
+
+    return r_ret;
 }
 
+/* 
+    Aplicar testes de re-insertion na rota e retornar a melhor rota encontrada 
+    ou a mesma que recebeu, caso não haja melhora
+ */
 Rota VND_Re_Insertion(Rota const r){
-    /* 
-        Aplicar testes de re-insertion na rota e retornar a melhor rota encontrada 
-        ou a mesma que recebeu, caso não haja melhora
-     */
+    Rota r_ret = Rota();
+    int melhor_custo = INFINITY;
+    int custo_anterior, custo_reinsertion, novo_custo;
+    No *melhor_aux1 = nullptr, *melhor_aux2 = nullptr;
+
+    // cópia da rota
+    {
+        No* aux = r.rota_i->proximo;
+        while(aux->proximo){
+            r_ret.InsertEnd(aux->estacao);
+            aux = aux->proximo;
+        }
+        r_ret.direcao_atual = r.direcao_atual;
+        r_ret.custo_total_d1 = r.custo_total_d1;
+        r_ret.custo_total_d2 = r.custo_total_d2;
+        r_ret.rotaTam = r.rotaTam;
+    }
+    
+    int i = 0; // mensurar onde seria a inserção
+    if(r_ret.direcao_atual == DirecaoRota::INICIO_FIM){
+        No* aux1 = r_ret.rota_i->proximo;
+        if(!aux1) return r_ret;
+
+        while(aux1->proximo){
+            No* aux2 = aux1->proximo;
+
+            if(!aux2){
+                // se for um único elemento na rota
+                if(aux1 == r_ret.rota_i->proximo)
+                    return r_ret;
+                break;
+            }
+            while(aux2->proximo){
+
+                /*
+                    Lógica de Re-Insertion
+                    - custo anterior: custo do nó em sua posicao inicial + custo do lugar onde vai ser inserido
+                    - novo custo: custo do lugar de onde o nó foi retirado + de onde foi inserido
+                */
+
+                custo_anterior = p.matriz_custo[aux1->anterior->estacao][aux1->estacao] +
+                                 p.matriz_custo[aux1->estacao][aux1->proximo->estacao] +
+                                 p.matriz_custo[aux2->estacao][aux2->proximo->estacao];
+                
+
+                custo_reinsertion = p.matriz_custo[aux1->anterior->estacao][aux1->proximo->estacao] +
+                                    p.matriz_custo[aux2->estacao][aux1->estacao] + 
+                                    p.matriz_custo[aux1->estacao][aux2->proximo->estacao];
+
+                novo_custo = custo_reinsertion - custo_anterior;
+
+                if(novo_custo < melhor_custo){
+
+
+                    melhor_custo = novo_custo;
+                    melhor_aux1 = aux1;
+                    melhor_aux2 = aux2;
+                }
+
+                aux2 = aux2->proximo;
+            }
+            aux1 = aux1->proximo;
+            i++;
+        }
+
+        // reinserção:
+        if(melhor_custo < 0){
+            // remover o aux1
+            melhor_aux1->anterior->proximo = melhor_aux1->proximo;
+            melhor_aux1->proximo->anterior = melhor_aux1->anterior;
+
+            // inserir aux1 depois de aux2
+            melhor_aux1->proximo = melhor_aux2->proximo;
+            melhor_aux1->anterior = melhor_aux2;
+            melhor_aux2->proximo->anterior = melhor_aux1;
+            melhor_aux2->proximo = melhor_aux1;
+
+            r_ret.custo_total_d1 += melhor_custo;
+        }
+    }else{
+
+        No* aux1 = r_ret.rota_i->anterior;
+        if(!aux1) return r_ret;
+
+        while(aux1->anterior){
+            No* aux2 = aux1->anterior;
+
+            if(!aux2){
+                // se for um único elemento na rota
+                if(aux1 == r_ret.rota_i->anterior)
+                    return r_ret;
+                break;
+            }
+            while(aux2->anterior){
+
+                /*
+                    Lógica de Re-Insertion
+                    - custo anterior: custo do nó em sua posicao inicial + custo do lugar onde vai ser inserido
+                    - novo custo: custo do lugar de onde o nó foi retirado + de onde foi inserido
+                */
+
+                custo_anterior = p.matriz_custo[aux1->proximo->estacao][aux1->estacao] +
+                                 p.matriz_custo[aux1->estacao][aux1->anterior->estacao] +
+                                 p.matriz_custo[aux2->estacao][aux2->anterior->estacao];
+                
+
+                custo_reinsertion = p.matriz_custo[aux1->proximo->estacao][aux1->anterior->estacao] +
+                                    p.matriz_custo[aux2->estacao][aux1->estacao] + 
+                                    p.matriz_custo[aux1->estacao][aux2->anterior->estacao];
+
+                novo_custo = custo_reinsertion - custo_anterior;
+
+                if(novo_custo < melhor_custo){
+                    melhor_custo = novo_custo;
+                    melhor_aux1 = aux1;
+                    melhor_aux2 = aux2;
+                }
+
+                aux2 = aux2->anterior;
+            }
+            aux1 = aux1->anterior;
+        }
+
+        // reinserção
+        if(melhor_custo < 0){
+            // remover o aux1
+            melhor_aux1->proximo->anterior = melhor_aux1->anterior;
+            melhor_aux1->anterior->proximo = melhor_aux1->proximo;
+
+            // inserir aux1 depois de aux2
+            melhor_aux1->anterior = melhor_aux2->anterior;
+            melhor_aux1->proximo = melhor_aux2;
+            melhor_aux2->anterior->proximo = melhor_aux1;
+            melhor_aux2->anterior = melhor_aux1;
+
+            r_ret.custo_total_d1 += melhor_custo;
+        }
+    }
+
+    return r_ret;
 }
 
 Rota VND_TwoOpt(Rota const r){
@@ -473,7 +743,7 @@ void* VND(void* atributos){
             if(nova_rota.custo_total_d1 < attr->rota_retorno.custo_total_d1){
                 k = 0;
                 // essa atribuição ainda tem problemas. criar operador move na classe rota
-                attr->rota_retorno = move(nova_rota); // move evita fazer a cópia da rota
+                attr->rota_retorno = nova_rota; // move evita fazer a cópia da rota
             }else
                 k++;
         }
@@ -486,7 +756,7 @@ void* VND(void* atributos){
             
             if(nova_rota.custo_total_d2 < attr->rota_retorno.custo_total_d2){
                 k = 0;
-                attr->rota_retorno = move(nova_rota);
+                attr->rota_retorno = nova_rota;
             }else
                 k++;
         }
