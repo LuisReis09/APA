@@ -1,4 +1,3 @@
-#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -817,7 +816,6 @@ Rota VND_Re_Insertion(Rota const r)
         r_ret.rotaTam = r.rotaTam;
     }
 
-    int i = 0; // mensurar onde seria a inserção
     if (r_ret.direcao_atual == DirecaoRota::INICIO_FIM)
     {
         No *aux1 = r_ret.rota_i->proximo;
@@ -865,7 +863,6 @@ Rota VND_Re_Insertion(Rota const r)
                 aux2 = aux2->proximo;
             }
             aux1 = aux1->proximo;
-            i++;
         }
 
         // reinserção:
@@ -953,12 +950,146 @@ Rota VND_Re_Insertion(Rota const r)
     return r_ret;
 }
 
+bool VerificaDemanda2Opt(Rota r, No* auxA, No* auxB, No* auxC, No* auxD){
+
+}
+
+/*
+    Aplicar testes de 2-opt na rota e retornar a melhor rota encontrada
+    ou a mesma que recebeu, caso não haja melhora
+ */
 Rota VND_TwoOpt(Rota const r)
 {
-    /*
-        Aplicar testes de 2-opt na rota e retornar a melhor rota encontrada
-        ou a mesma que recebeu, caso não haja melhora
-     */
+Rota r_ret = Rota();
+    int melhor_custo = INFINITY;
+    int custo_anterior, custo_2opt, novo_custo;
+    No *melhor_auxA = nullptr, *melhor_auxB = nullptr, *melhor_auxC = nullptr, *melhor_auxD = nullptr;
+
+    if (r.direcao_atual == DirecaoRota::INICIO_FIM)
+    {
+        No *auxA = r.rota_i->proximo;
+        if(!auxA)
+            return r;
+
+        No *auxB = auxA->proximo;
+        if (!auxB)
+            return r;
+
+        while (auxA && auxB && auxB->estacao)
+        {
+            No *auxC = auxB->proximo;
+            if(!auxC){
+                // se for um único elemento na rota
+                if (auxA == r.rota_i->proximo)
+                    return r;
+                break;
+            }
+
+            No *auxD = auxC->proximo;
+            if (!auxD){
+                // se for um único elemento na rota
+                if (auxA == r.rota_i->proximo)
+                    return r;
+                break;
+            }
+
+            while (auxC && auxD && auxD->estacao)
+            {
+
+                /**
+                 * Lógica 2opt:
+                 * - custo anterior: custo a->b + custo c->d
+                 * - custo 2opt:     custo a->c + custo b->d
+                 * - novo custo:     custo_2opt - custo_anterior
+                 * 
+                 * Além disso, a rota entre c e b é invertida. 
+                 * Isso tem a finalidade de desfazer nós da rota
+                 */
+
+                custo_anterior = p.matriz_custo[auxA->estacao][auxB->estacao] +
+                                 p.matriz_custo[auxB->estacao][auxB->proximo->estacao] +
+                                 p.matriz_custo[auxC->anterior->estacao][auxC->estacao]+
+                                 p.matriz_custo[auxC->estacao][auxD->estacao];
+
+                custo_2opt = p.matriz_custo[auxA->estacao][auxC->estacao] +
+                             p.matriz_custo[auxC->estacao][auxC->anterior->estacao] +
+                             p.matriz_custo[auxB->proximo->estacao][auxB->estacao] +
+                             p.matriz_custo[auxB->estacao][auxD->estacao];
+
+                // calcular o custo no intervalo antes, e invertido
+                No* aux1 = auxB->proximo;
+                No* aux2 = auxC->anterior;
+                
+                // considerando que a rota está íntegra entre os Nos B e C
+                while(aux1->proximo != auxC){
+                    No* aux = aux1->proximo;
+                    custo_anterior += p.matriz_custo[aux1->estacao][aux->estacao];
+                    aux = aux2->anterior;
+                    custo_2opt += p.matriz_custo[aux2->estacao][aux];
+
+                    aux1 = aux1->proximo;
+                    aux2 = aux2->anterior;
+                }
+
+                novo_custo = custo_2opt - custo_anterior;
+
+                if (novo_custo < melhor_custo && VerificaDemanda2Opt(r, auxA, auxB, auxC, auxD))
+                {
+                    melhor_custo = novo_custo;
+                    melhor_auxA = auxA;
+                    melhor_auxB = auxB;
+                    melhor_auxC = auxC;
+                    melhor_auxD = auxD;
+                }
+
+                auxC = auxC->proximo;
+                auxD = auxD->proximo;
+            }
+            auxA = auxA->proximo;
+            auxB = auxB->proximo;
+        }
+
+        // reinserção:
+        if (melhor_custo < 0)
+        {
+            No *aux = r.rota_i->proximo;
+            while (aux && aux != melhor_auxB){
+                r_ret.InsertEnd(aux->estacao);
+                aux = aux->proximo;
+            }
+            r_ret.InsertEnd(melhor_auxC->estacao);
+            aux = melhor_auxC->anterior;
+            while (aux && aux != melhor_auxB){
+                r_ret.InsertEnd(aux->estacao);
+                aux = aux->anterior;
+            }
+            r_ret.InsertEnd(melhor_auxB->estacao);
+            aux = melhor_auxC->proximo;
+            while (aux && aux->estacao){
+                r_ret.InsertEnd(aux->estacao);
+                aux = aux->proximo;
+            }    
+            r_ret.custo_total_d1 = r.custo_total_d1 + melhor_custo;            
+            
+            aux = r_ret.rota_f;
+            while(aux && aux->estacao){
+                r_ret.custo_total_d2 += p.matriz_custo[aux->estacao][aux->anterior->estacao];
+                aux = aux->anterior;
+            }
+
+        }else{
+            r_ret.custo_total_d1 = r.custo_total_d1;
+            r_ret.custo_total_d2 = r.custo_total_d2;
+        }
+        r_ret.rotaTam = r.rotaTam;
+        r_ret.direcao_atual = DirecaoRota::INICIO_FIM;
+    }
+    else {
+    
+    }
+
+    return r_ret;
+
 }
 
 Solucao VND(Solucao solucao)
