@@ -26,6 +26,26 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
   const [results, setResults] = useState<any>(null);
   const [statistics, setStatistics] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [colorUsed, setColorUsed] = useState<number>(0);
+
+  const colors = [
+    "hsl(200, 70%, 50%)",
+    "hsl(260, 70%, 50%)",
+    "hsl(320, 70%, 50%)",
+    "hsl(20, 70%, 50%)",
+    "hsl(80, 70%, 50%)",
+    "hsl(140, 70%, 50%)",
+    "hsl(340, 70%, 50%)",
+    "hsl(110, 70%, 50%)",
+    "hsl(170, 70%, 50%)",
+    "hsl(230, 70%, 50%)"
+  ]
+
+  const getNextColor = () => {
+    const color = colors[colorUsed];
+    setColorUsed((prev => (prev + 1) % colors.length));
+    return color;
+  }
 
   const steps = [
     { id: "greedy", name: "Buscas Gulosas", description: "Vizinho mais próximo e Inserção mais barata" },
@@ -50,63 +70,93 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
   const handleProcessStep = (stepId: string) => {
     setIsProcessing(true);
     setCurrentStep(stepId);
-    
-    // Simular processamento
-    setTimeout(() => {
-      const nearestNeighborRoutes = generateMockRoutes("nearest");
-      const cheapestInsertionRoutes = generateMockRoutes("cheapest");
-      
-      const nearestNeighborResult = {
-        totalCost: Math.random() * 1000 + 500,
-        totalLoad: Math.random() * 100 + 50,
-        executionTime: Math.random() * 5 + 1,
-        gapIndex: Math.random() * 10
-      };
 
-      const cheapestInsertionResult = {
-        totalCost: Math.random() * 1000 + 500,
-        totalLoad: Math.random() * 100 + 50,
-        executionTime: Math.random() * 5 + 1,
-        gapIndex: Math.random() * 10
-      };
+    // Realiza um fetch para o backend 
+    let rota = "";
+    switch(stepId) {
+      case "greedy":
+        rota = "processarGulosos";
+        break;
+      case "local":
+        rota = "melhorarGulosos";
+        break;
+      case "vnd":
+        rota = "aplicarVND";
+        break;
+      case "ils":
+        rota = "aplicarILS";
+        break;
+    }
 
-      const mockResult = {
-        nearestNeighborRoutes,
-        cheapestInsertionRoutes,
-        nearestNeighborResult,
-        cheapestInsertionResult
-      };
-      
-      setResults(mockResult);
-      setStatistics(prev => [...prev, 
-        { 
-          algorithm: stepId, 
-          baseMethod: "vizinho mais próximo",
-          ...nearestNeighborResult,
-          timestamp: Date.now()
-        },
-        { 
-          algorithm: stepId, 
-          baseMethod: "inserção mais barata",
-          ...cheapestInsertionResult,
-          timestamp: Date.now() + 1
-        }
-      ]);
-      setIsProcessing(false);
-    }, 2000);
+    fetch(`http://localhost:4000/${rota}`)
+      .then(res => res.json())
+      .then(data => {
+        console.log("Dados recebidos do backend:", data);
+
+        let nearestNeighborRoutes = data.vizinho_mais_proximo.map((route: any, id: number) => ({
+          id: id,
+          nodes: route,
+          color: getNextColor()
+        }));
+        let cheapestInsertionRoutes = data.insercao_mais_barata.map((route: any, id: number) => ({
+          id: id,
+          nodes: route,
+          color: getNextColor()
+        }));
+
+        const nearestNeighborResult = {
+          totalCost: data.custo_vizinho_mais_proximo,
+          executionTime: data.tempo_vizinho_mais_proximo, // Convertendo ms para s
+          gapIndex: data.gap_vizinho_mais_proximo // Novo campo de gap
+        };
+
+        const cheapestInsertionResult = {
+          totalCost: data.custo_insercao_mais_barata,
+          executionTime: data.tempo_insercao_mais_barata, // Convertendo ms para s
+          gapIndex: data.gap_insercao_mais_barata // Novo campo de gap
+        };
+
+        const resultData = {
+          nearestNeighborRoutes,
+          cheapestInsertionRoutes,
+          nearestNeighborResult,
+          cheapestInsertionResult
+        };
+
+        setResults(resultData);
+        setStatistics(prev => [...prev, 
+          {
+            algorithm: stepId,
+            baseMethod: "vizinho mais próximo",
+            ...nearestNeighborResult,
+            timestamp: Date.now()
+          },
+          {
+            algorithm: stepId,
+            baseMethod: "inserção mais barata",
+            ...cheapestInsertionResult,
+            timestamp: Date.now() + 1
+          }
+        ]);
+        setIsProcessing(false);
+      })
+      .catch(err => {
+        console.error("Erro ao chamar API:", err);
+        setIsProcessing(false);
+      });
   };
 
-  const generateMockRoutes = (type: string) => {
-    const numRoutes = Math.floor(Math.random() * 3) + 2;
-    return Array.from({ length: numRoutes }, (_, i) => ({
-      id: i + 1,
-      nodes: [0, ...Array.from({ length: Math.floor(Math.random() * 5) + 2 }, () => 
-        Math.floor(Math.random() * 10) + 1), 0],
-      color: type === "nearest" 
-        ? `hsl(${200 + (i * 60)}, 70%, 50%)` 
-        : `hsl(${20 + (i * 60)}, 70%, 50%)`
-    }));
-  };
+  // const generateMockRoutes = (type: string) => {
+  //   const numRoutes = Math.floor(Math.random() * 3) + 2;
+  //   return Array.from({ length: numRoutes }, (_, i) => ({
+  //     id: i + 1,
+  //     nodes: [0, ...Array.from({ length: Math.floor(Math.random() * 5) + 2 }, () => 
+  //       Math.floor(Math.random() * 10) + 1), 0],
+  //     color: type === "nearest" 
+  //       ? `hsl(${200 + (i * 60)}, 70%, 50%)` 
+  //       : `hsl(${20 + (i * 60)}, 70%, 50%)`
+  //   }));
+  // };
 
   return (
     <div className="space-y-8">

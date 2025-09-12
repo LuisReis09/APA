@@ -153,7 +153,7 @@
             void StopAllThreads(){
                 pthread_mutex_lock(&mtx);
                 stop = 1;
-                tasks.clear();
+                tasks = queue<Task>(); // limpa a fila de tarefas
                 pthread_cond_broadcast(&cond_var);
                 pthread_mutex_unlock(&mtx);
             }
@@ -179,6 +179,6 @@
                 pthread_mutex_destroy(&mtx);
                 pthread_cond_destroy(&cond_var);
             }
-    }
+    };
 
 #endif

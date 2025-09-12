@@ -29,7 +29,6 @@ int main()
 
             cout << req.body;
             cout << req.get_param_value("input");
-            // LerDados(req.body);
 
             RespostaLeitura leitura = LerDadosStr(req.body);
             if(!leitura.success){
@@ -86,17 +85,19 @@ int main()
      * {
      *      success: true,
      *      vizinho_mais_proximo: [
-     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
+     *          {id: 1, path: [0, 1, 7, 0] },
+     *          {id: 2, path: [0, 3, 5, 0] },
      *          ...
      *      ],
-     *     tempo_vizinho_mais_proximo: 123.45, // em ms
+     *      tempo_vizinho_mais_proximo: 123.45, // em ms
+     *      gap_vizinho_mais_proximo: 12.34, // em %
      *      insercao_mais_barata: [
-     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
+     *          {id: 1, path: [0, 1, 7, 0] },
+     *          {id: 2, path: [0, 3, 5, 0] },
      *          ...
      *      ],
      *     tempo_insercao_mais_barata: 123.45, // em ms
+     *     gap_insercao_mais_barata: 12.34, // em %
      * }
      *
      */
@@ -118,14 +119,14 @@ int main()
      * {
      *      success: true,
      *      vizinho_mais_proximo: [
-     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
+     *          {id: 1, path: [0, 1, 7, 0] },
+     *          {id: 2, path: [0, 3, 5, 0] },
      *          ...
      *      ],
      *      tempo_vizinho_mais_proximo: 123.45, // em ms
      *      insercao_mais_barata: [
-     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
+     *          {id: 1, path: [0, 1, 7, 0] },
+     *          {id: 2, path: [0, 3, 5, 0] },
      *          ...
      *      ],
      *      tempo_insercao_mais_barata: 123.45, // em ms
@@ -149,14 +150,14 @@ int main()
      * {
      *      success: true,
      *      vizinho_mais_proximo: [
-     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
+     *          {id: 1, path: [0, 1, 7, 0] },
+     *          {id: 2, path: [0, 3, 5, 0] },
      *          ...
      *      ],
      *      tempo_vizinho_mais_proximo: 123.45, // em ms
      *      insercao_mais_barata: [
-     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
+     *          {id: 1, path: [0, 1, 7, 0] },
+     *          {id: 2, path: [0, 3, 5, 0] },
      *          ...
      *      ],
      *     tempo_insercao_mais_barata: 123.45, // em ms
@@ -180,14 +181,14 @@ int main()
      * {
      *      success: true,
      *      vizinho_mais_proximo: [
-     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
+     *          {id: 1, path: [0, 1, 7, 0] },
+     *          {id: 2, path: [0, 3, 5, 0] },
      *          ...
      *      ],
      *      tempo_vizinho_mais_proximo: 123.45, // em ms
      *      insercao_mais_barata: [
-     *          {id: 1, path: [[0, 1, 7, 0]], cost: 115.8, load: 42 },
-     *          {id: 2, path: [[0, 3, 5, 0]], cost: 115.8, load: 30 },
+     *          {id: 1, path: [0, 1, 7, 0] },
+     *          {id: 2, path: [0, 3, 5, 0] },
      *          ...
      *      ],
      *     tempo_insercao_mais_barata: 123.45, // em ms

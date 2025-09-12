@@ -77,8 +77,24 @@ public:
         return *this;
     }
 
+        int stationAtIndex(int posicao)
+    {
+        if (posicao > (rotaTam + 1) || posicao < 0)
+            return -1;
+
+        No *atual = rota_i;
+        int index_atual = 0;
+        while (index_atual != posicao)
+        {
+            atual = atual->proximo;
+            index_atual++;
+        }
+        return index_atual;
+    }
+
     void InsertBegin(int estacao)
     {
+        extern Problema p;
         No *novo = new No(estacao);
         novo->proximo = rota_i->proximo;
         novo->anterior = rota_i;
@@ -101,6 +117,7 @@ public:
 
     void InsertEnd(int estacao)
     {
+        extern Problema p;
         No *novo = new No(estacao);
         novo->anterior = rota_f->anterior;
         novo->proximo = rota_f;
@@ -123,6 +140,7 @@ public:
 
     void InsertAt(int posicao, int estacao)
     {
+        extern Problema p;
         if (posicao < 1 || posicao > (rotaTam+1))
             return; // Posição inválida
 
@@ -170,7 +188,89 @@ public:
         custo_total_d2 += p.matriz_custo[atual->estacao][estacao] + p.matriz_custo[estacao][novo->anterior->estacao];
     }
 
+    /*
+        Recebe um vetor de estações e insere todas na posição indicada.
+        Atualiza os custos da rota de acordo com as inserções.
+    */
+    void InsertArrayAt(int posicao, vector<int> estacoes)
+    {
+        extern Problema p;
+        No *novos_nos[estacoes.size()];
+        novos_nos[0] = new No(estacoes[0]);
+
+        int custo_insercao = 0, custo_insercao_2 = 0;
+
+        for (size_t i = 1; i < estacoes.size(); i++)
+        {
+            novos_nos[i] = new No(estacoes[i]);
+            novos_nos[i - 1]->proximo = novos_nos[i];
+            novos_nos[i]->anterior = novos_nos[i - 1];
+            custo_insercao += p.matriz_custo[estacoes[i - 1]][estacoes[i]];
+            custo_insercao_2 += p.matriz_custo[estacoes[i]][estacoes[i - 1]];
+        }
+
+        No *atual;
+        if (posicao <= rotaTam / 2)
+        {
+            atual = rota_i->proximo;
+            for (int i = 1; i < posicao; i++)
+                atual = atual->proximo;
+
+            custo_insercao -= p.matriz_custo[atual->anterior->estacao][atual->estacao];
+            custo_insercao_2 -= p.matriz_custo[atual->estacao][atual->anterior->estacao];
+
+            // Conecta o primeiro novo nó ao nó anterior ao atual
+            novos_nos[0]->anterior = atual->anterior;
+            atual->anterior->proximo = novos_nos[0];
+            custo_insercao += p.matriz_custo[atual->anterior->estacao][novos_nos[0]->estacao];
+            custo_insercao_2 += p.matriz_custo[novos_nos[0]->estacao][atual->anterior->estacao];
+
+            // Conecta o último novo nó ao nó atual
+            novos_nos[estacoes.size() - 1]->proximo = atual;
+            atual->anterior = novos_nos[estacoes.size() - 1];
+            custo_insercao += p.matriz_custo[atual->anterior->estacao][atual->estacao];
+            custo_insercao_2 += p.matriz_custo[atual->estacao][atual->anterior->estacao];
+
+            // Atualiza os custos da rota
+            custo_total_d1 += custo_insercao;
+            custo_total_d2 += custo_insercao_2;
+
+            // Incrementa a quantidade de estações na rota
+            rotaTam += estacoes.size();
+        }
+        else
+        {
+            atual = rota_f->anterior;
+            for (int i = rotaTam; i > posicao; i--)
+                atual = atual->anterior;
+
+            custo_insercao -= p.matriz_custo[atual->anterior->estacao][atual->estacao];
+            custo_insercao_2 -= p.matriz_custo[atual->estacao][atual->anterior->estacao];
+
+            // Conecta o primeiro novo nó ao nó anterior ao atual
+            novos_nos[0]->anterior = atual->anterior;
+            atual->anterior->proximo = novos_nos[0];
+            custo_insercao += p.matriz_custo[atual->anterior->estacao][novos_nos[0]->estacao];
+            custo_insercao_2 += p.matriz_custo[novos_nos[0]->estacao][atual->anterior->estacao];
+
+            // Conecta o último novo nó ao nó atual
+            novos_nos[estacoes.size() - 1]->proximo = atual;
+            atual->anterior = novos_nos[estacoes.size() - 1];
+            custo_insercao += p.matriz_custo[atual->anterior->estacao][atual->estacao];
+            custo_insercao_2 += p.matriz_custo[atual->estacao][atual->anterior->estacao];
+
+            // Atualiza os custos da rota
+            custo_total_d1 += custo_insercao;
+            custo_total_d2 += custo_insercao_2;
+
+            // Incrementa a quantidade de estações na rota
+            rotaTam += estacoes.size();
+        }
+        
+    }
+
     void RemoveAt(int posicao){
+        extern Problema p;
         if (posicao < 1 || posicao > rotaTam)
             return; // Posição inválida
 
@@ -283,5 +383,15 @@ typedef struct{
     int i_rota;
     Rota rota_retorno;
 } VND_attr;
+
+// Utilizado em combinação às threads do ILS
+struct ParametrosILS {
+    int id_execucao;          // só para identificar
+    Solucao solucao;          // passa por valor (cópia)
+    int max_iteracoes;
+    int max_sem_melhora;
+    Solucao* resultado;       // onde salvar a solução final
+};
+
 
 #endif

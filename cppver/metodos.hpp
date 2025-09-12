@@ -80,7 +80,7 @@ typedef enum
     // cria uma nova rota com até (2 * grau_perturbacao) estações retiradas de rotas existentes
     NEWROUTE,
     // inverte uma rota aleatória inteira
-    INVERSAO
+    RECORTE
 } PerturbacaoOpt;
 
 /**

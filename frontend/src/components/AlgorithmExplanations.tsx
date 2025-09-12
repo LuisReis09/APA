@@ -19,14 +19,18 @@ export const AlgorithmExplanations = () => {
       icon: Target,
       description: "Algoritmo construtivo que sempre escolhe o próximo nó mais próximo ainda não visitado.",
       steps: [
-        "Inicia no depósito (nó 0)",
-        "A cada passo, visita o nó mais próximo ainda não visitado",
-        "Quando a capacidade do veículo é atingida, retorna ao depósito",
-        "Inicia uma nova rota com um novo veículo"
+        "Inicia cada veículo (rota) no depósito, ou seja, nó 0",
+        "Para cada rota, constrói sua fila de prioridades com os nós não visitados, ordenados pela distância ao nó atual",
+        "Escolhe a rota que tiver o menor custo de inserção para ser atualizada",
+        "Adiciona em tal rota sua estação de maior prioridade (nó mais próximo)",
+        "Atualiza a fila de prioridades da rota atual",
+        "Retira das outras rotas a possibilidade de inserir o nó adicionado",
+        "Repete os passos 3 a 6 até que todos os nós sejam visitados",
+        "Retorna as rotas construídas"
       ],
       complexity: "O(n²)",
-      advantages: ["Simples de implementar", "Rápido", "Boa solução inicial"],
-      disadvantages: ["Pode gerar soluções subótimas", "Sensível ao ponto de partida"]
+      advantages: ["Simples de implementar", "Rápido", "Solução inicial fácil e intuitiva"],
+      disadvantages: ["Pode gerar soluções medianas", "Sensível ao ponto de partida"]
     },
     {
       id: "cheapest-insertion",
@@ -36,9 +40,12 @@ export const AlgorithmExplanations = () => {
       description: "Constrói rotas inserindo nós na posição que causa menor aumento no custo total.",
       steps: [
         "Inicia com uma rota parcial",
-        "Para cada nó não visitado, calcula o custo de inserção em cada posição",
-        "Insere o nó na posição de menor custo",
-        "Repete até todos os nós serem visitados"
+        "Para cada nó não visitado, calcula o custo de inserção em cada aresta das rotas existentes, inclusive o caso de inverter a rota",
+        "Verifica se a inserção respeita as restrições de capacidade e demanda",
+        "Se o custo de ir do galpão até tal estação e voltar for menor que o custo de inseri-la em qualquer rota, cria uma nova rota para ela",
+        "Insere o nó na posição que gera o menor aumento de custo",
+        "Repete os passos 2 a 5 até que todos os nós sejam visitados",
+        "Retorna as rotas construídas"
       ],
       complexity: "O(n³)",
       advantages: ["Melhor qualidade que vizinho mais próximo", "Considera impacto global"],
@@ -52,13 +59,16 @@ export const AlgorithmExplanations = () => {
       description: "Aplica movimentos locais para melhorar uma solução existente.",
       steps: [
         "Recebe uma solução inicial",
-        "Aplica movimentos como 2-opt, swap, relocate",
-        "Aceita movimentos que melhoram a solução",
-        "Para quando não há mais melhorias possíveis"
+        "Para cada estação em cada rota:",
+        "Avalia se movê-la para outra posição na mesma rota ou para outra rota reduz o custo total",
+        "Avalia também se tal alteração respeita a capacidade e as demandas",
+        "Se encontrar uma melhoria, aplica a alteração e reinicia o processo",
+        "Repete até que nenhuma melhoria seja possível",
+        "Retorna a solução otimizada"
       ],
       complexity: "O(n²) por iteração",
       advantages: ["Melhora qualidade da solução", "Convergência garantida"],
-      disadvantages: ["Pode ficar preso em ótimos locais", "Depende da solução inicial"]
+      disadvantages: ["Pode ficar preso em ótimos locais", "Depende da solução inicial", "Pode ser lento"]
     },
     {
       id: "vnd",
@@ -83,14 +93,14 @@ export const AlgorithmExplanations = () => {
       icon: RefreshCw,
       description: "Combina busca local intensiva com perturbações para escapar de ótimos locais.",
       steps: [
-        "Gera solução inicial e aplica busca local",
+        "Recebe solução inicial e aplica busca local",
         "Aplica perturbação na solução atual",
         "Executa busca local na solução perturbada",
         "Aceita nova solução baseado em critério",
         "Repete até critério de parada"
       ],
       complexity: "Depende da busca local usada",
-      advantages: ["Bom balanço intensificação/diversificação", "Resultados de alta qualidade"],
+      advantages: ["Bom balanço intensificação/diversificação", "Resultados de alta qualidade", "Flexibilidade de criação de perturbações"],
       disadvantages: ["Requer ajuste de parâmetros", "Tempo de execução elevado"]
     }
   ];

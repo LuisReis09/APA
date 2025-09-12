@@ -193,7 +193,7 @@ int VerificaSolucao(vector<Rota> rotas)
             // Este loop itera por todos os nós de uma rota
             No *no_atual = route.rota_i->proximo; // Primeiro nó é o nó após a garagem
             No *no_anterior = route.rota_i;
-            while (no_atual->proximo != NULL)
+            while (no_atual->estacao)
             {
                 soma_carga += p.demandas[no_atual->estacao];
 
@@ -309,7 +309,7 @@ int SomaCustoRota(Rota rota)
         No *aux = rota.rota_i;
         if (!aux)
             return -1;
-        while (aux->proximo)
+        while (aux && aux->estacao)
         {
             custo_total += p.matriz_custo[aux->estacao][aux->proximo->estacao];
             aux = aux->proximo;
@@ -320,7 +320,7 @@ int SomaCustoRota(Rota rota)
         No *aux = rota.rota_f;
         if (!aux)
             return -1;
-        while (aux->anterior)
+        while (aux && aux->estacao)
         {
             custo_total += p.matriz_custo[aux->estacao][aux->anterior->estacao];
             aux = aux->anterior;
@@ -341,7 +341,7 @@ int SomaCusto(vector<Rota> rotas)
             No *aux = rotas[i].rota_i;
             if (!aux)
                 continue;
-            while (aux->proximo)
+            while (aux && aux->estacao)
             {
                 custo_total += p.matriz_custo[aux->estacao][aux->proximo->estacao];
                 aux = aux->proximo;
@@ -352,7 +352,7 @@ int SomaCusto(vector<Rota> rotas)
             No *aux = rotas[i].rota_f;
             if (!aux)
                 continue;
-            while (aux->anterior)
+            while (aux && aux->estacao)
             {
                 custo_total += p.matriz_custo[aux->estacao][aux->anterior->estacao];
                 aux = aux->anterior;
@@ -371,7 +371,7 @@ bool VerificaNovaDemanda(Rota rota, int antecessor, int novaEstacao)
     {
         No *aux = rota.rota_i;
         // segue enquanto há um proximo e ainda não chegou na estação dada
-        while (aux)
+        while (aux && aux->estacao)
         {
             demanda_total += p.demandas[aux->estacao - 1];
             if (aux->estacao == antecessor)
@@ -379,7 +379,7 @@ bool VerificaNovaDemanda(Rota rota, int antecessor, int novaEstacao)
             aux = aux->proximo;
         }
         // se acabou a rota e não chegou no indice passado
-        if (!aux)
+        if (!aux->estacao)
             return false;
 
         // verifica se após a inserção da nova demanda, a soma continua válida
@@ -388,7 +388,7 @@ bool VerificaNovaDemanda(Rota rota, int antecessor, int novaEstacao)
             return false;
 
         // para o resto da rota, verifica sua validade após a inserção da nova demanda
-        while (aux)
+        while (aux && aux->estacao)
         {
             demanda_total += p.demandas[aux->estacao - 1];
             if (abs(demanda_total) > p.capacidade_max)
@@ -400,7 +400,7 @@ bool VerificaNovaDemanda(Rota rota, int antecessor, int novaEstacao)
     {
         No *aux = rota.rota_f;
         // segue enquanto há um proximo e ainda não chegou na estação dada
-        while (aux)
+        while (aux && aux->estacao)
         {
             demanda_total += p.demandas[aux->estacao - 1];
             if (aux->estacao == antecessor)
@@ -408,7 +408,7 @@ bool VerificaNovaDemanda(Rota rota, int antecessor, int novaEstacao)
             aux = aux->anterior;
         }
         // se acabou a rota e não chegou no indice passado
-        if (!aux)
+        if (!aux->estacao)
             return false;
 
         // verifica se após a inserção da nova demanda, a soma continua válida
@@ -417,7 +417,7 @@ bool VerificaNovaDemanda(Rota rota, int antecessor, int novaEstacao)
             return false;
 
         // para o resto da rota, verifica sua validade após a inserção da nova demanda
-        while (aux)
+        while (aux && aux->estacao)
         {
             demanda_total += p.demandas[aux->estacao - 1];
             if (abs(demanda_total) > p.capacidade_max)
@@ -433,7 +433,7 @@ int CustoInsercao(Rota rota, int antecessor, int novaEstacao)
     if (rota.direcao_atual == DirecaoRota::INICIO_FIM)
     {
         No *aux = rota.rota_i;
-        while (aux)
+        while (aux->proximo)
         {
             if (aux->estacao == antecessor)
             {
@@ -448,7 +448,7 @@ int CustoInsercao(Rota rota, int antecessor, int novaEstacao)
     else
     {
         No *aux = rota.rota_f;
-        while (aux)
+        while (aux->proximo)
         {
             if (aux->estacao == antecessor)
             {

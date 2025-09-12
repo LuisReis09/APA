@@ -51,7 +51,7 @@ export const RouteVisualization = ({ title, routes }: RouteVisualizationProps) =
         id: nodeId.toString(),
         position: { x, y },
         data: { 
-          label: nodeId === 0 ? "Depósito" : `Est. ${nodeId}` 
+          label: nodeId === 0 ? "D" : `Est. ${nodeId}` 
         },
         type: nodeId === 0 ? 'depot' : 'station',
         style: {

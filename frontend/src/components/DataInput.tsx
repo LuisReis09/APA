@@ -90,7 +90,20 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
         maximo_iteracoes_sem_melhora: data.maxIterationsWithoutImprovement
       })
     })
-    .then()
+    .then(response => {
+      if (!response.ok) throw new Error("Erro ao enviar configurações");
+      return response.json();
+    })
+    .then(data => {
+      if(!data.success){
+        throw new Error(data.message);
+      }
+      onDataSubmit(data);
+      setError("");
+    })
+    .catch(error => {
+      setError(error.message);
+    });
   };
 
   return (

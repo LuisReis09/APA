@@ -23,7 +23,7 @@ export const VehicleRoutingApp = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">
-                  Problema das Rotas para N Veículos
+                  Problema das Rotas para M Veículos
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   Análise e Projeto de Algoritmos - UFPB
