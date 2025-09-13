@@ -11,9 +11,19 @@
 #include <thread>
 #include <map>
 #include <algorithm>
+#include <mutex>
+#include <barrier>
 #include "metodos.hpp"
 #include "threadpool.hpp"
 using namespace std;
+
+// ================================================================================== //
+//                               Variáveis Globais                                    //
+// ================================================================================== //
+Problema p;
+Solucao melhor_solucao;
+pthread_mutex_t mutex_melhorSolucaoCheck_ILS = PTHREAD_MUTEX_INITIALIZER;   // Mutex do ILS
+pthread_barrier_t barreira_ILS;
 
 Solucao VizinhoMaisProximo()
 {
@@ -140,10 +150,12 @@ Solucao VizinhoMaisProximo()
     }
 
     // Finalmente, cada rota deve retornar ao galpão
-    for (vector<int> rota : rotas)
+    for (auto &rota : rotas)
     {
-        custo_total += p.matriz_custo[rota[rota.size() - 1]][0];
-        rota.push_back(0);
+        if(rota.size() != 0){
+            custo_total += p.matriz_custo[rota[rota.back()]][0];
+            rota.push_back(0);
+        }
     }
 
     // Construção do Objeto Solução e do array de rotas
@@ -164,8 +176,8 @@ Solucao VizinhoMaisProximo()
 
         // Construção do objeto Rota
         Rota route;
-        No *inicio;
-        No *fim;
+        No *inicio = new No();
+        No *fim = new No();
         inicio->estacao = 0;
         fim->estacao = 0;
 
@@ -183,81 +195,86 @@ Solucao VizinhoMaisProximo()
 
 vector<Rota> MelhorarSolucao(vector<Rota> rotas)
 {
-    int index_rota_origem = 0;
-    for (Rota rota : rotas)
-    {
-        // Itera por cada estação em rota
-
-        No *no_atual = rota.rota_i;
-        int index_rota_destino = 0;
-        while (no_atual->proximo != rota.rota_f)
+    bool melhorou = true;
+    int index_rota_origem;
+    while (melhorou){
+        melhorou = false;
+        index_rota_origem = 0;
+        for (Rota rota : melhor_solucao.rotas)
         {
+            // Itera por cada estação em rota
+
+            No *no_atual = rota.rota_i->proximo;
             int index_rota_destino = 0;
-            for (Rota rota_destino : rotas)
+            while (no_atual->estacao)
             {
-                for (int pos = 1; pos < rota_destino.rotaTam - 1; pos++)
+                int index_rota_destino = 0;
+                for (Rota rota_destino : rotas)
                 {
-                    if (no_atual->estacao == 0) // Nunca mover depositos
-                        continue;
-
-                    // Cópia para teste
-                    Rota nova_rota_origem = rota;
-                    Rota nova_rota_destino;
-
-                    // Remoção da estação atual pra nova_rota_origem
-                    // Achando a posição do alvo
-
-                    No *aux = nova_rota_origem.rota_i;
-                    int posicao = 0;
-                    while (aux->estacao != no_atual->estacao)
+                    for (int pos = 1; pos < rota_destino.rotaTam; pos++)
                     {
-                        posicao++;
-                        aux = aux->proximo;
+                        if (no_atual->estacao == 0) // Nunca mover depositos
+                            continue;
+
+                        // Cópia para teste
+                        Rota nova_rota_origem = rota;
+                        Rota nova_rota_destino;
+
+                        // Remoção da estação atual pra nova_rota_origem
+                        // Achando a posição do alvo
+
+                        No *aux = nova_rota_origem.rota_i;
+                        int posicao = 0;
+                        while (aux->estacao != no_atual->estacao)
+                        {
+                            posicao++;
+                            aux = aux->proximo;
+                        }
+                        nova_rota_origem.RemoveAt(posicao);
+
+                        index_rota_origem == index_rota_destino
+                            ? nova_rota_destino = nova_rota_origem
+                            : nova_rota_destino = rota_destino;
+
+                        // Inserção da estação na posição válida
+                        nova_rota_destino.InsertAt(posicao, no_atual->estacao);
+
+                        // Checa viabilidade
+                        if (!ValidaDemanda(nova_rota_destino) || !ValidaDemanda(nova_rota_origem))
+                            continue;
+
+                        // Calculo de custos
+                        int custo_atual;
+                        int custo_novo;
+
+                        if (index_rota_destino == index_rota_origem)
+                        {
+                            rota.direcao_atual >= INICIO_FIM ? custo_atual = rota.custo_total_d1 : custo_atual = rota.custo_total_d2;
+                            custo_novo = SomaCustoRota(nova_rota_destino);
+                        }
+                        else
+                        {
+                            custo_atual = SomaCusto({rota, rota_destino});
+                            custo_novo = SomaCusto({nova_rota_origem, nova_rota_destino});
+                        }
+
+                        // Aplica a mudança se melhorou
+                        if (custo_novo < custo_atual)
+                        {
+                            rotas[index_rota_destino] = nova_rota_destino;
+                            if (index_rota_destino != index_rota_origem)
+                                rotas[index_rota_origem] = nova_rota_origem;
+                            melhorou = true;
+                        }
                     }
-                    nova_rota_origem.RemoveAt(posicao);
-
-                    index_rota_origem == index_rota_destino
-                        ? nova_rota_destino = nova_rota_origem
-                        : nova_rota_destino = rota_destino;
-
-                    // Inserção da estação na posição válida
-                    nova_rota_destino.InsertAt(posicao, no_atual->estacao);
-
-                    // Checa viabilidade
-                    if (!ValidaDemanda(nova_rota_destino) || !ValidaDemanda(nova_rota_origem))
-                        continue;
-
-                    // Calculo de custos
-                    int custo_atual;
-                    int custo_novo;
-
-                    if (index_rota_destino == index_rota_origem)
-                    {
-                        rota.direcao_atual >= INICIO_FIM ? custo_atual = rota.custo_total_d1 : custo_atual = rota.custo_total_d2;
-                        custo_novo = SomaCustoRota(nova_rota_destino);
-                    }
-                    else
-                    {
-                        custo_atual = SomaCusto({rota, rota_destino});
-                        custo_novo = SomaCusto({nova_rota_origem, nova_rota_destino});
-                    }
-
-                    // Aplica a mudança se melhorou
-                    if (custo_novo < custo_atual)
-                    {
-                        rotas[index_rota_destino] = nova_rota_destino;
-                        if (index_rota_destino != index_rota_origem)
-                            rotas[index_rota_origem] = nova_rota_origem;
-                        return MelhorarSolucao(rotas);
-                    }
+                    index_rota_destino++;
                 }
-                index_rota_destino++;
+
+                no_atual = no_atual->proximo;
             }
 
-            no_atual = no_atual->proximo;
+            index_rota_origem++;
         }
-
-        index_rota_origem++;
     }
 
     return rotas;
@@ -1415,7 +1432,23 @@ vector<Rota> Perturbacao(vector<Rota> rotas, PerturbacaoOpt perturbacao_escolhid
     }
 }
 
-// void executeThreadsILS()
+void* executeThreadsILS(void* atributos){
+    ParametrosILS parametros_ILS = (ParametrosILS*)atributos;
+
+    Solucao solucao_encontrada = ILS(parametros_ILS.solucao, parametros_ILS.max_iteracoes, parametros_ILS.max_sem_melhora);
+
+    // Após cada função terminar de executar, comparamos os valores
+    // É necessario que a barreira seja inicializada fora desta função com pthread_barrier_init(&barreira_ILS, nullptr, NUM_THREADS);
+    pthread_barrier_wait(&barreira_ILS);
+
+    // Entrada em SC
+    pthread_mutex_lock(&mutex_melhorSolucaoCheck_ILS);
+    if (solucao_encontrada.custo_total < melhor_solucao.custo_total)
+        melhor_solucao = solucao_encontrada;
+    pthread_mutex_unlock(&mutex_melhorSolucaoCheck_ILS); // Saída da SC
+
+    delete parametros_ILS;
+}
 
 Solucao ILS(Solucao solucao, int max_iteracoes, int max_sem_melhora)
 {

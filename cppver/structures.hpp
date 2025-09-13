@@ -391,6 +391,7 @@ struct ParametrosILS {
     int max_iteracoes;
     int max_sem_melhora;
     Solucao* resultado;       // onde salvar a solução final
+    int pool_count;           // Utilizado para determinar quantas threads serão chamadas 
 };
 
 

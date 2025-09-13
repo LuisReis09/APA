@@ -3,7 +3,7 @@ import copy
 import random
 
 # ---------- Leitura dos dados ----------
-estacoes, caminhoes, capmax_caminhao, necessidades, matriz = LerDados("../exemplos/n20_q20.txt")
+estacoes, caminhoes, capmax_caminhao, necessidades, matriz = LerDados("../exemplos/instancia1.txt")
 print("DADOS DE ENTRADA")
 print("Estações:", estacoes)
 print("Caminhões:", caminhoes)
@@ -87,11 +87,7 @@ def calcula_custo_insercao(rota, ind, estacao):
 
 
 # ---------- Algoritmo principal ----------
-<<<<<<< Updated upstream
-# ---------- Insercao mais Barata ---------
-=======
 # ---------- Inserção mais barata ---------
->>>>>>> Stashed changes
 def execute(estacoes_restantes=estacoes_restantes, rotas=rotas, caminhoes_restantes=caminhoes_restantes):
     for estacao in estacoes_restantes:
         menor_custo = float("inf")
@@ -408,14 +404,14 @@ def ILS(rotas, max_iteracoes, max_sem_melhora):
 print("Iniciando busca gulosa...")
 rotas_guloso, custo = BuscaGulosa2(matriz, capmax_caminhao, necessidades, caminhoes)
 print("Custo inicial:", VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_guloso))
+rotas_guloso = [rota for rota in rotas_guloso if len(rota) > 2]  # Remove rotas vazias
 rotas_guloso = melhorar_solucao(rotas_guloso)
 print("Rotas melhora-guloso:", rotas_guloso)
 print("Custo melhora-guloso:", VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_guloso))
-rotas_guloso = [rota for rota in rotas_guloso if len(rota) > 2]  # Remove rotas vazias
-rotas_guloso = ILS(rotas_guloso, 5000, 150)
-print("Rotas finais guloso:", rotas_guloso)
-custo_final = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_guloso)
-print("Custo final guloso:", custo_final)
+# rotas_guloso = ILS(rotas_guloso, 5000, 50)
+# print("Rotas finais guloso:", rotas_guloso)
+# custo_final = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_guloso)
+# print("Custo final guloso:", custo_final)
 
 rotas_finais = execute()
 rotas_finais = arestas_para_rotas(rotas_finais)
@@ -424,13 +420,13 @@ custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finai
 print("Custo IMB:", custo_total, "\n")
 
 
+rotas_finais = [rota for rota in rotas_finais if len(rota) > 2]  # Remove rotas vazias
 rotas_finais = melhorar_solucao(rotas_finais)
 print("Rotas IMB-melhorado:", rotas_finais)
 custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais, show_warnings=True)
 print("Custo IMB-melhorado:", custo_total)
 
-rotas_finais = [rota for rota in rotas_finais if len(rota) > 2]  # Remove rotas vazias
-rotas_finais = ILS(rotas_finais, 5000, 150)
+rotas_finais = ILS(rotas_finais, 5000, 50)
 print("Rotas finais IMB:", rotas_finais)
 custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais)
 print("Custo total IMB:", custo_total)
