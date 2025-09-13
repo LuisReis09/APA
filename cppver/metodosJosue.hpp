@@ -38,12 +38,11 @@ Solucao VizinhoMaisProximo(); // vulgo BuscaGulosa2, no utils.py
  * de custo total.
  *
  * ---
- * @param rotas que contém as rotas de uma dada solução
  *
  * ---
  * @return `rotas` - um vetor de rotas igual ao de entrada ou de melhor custo total
  */
-vector<Rota> MelhorarSolucao(vector<Rota>);
+vector<Rota> MelhorarSolucao();
 
 // Estruturas de vizinhanças a serem aplicadas no algoritmo VND
 typedef enum

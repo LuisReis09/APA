@@ -2,7 +2,7 @@
 #define STRUCTURES_H
 // #include "utils.h"
 #include <vector>
-
+#include <cstdio>
 using namespace std;
 
 class Problema
@@ -43,12 +43,13 @@ public:
 
     // Construtor padrão
     Rota() : custo_total_d1(0), custo_total_d2(0),
-             rotaTam(0), direcao_atual(INICIO_FIM) {
-                rota_i = new No(0); // Nó inicial (depósito)
-                rota_f = new No(0); // Nó final (depósito)
-                rota_i->proximo = rota_f;
-                rota_f->anterior = rota_i;
-             }
+             rotaTam(0), direcao_atual(INICIO_FIM)
+    {
+        rota_i = new No(0); // Nó inicial (depósito)
+        rota_f = new No(0); // Nó final (depósito)
+        rota_i->proximo = rota_f;
+        rota_f->anterior = rota_i;
+    }
 
     // Construtor de cópia (deep copy)
     Rota(const Rota &other)
@@ -77,7 +78,7 @@ public:
         return *this;
     }
 
-        int stationAtIndex(int posicao)
+    int stationAtIndex(int posicao)
     {
         if (posicao > (rotaTam + 1) || posicao < 0)
             return -1;
@@ -90,6 +91,17 @@ public:
             index_atual++;
         }
         return index_atual;
+    }
+
+    void printRota()
+    {
+        No *aux = rota_i;
+        while (aux->proximo)
+        {
+            printf("%d --- ", aux->estacao);
+            aux = aux->proximo;
+        }
+        printf("%d\n", aux->estacao);
     }
 
     void InsertBegin(int estacao)
@@ -113,6 +125,8 @@ public:
         custo_total_d2 += p.matriz_custo[novo->proximo->estacao][estacao] + p.matriz_custo[estacao][0];
 
         // Agora temos a estação inserida e o novo custo atualizado
+
+        updateDirection();
     }
 
     void InsertEnd(int estacao)
@@ -136,12 +150,13 @@ public:
         custo_total_d2 += p.matriz_custo[0][estacao] + p.matriz_custo[estacao][novo->anterior->estacao];
 
         // Agora temos a estação inserida e o novo custo atualizado
+        updateDirection();
     }
 
     void InsertAt(int posicao, int estacao)
     {
         extern Problema p;
-        if (posicao < 1 || posicao > (rotaTam+1))
+        if (posicao < 1 || posicao > (rotaTam + 1))
             return; // Posição inválida
 
         // Se a posição for mais perto do início, percorre a partir do início
@@ -186,6 +201,45 @@ public:
         // Atualiza custos da direcao FIM_INICIO
         custo_total_d2 -= p.matriz_custo[atual->estacao][novo->anterior->estacao];
         custo_total_d2 += p.matriz_custo[atual->estacao][estacao] + p.matriz_custo[estacao][novo->anterior->estacao];
+
+        updateDirection();
+    }
+
+    /*
+        Recebe uma posição e uma estação e cria um nó naquela posição da esquerda a direita
+        Atualiza os custos da rota de acordo com as inserções
+    */
+    void LeftInsertAt(int posicao, int estacao)
+    {
+        extern Problema p;
+        printf("Tentando inserir na posição %d em uma rota de tamanho %d\n", posicao, rotaTam);
+        if (posicao < 1 || posicao > (rotaTam + 1))
+            return; // Posição inválida
+
+        No *novo_no = new No(estacao);
+        No *atual = rota_i->proximo;
+
+        for (int i = 1; i < posicao; i++)
+            atual = atual->proximo;
+
+        // Quando eu chego na posição que eu quero, a estação vai ser o novo elemento daquela posição
+        // Ou seja, o atual que está na posição posicao vai ser empurrado para frente, ficando na posição posicao + 1
+        novo_no->proximo = atual;
+        novo_no->anterior = atual->anterior;
+        atual->anterior->proximo = novo_no;
+        atual->anterior = novo_no;
+        rotaTam++;
+
+        // Atualização de custos
+        // Atualiza custos da direcao INICIO_FIM
+        custo_total_d1 -= p.matriz_custo[novo_no->anterior->estacao][atual->estacao];
+        custo_total_d1 += p.matriz_custo[novo_no->anterior->estacao][estacao] + p.matriz_custo[estacao][atual->estacao];
+
+        // Atualiza custos da direcao FIM_INICIO
+        custo_total_d2 -= p.matriz_custo[atual->estacao][novo_no->anterior->estacao];
+        custo_total_d2 += p.matriz_custo[atual->estacao][estacao] + p.matriz_custo[estacao][novo_no->anterior->estacao];
+
+        updateDirection();
     }
 
     /*
@@ -265,11 +319,13 @@ public:
 
             // Incrementa a quantidade de estações na rota
             rotaTam += estacoes.size();
+
+            updateDirection();
         }
-        
     }
 
-    void RemoveAt(int posicao){
+    void RemoveAt(int posicao)
+    {
         extern Problema p;
         if (posicao < 1 || posicao > rotaTam)
             return; // Posição inválida
@@ -285,7 +341,6 @@ public:
             atual->anterior->proximo = atual->proximo;
             atual->proximo->anterior = atual->anterior;
             rotaTam--;
-
         }
         else
         {
@@ -308,7 +363,14 @@ public:
         custo_total_d2 -= p.matriz_custo[atual->estacao][atual->anterior->estacao];
         custo_total_d2 += p.matriz_custo[atual->proximo->estacao][atual->anterior->estacao];
 
+        updateDirection();
+
         delete atual; // Libera memória do nó removido
+    }
+
+    void updateDirection()
+    {
+        custo_total_d1 > custo_total_d2 ? direcao_atual = INICIO_FIM : direcao_atual = FIM_INICIO;
     }
 
     // Destrutor
@@ -376,23 +438,31 @@ public:
     int veiculos_usados;
     int veiculos_disponiveis;
     vector<Rota> rotas;
+
+    void printRotas()
+    {
+        for (Rota rota : rotas)
+            rota.printRota();
+        printf("\n");
+    }
 };
 
-typedef struct{
+typedef struct
+{
     Solucao solucao;
     int i_rota;
     Rota rota_retorno;
 } VND_attr;
 
 // Utilizado em combinação às threads do ILS
-struct ParametrosILS {
-    int id_execucao;          // só para identificar
-    Solucao solucao;          // passa por valor (cópia)
+struct ParametrosILS
+{
+    int id_execucao; // só para identificar
+    Solucao solucao; // passa por valor (cópia)
     int max_iteracoes;
     int max_sem_melhora;
-    Solucao* resultado;       // onde salvar a solução final
-    int pool_count;           // Utilizado para determinar quantas threads serão chamadas 
+    Solucao *resultado; // onde salvar a solução final
+    int pool_count;     // Utilizado para determinar quantas threads serão chamadas
 };
-
 
 #endif

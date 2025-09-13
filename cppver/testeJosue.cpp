@@ -1,4 +1,4 @@
-#include "metodos.hpp"
+#include "metodosJosue.hpp"
 #include "utils.hpp"
 #include "threadpool.hpp"
 #include "structures.hpp"
@@ -7,8 +7,7 @@ using namespace std;
 
 int main()
 {
-    Problema p = LerDados("../exemplos/exemplo3.txt");
-    SetProblema(p);
+    SetProblema(LerDados("../exemplos/exemplo1.txt"));
 
     Solucao sol = VizinhoMaisProximo();
 
@@ -27,7 +26,7 @@ int main()
         printf("%d\n\t", aux->estacao);
     }
 
-    sol.rotas = MelhorarSolucao(sol.rotas);
+    sol.rotas = MelhorarSolucao();
 
     // Solução inicial
     printf("SOLUÇÃO PÓS-MELHORA\n\t>> Custo total: %d\n\t>> Veiculos usados: %d\n\t", sol.custo_total, sol.veiculos_usados);

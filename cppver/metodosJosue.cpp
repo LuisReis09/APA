@@ -15,6 +15,7 @@
 #include <barrier>
 #include "metodosJosue.hpp"
 #include "threadpool.hpp"
+#include "utils.hpp"
 #include <pthread.h>
 #include <iostream>
 using namespace std;
@@ -116,13 +117,13 @@ Solucao VizinhoMaisProximo()
         int melhor_rota = (melhor_it != rotas_a_atualizar.end()) ? *melhor_it : rotas_a_atualizar.back();
 
         // Seleciona a estação de menor custo necessario achar o indice
-        printf("checkpoint 1\n");
+        // printf("checkpoint 1\n");
         auto it = min_element( // Retorna o par chave : valor
             fila_prioridade[melhor_rota].begin(),
             fila_prioridade[melhor_rota].end(),
             [](const auto &a, const auto &b)
             { return a.second < b.second; });
-        printf("checkpoint 1.2\n");
+        // printf("checkpoint 1.2\n");
 
         if (it == fila_prioridade[melhor_rota].end())
         {
@@ -138,13 +139,13 @@ Solucao VizinhoMaisProximo()
         custo_total += custo_escolhido;
 
         // Removendo por valor
-        printf("checkpoint 2\n");
+        // printf("checkpoint 2\n");
         restam_visitar.erase(
             remove(restam_visitar.begin(),
                    restam_visitar.end(),
                    estacao_escolhida),
             restam_visitar.end());
-        printf("checkpoint 2.1\n");
+        // printf("checkpoint 2.1\n");
 
         // Para a rota que acabou de inserir, é necessário reajustar sua fila de prioridades, considerando a nova estação final
         printf("\tValor de melhor rota: %d\n\tValor de estacao_escolhida: %d\n", melhor_rota, estacao_escolhida);
@@ -163,13 +164,13 @@ Solucao VizinhoMaisProximo()
             fila_prioridade[melhor_rota] = ajuste;
         }
 
-        printf("checkpoint 3\n");
+        // printf("checkpoint 3\n");
 
         // Remove a estação escolhida de todas as filas
         for (int i : rotas_a_atualizar)
             fila_prioridade[i].erase(estacao_escolhida);
 
-        printf("checkpoint 3.1\n");
+        // printf("checkpoint 3.1\n");
         rotas_a_atualizar.erase(
             std::remove_if(
                 rotas_a_atualizar.begin(),
@@ -183,7 +184,7 @@ Solucao VizinhoMaisProximo()
     }
 
     // Finalmente, cada rota deve retornar ao galpão
-    printf("CHECKPOINT 4\n");
+    // printf("CHECKPOINT 4\n");
     for (auto &rota : rotas)
     {
         if (rota.size() != 0)
@@ -193,7 +194,7 @@ Solucao VizinhoMaisProximo()
             rota.push_back(0);
         }
     }
-    printf("CHECKPOINT 4.1\n");
+    // printf("CHECKPOINT 4.1\n");
 
     // Construção do Objeto Solução e do array de rotas
     Solucao solucao_encontrada;
@@ -223,16 +224,16 @@ Solucao VizinhoMaisProximo()
         // Construção do objeto Rota
         Rota route = Rota();
 
-        printf("checkpoint 5\n");
+        // printf("checkpoint 5\n");
         for (int index = 1; index < rota.size() - 1; index++)
         {
             printf("Inserindo a estacao %d na rota\n", rota[index]);
             route.InsertEnd(rota[index]);
         }
-        printf("checkpoint 5.1\n");
+        // printf("checkpoint 5.1\n");
 
         rotas_solucao.push_back(route);
-        printf("checkpoint 5.2\n");
+        // printf("checkpoint 5.2\n");
     }
 
     solucao_encontrada.rotas = rotas_solucao;
@@ -241,9 +242,10 @@ Solucao VizinhoMaisProximo()
     return solucao_encontrada;
 }
 
-vector<Rota> MelhorarSolucao(vector<Rota> rotas)
+vector<Rota> MelhorarSolucao()
 {
     bool melhorou = true;
+    int qtd_melhoras = 0;
     int index_rota_origem;
     while (melhorou)
     {
@@ -258,12 +260,18 @@ vector<Rota> MelhorarSolucao(vector<Rota> rotas)
             while (no_atual->estacao) // Checa todos os nós não-deposito da rota origem
             {
                 int index_rota_destino = 0;
-                for (Rota rota_destino : melhor_solucao.rotas)
+                for (Rota &rota_destino : melhor_solucao.rotas)
                 {
                     for (int pos = 1; pos <= rota_destino.rotaTam; pos++)
                     {
+                        if (index_rota_destino == index_rota_origem && no_atual->estacao == rota.stationAtIndex(pos))
+                        { // Em suma, checa se esta sendo analisado o mesmo nó, afinal, não tem pra que calcular a diferença de um termo se a gente colocar ele na mesma posição
+                            continue;
+                        }
                         if (no_atual->estacao == 0) // Nunca mover depositos
                             continue;
+
+                        printf("DEBUG MELHORAR-SOLUCAO\n\t>> Index_rota_origem: %d\n\t>> Index rota destino: %d\n\t>> Estacao atual: %d\n\t>> Posição: %d\n", index_rota_origem, index_rota_destino, no_atual->estacao, pos);
 
                         // Cópia para teste
                         Rota nova_rota_origem = rota;
@@ -279,41 +287,85 @@ vector<Rota> MelhorarSolucao(vector<Rota> rotas)
                             posicao++;
                             aux = aux->proximo;
                         }
-                        nova_rota_origem.RemoveAt(posicao);
+                        nova_rota_origem.RemoveAt(posicao); // Remove o termo atual
 
-                        index_rota_origem == index_rota_destino
+                        index_rota_origem == index_rota_destino // Significa que a operação é na mesma rota
                             ? nova_rota_destino = nova_rota_origem
                             : nova_rota_destino = rota_destino;
 
                         // Inserção da estação na posição válida
-                        nova_rota_destino.InsertAt(posicao, no_atual->estacao);
+                        // printf("checkpoint - melhorar solucao 1\n");
+                        // if (nova_rota_origem.rotaTam != 0)
+                        // {
+
+                        nova_rota_destino.LeftInsertAt(pos, no_atual->estacao);
+                        printf("Rota destino após inserção: ");
+                        nova_rota_destino.printRota();
+                        printf("\n");
+                        printf("Custo d1: %d ---- Custo d2: %d\n", nova_rota_destino.custo_total_d1, nova_rota_destino.custo_total_d2);
+                        // } // Caso excepcional: Quando a rota só tem 1 termo, ele será removido conforme a linha 285 e a lista de nova_rota_destino será vazia
+                        // else
+                        // {
+                        //     continue;
+                        // }
+                        // printf("checkpoint - melhorar solucao 1.2\n");
 
                         // Checa viabilidade
                         if (!ValidaDemanda(nova_rota_destino) || !ValidaDemanda(nova_rota_origem))
-                            continue;
+                        {
+                            printf("DEMANDA ACIMA DO ACEITÁVEL\n");
+                            continue; // Não há porque calcular uma rota inaceitável
+                        }
 
                         // Calculo de custos
                         int custo_atual;
                         int custo_novo;
 
-                        if (index_rota_destino == index_rota_origem)
+                        if (index_rota_destino == index_rota_origem) // Está sendo analisado se a mudança de localização melhora algo
                         {
-                            rota.direcao_atual >= INICIO_FIM ? custo_atual = rota.custo_total_d1 : custo_atual = rota.custo_total_d2;
-                            custo_novo = SomaCustoRota(nova_rota_destino);
+                            // rota.direcao_atual >= INICIO_FIM ? custo_atual = rota.custo_total_d1 : custo_atual = rota.custo_total_d2;
+                            rota.direcao_atual == INICIO_FIM ? custo_atual = rota.custo_total_d1 : custo_atual = rota.custo_total_d2;
+                            nova_rota_destino.custo_total_d1 > nova_rota_destino.custo_total_d2 ? custo_novo = nova_rota_destino.custo_total_d1 : custo_novo = nova_rota_destino.custo_total_d2;
+
+                            // Comparação
+                            rota.printRota();
+                            printf("\n\t>> Custo d1: %d ----- Custo d2: %d\n", rota.custo_total_d1, rota.custo_total_d2);
+
+                            nova_rota_destino.printRota();
+                            printf("\n\t(Rota resultado)>> Custo d1: %d ----- Custo d2: %d", nova_rota_destino.custo_total_d1, nova_rota_destino.custo_total_d2);
+
+                            cout << "\n";
                         }
                         else
                         {
-                            custo_atual = SomaCusto({rota, rota_destino});
-                            custo_novo = SomaCusto({nova_rota_origem, nova_rota_destino});
+                            int custo_atual_rota, custo_atual_rota_destino;
+                            rota.direcao_atual == INICIO_FIM ? custo_atual_rota = rota.custo_total_d1 : custo_atual_rota = rota.custo_total_d2;
+                            rota_destino.direcao_atual == INICIO_FIM ? custo_atual_rota_destino = rota_destino.custo_total_d1 : custo_atual_rota_destino = rota_destino.custo_total_d2;
+
+                            custo_atual = custo_atual_rota + custo_atual_rota_destino;
+
+                            int custo_novo_origem, custo_novo_destino;
+                            nova_rota_origem.custo_total_d1 < nova_rota_origem.custo_total_d2 ? custo_novo_origem = nova_rota_origem.custo_total_d1 : custo_novo_origem = nova_rota_origem.custo_total_d2;
+                            nova_rota_destino.custo_total_d1 < nova_rota_destino.custo_total_d2 ? custo_novo_destino = nova_rota_destino.custo_total_d1 : custo_novo_destino = nova_rota_destino.custo_total_d2;
+
+                            custo_novo = custo_novo_origem + custo_novo_destino;
+
+                            PrintRotas({nova_rota_origem, nova_rota_destino});
+                            cout << "\n";
                         }
+
+                        printf(">> Custo atual: %d ----- Custo novo: %d\n", custo_atual, custo_novo);
 
                         // Aplica a mudança se melhorou
                         if (custo_novo < custo_atual)
                         {
-                            rotas[index_rota_destino] = nova_rota_destino;
+                            melhor_solucao.rotas[index_rota_destino] = nova_rota_destino;
+                            printf("Check\n");
                             if (index_rota_destino != index_rota_origem)
-                                rotas[index_rota_origem] = nova_rota_origem;
+                                melhor_solucao.rotas[index_rota_origem] = nova_rota_origem;
+                            printf("lalalal\n");
                             melhorou = true;
+                            qtd_melhoras++;
                         }
                     }
                     index_rota_destino++;
@@ -326,20 +378,8 @@ vector<Rota> MelhorarSolucao(vector<Rota> rotas)
         }
     }
 
-    // Print das rotas achadas
-    printf("PRINT DAS ROTAS ACHADAS EM MELHORAR SOLUCAO: \n");
-    for (Rota rota : melhor_solucao.rotas)
-    {
-        printf(">> ");
-        No *aux = rota.rota_i;
-        while (aux->proximo)
-        {
-            printf(" %d - ", aux->estacao);
-            aux = aux->proximo;
-        }
-        printf("%d\n\t", aux->estacao);
-    }
-
+    melhor_solucao.printRotas();
+    printf("Quantia de melhoras: %d\n", qtd_melhoras);
     return melhor_solucao.rotas;
 }
 
@@ -637,7 +677,7 @@ Solucao ILS(Solucao solucao, int max_iteracoes, int max_sem_melhora)
         vector<Rota> rotas_copia = solucao.rotas;
 
         vector<Rota> rotas_encontradas = Perturbacao(rotas_copia, opcao_perturbacao, grau_perturbacao);
-        rotas_encontradas = MelhorarSolucao(rotas_encontradas);
+        rotas_encontradas = MelhorarSolucao();
 
         int custo_atual = SomaCusto(solucao.rotas);
         int custo_novo = SomaCusto(rotas_encontradas);

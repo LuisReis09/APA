@@ -6,12 +6,12 @@
 #include <utility>
 using namespace std;
 
-typedef struct{
+typedef struct
+{
     bool success;
     string message;
     Problema problema;
 } RespostaLeitura;
-
 
 /**
  * Instância de Problema que será utilizada por todas as funções que envolverem problema,
@@ -46,6 +46,11 @@ RespostaLeitura LerDadosStr(const string conteudo_arq);
  * Mostra o problema da instância atual no terminal, exigindo um nome para o problema
  */
 void PrintProblema(string p_name);
+
+/**
+ * Mostra o solucao s da instância atual no terminal, exigindo um nome para a solucao
+ */
+void PrintSolucao(Solucao s, string s_name);
 
 /**
  * ## Melhores Vértices
@@ -130,5 +135,6 @@ Problema ProblemaAleatorio(int n, int m, int c, int max);
  */
 clock_t ComecarCronometro();
 float getDuracao(clock_t cronometro_inicio);
+void PrintRotas(vector<Rota> rotas);
 
 #endif

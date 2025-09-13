@@ -102,13 +102,15 @@ Problema LerDados(string filePath)
     return problema_iniciado;
 }
 
-RespostaLeitura LerDadosStr(const string conteudo_arq){
+RespostaLeitura LerDadosStr(const string conteudo_arq)
+{
     istringstream input(conteudo_arq);
 
     RespostaLeitura resultado;
     string aux;
 
-    try {
+    try
+    {
         Problema retorno;
 
         // ---- Leitura básica ----
@@ -127,15 +129,16 @@ RespostaLeitura LerDadosStr(const string conteudo_arq){
 
         // ---- Demandas ----
         retorno.demandas.resize(retorno.qnt_estacoes);
-        for (int i = 0; i < retorno.qnt_estacoes; i++) {
+        for (int i = 0; i < retorno.qnt_estacoes; i++)
+        {
             if (!(input >> retorno.demandas[i]))
                 throw runtime_error("Demandas incompletas no arquivo.");
 
-            if (abs(retorno.demandas[i]) > retorno.capacidade_max) {
+            if (abs(retorno.demandas[i]) > retorno.capacidade_max)
+            {
                 throw runtime_error(
                     "Demanda da estação " + to_string(i) +
-                    " excede a capacidade máxima de um veículo."
-                );
+                    " excede a capacidade máxima de um veículo.");
             }
         }
 
@@ -144,9 +147,12 @@ RespostaLeitura LerDadosStr(const string conteudo_arq){
         // ---- Matriz de custos ----
         retorno.matriz_custo.resize(retorno.qnt_estacoes + 1,
                                     vector<int>(retorno.qnt_estacoes + 1));
-        for (int i = 0; i <= retorno.qnt_estacoes; i++) {
-            for (int j = 0; j <= retorno.qnt_estacoes; j++) {
-                if (!(input >> retorno.matriz_custo[i][j])) {
+        for (int i = 0; i <= retorno.qnt_estacoes; i++)
+        {
+            for (int j = 0; j <= retorno.qnt_estacoes; j++)
+            {
+                if (!(input >> retorno.matriz_custo[i][j]))
+                {
                     throw runtime_error("Matriz de custo incompleta.");
                 }
             }
@@ -154,7 +160,8 @@ RespostaLeitura LerDadosStr(const string conteudo_arq){
 
         // Dados extras?
         int lixo;
-        if (input >> lixo) {
+        if (input >> lixo)
+        {
             throw runtime_error("Dados extras encontrados no fim do arquivo.");
         }
 
@@ -162,7 +169,8 @@ RespostaLeitura LerDadosStr(const string conteudo_arq){
         resultado.message = "Leitura concluída com sucesso.";
         resultado.problema = move(retorno);
     }
-    catch (const exception& e) {
+    catch (const exception &e)
+    {
         resultado.success = false;
         resultado.message = e.what();
     }
@@ -514,12 +522,94 @@ void PrintProblema(string p_name)
     return;
 }
 
+void PrintSolucao(Solucao s, string s_name)
+{
+    cout << "====================================" << endl;
+    cout << "           " << s_name << endl;
+    cout << "====================================" << endl
+         << endl;
+    cout << "Custo total:   " << s.custo_total << endl;
+    cout << "Qtd veiculos:  " << s.veiculos_usados << endl;
+    cout << "Veiculos disp: " << s.veiculos_disponiveis << endl;
+    cout << "Rotas: " << endl;
+
+    int i = 0;
+    for (Rota rota : s.rotas)
+    { // melhore, herick. ()(So me matando pra melhorar)
+        // rt like e bookmark KSKDKASDv v ctrl+s, plsFOI
+        // segmentation faul (saranhe, tsugi)
+        if (rota.direcao_atual == DirecaoRota::INICIO_FIM)
+        {
+            cout << "\tCusto: " << rota.custo_total_d1 << endl;
+            cout << "\tRota " << i << ": (";
+
+            No *aux = rota.rota_i;
+            if (!aux)
+            {
+                cout << "(0 -> 0)";
+                continue;
+            }
+            while (true)
+            {
+                cout << aux->estacao;
+                aux = aux->proximo;
+                if (!aux->proximo)
+                    cout << " -> ";
+                else
+                {
+                    cout << ")\n";
+                    break;
+                }
+            }
+        }
+        else
+        {
+            cout << "\tCusto: " << rota.custo_total_d2 << endl;
+            cout << "\tRota " << i << ": (";
+
+            No *aux = rota.rota_f;
+            if (!aux)
+            {
+                cout << "(0 -> 0)";
+                continue;
+            }
+            while (true)
+            {
+                cout << aux->estacao;
+                aux = aux->anterior;
+                if (!aux->anterior)
+                    cout << " -> ";
+                else
+                {
+                    cout << ")\n";
+                    break;
+                }
+            }
+        }
+
+        i++;
+    }
+    cout << endl;
+
+    return;
+}
+
+void PrintRotas(vector<Rota> rotas)
+{
+    for (Rota rota : rotas)
+    {
+        rota.printRota();
+    }
+}
+
 // Função que inicia a cronometragem, retorna um objeto clock_t
-clock_t ComecarCronometro(){
+clock_t ComecarCronometro()
+{
     clock_t inicio = clock();
     return inicio;
 }
-float getDuracao(clock_t cronometro_inicio){
+float getDuracao(clock_t cronometro_inicio)
+{
     clock_t duracao = clock() - cronometro_inicio;
     return (float)duracao / CLOCKS_PER_SEC;
 }

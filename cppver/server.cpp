@@ -9,7 +9,7 @@ using namespace std;
 int main()
 {
     httplib::Server server;
-    Problema p;
+    // Problema p; // problema p já está definido em utils.hpp
 
     /**
      * @brief

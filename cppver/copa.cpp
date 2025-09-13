@@ -2,7 +2,9 @@
 #define endl "\n"
 
 using namespace std;
-#define _ ios_base::sync_with_stdio(0);cin.tie(0);
+#define _                         \
+    ios_base::sync_with_stdio(0); \
+    cin.tie(0);
 
 // ================================================================================== //
 //                               Estruturas Globais                                   //
@@ -45,12 +47,13 @@ public:
 
     // Construtor padrão
     Rota() : custo_total_d1(0), custo_total_d2(0),
-             rotaTam(0), direcao_atual(INICIO_FIM) {
-                rota_i = new No(0); // Nó inicial (depósito)
-                rota_f = new No(0); // Nó final (depósito)
-                rota_i->proximo = rota_f;
-                rota_f->anterior = rota_i;
-             }
+             rotaTam(0), direcao_atual(INICIO_FIM)
+    {
+        rota_i = new No(0); // Nó inicial (depósito)
+        rota_f = new No(0); // Nó final (depósito)
+        rota_i->proximo = rota_f;
+        rota_f->anterior = rota_i;
+    }
 
     // Construtor de cópia (deep copy)
     Rota(const Rota &other)
@@ -59,9 +62,12 @@ public:
         custo_total_d2 = other.custo_total_d2;
         rotaTam = other.rotaTam;
         direcao_atual = other.direcao_atual;
-        if (other.rota_i) {
+        if (other.rota_i)
+        {
             rota_i = copiaLista(other.rota_i, other.rota_f, &rota_f);
-        } else {
+        }
+        else
+        {
             rota_i = nullptr;
             rota_f = nullptr;
         }
@@ -84,7 +90,7 @@ public:
         return *this;
     }
 
-        int stationAtIndex(int posicao)
+    int stationAtIndex(int posicao)
     {
         if (posicao > (rotaTam + 1) || posicao < 0)
             return -1;
@@ -148,7 +154,7 @@ public:
     void InsertAt(int posicao, int estacao)
     {
         extern Problema p;
-        if (posicao < 1 || posicao > (rotaTam+1))
+        if (posicao < 1 || posicao > (rotaTam + 1))
             return; // Posição inválida
 
         // Se a posição for mais perto do início, percorre a partir do início
@@ -273,10 +279,10 @@ public:
             // Incrementa a quantidade de estações na rota
             rotaTam += estacoes.size();
         }
-        
     }
 
-    void RemoveAt(int posicao){
+    void RemoveAt(int posicao)
+    {
         extern Problema p;
         if (posicao < 1 || posicao > rotaTam)
             return; // Posição inválida
@@ -292,7 +298,6 @@ public:
             atual->anterior->proximo = atual->proximo;
             atual->proximo->anterior = atual->anterior;
             rotaTam--;
-
         }
         else
         {
@@ -836,98 +841,99 @@ Solucao InsercaoMaisBarata()
     return s;
 }
 
-vector<Rota> MelhorarSolucao(vector<Rota>& rotas)
+vector<Rota> MelhorarSolucao(vector<Rota> &rotas)
 {
-    melhorar_solucao:
-        int index_rota_origem = 0;
-        for (Rota rota : rotas)
+melhorar_solucao:
+    int index_rota_origem = 0;
+    for (Rota rota : rotas)
+    {
+        // Itera por cada estação em rota
+
+        No *no_atual = rota.rota_i->proximo;
+        int index_rota_destino = 0;
+        int pos_origem = 1;
+        while (no_atual->estacao)
         {
-            // Itera por cada estação em rota
-
-            No *no_atual = rota.rota_i->proximo;
             int index_rota_destino = 0;
-            int pos_origem = 1;
-            while (no_atual->estacao)
+            for (Rota rota_destino : rotas)
             {
-                int index_rota_destino = 0;
-                for (Rota rota_destino : rotas)
+                No *no_destino = rota_destino.rota_i->proximo;
+                int pos = 1;
+
+                while (no_destino->estacao)
                 {
-                    No *no_destino = rota_destino.rota_i->proximo;
-                    int pos = 1;
+                    int custo_remocao, custo_insercao, ganho_ao_remover, ganho_ao_inserir;
 
-                    while (no_destino->estacao)
+                    if (rota.direcao_atual == DirecaoRota::INICIO_FIM)
                     {
-                        int custo_remocao, custo_insercao, ganho_ao_remover, ganho_ao_inserir;
+                        custo_remocao = p.matriz_custo[no_atual->anterior->estacao][no_atual->proximo->estacao] -
+                                        p.matriz_custo[no_atual->anterior->estacao][no_atual->estacao] -
+                                        p.matriz_custo[no_atual->estacao][no_atual->proximo->estacao];
 
-                        if (rota.direcao_atual == DirecaoRota::INICIO_FIM){
-                            custo_remocao = p.matriz_custo[no_atual->anterior->estacao][no_atual->proximo->estacao] -  
-                                                p.matriz_custo[no_atual->anterior->estacao][no_atual->estacao] -              
-                                                p.matriz_custo[no_atual->estacao][no_atual->proximo->estacao];
+                        custo_insercao = p.matriz_custo[no_destino->anterior->estacao][no_atual->estacao] +
+                                         p.matriz_custo[no_atual->estacao][no_destino->estacao] -
+                                         p.matriz_custo[no_destino->anterior->estacao][no_destino->estacao];
 
-                            
-                            custo_insercao = p.matriz_custo[no_destino->anterior->estacao][no_atual->estacao] + 
-                                                p.matriz_custo[no_atual->estacao][no_destino->estacao] -              
-                                                p.matriz_custo[no_destino->anterior->estacao][no_destino->estacao];
-
-                            ganho_ao_remover = (rota.custo_total_d1 + custo_remocao) - rota.custo_total_d1;
-                            ganho_ao_inserir = (rota_destino.custo_total_d1 + custo_insercao) - rota_destino.custo_total_d1;
-                        } else {
-                            custo_remocao = p.matriz_custo[no_atual->proximo->estacao][no_atual->anterior->estacao] -  
-                                                p.matriz_custo[no_atual->proximo->estacao][no_atual->estacao] -              
-                                                p.matriz_custo[no_atual->estacao][no_atual->anterior->estacao];
-
-                            
-                            custo_insercao = p.matriz_custo[no_destino->anterior->estacao][no_atual->estacao] + 
-                                                p.matriz_custo[no_atual->estacao][no_destino->estacao] -              
-                                                p.matriz_custo[no_destino->anterior->estacao][no_destino->estacao];
-
-                            ganho_ao_remover = (rota.custo_total_d2 + custo_remocao) - rota.custo_total_d2;
-                            ganho_ao_inserir = (rota_destino.custo_total_d2 + custo_insercao) - rota_destino.custo_total_d2;
-                        }
-
-                        if (ganho_ao_remover > ganho_ao_inserir)
-                        {
-                            no_destino = no_destino->proximo;
-                            pos++;
-                            continue;
-                        }
-                        
-                            
-                        // Cópia para teste
-                        Rota nova_rota_origem = rota;
-                        Rota nova_rota_destino;
-
-                        if (index_rota_origem == index_rota_destino){
-                            nova_rota_destino = nova_rota_origem;
-                        }
-                        else{
-                            nova_rota_destino = rotas[index_rota_destino];
-                        }
-
-                        nova_rota_origem.RemoveAt(pos_origem);
-                        nova_rota_destino.InsertAt(pos, no_atual->estacao);
-
-                        if (ValidaDemanda(nova_rota_origem) &&
-                            ValidaDemanda(nova_rota_destino))
-                        {
-                            rotas[index_rota_origem] = nova_rota_origem;
-                            rotas[index_rota_destino] = nova_rota_destino;
-                            goto melhorar_solucao;
-                        }
-
-                        
-                        no_destino = rota_destino.rota_i->proximo;
-                        pos++;
+                        ganho_ao_remover = (rota.custo_total_d1 + custo_remocao) - rota.custo_total_d1;
+                        ganho_ao_inserir = (rota_destino.custo_total_d1 + custo_insercao) - rota_destino.custo_total_d1;
                     }
-                    index_rota_destino++;
-                }
+                    else
+                    {
+                        custo_remocao = p.matriz_custo[no_atual->proximo->estacao][no_atual->anterior->estacao] -
+                                        p.matriz_custo[no_atual->proximo->estacao][no_atual->estacao] -
+                                        p.matriz_custo[no_atual->estacao][no_atual->anterior->estacao];
 
-                no_atual = no_atual->proximo;
-                pos_origem++;
+                        custo_insercao = p.matriz_custo[no_destino->anterior->estacao][no_atual->estacao] +
+                                         p.matriz_custo[no_atual->estacao][no_destino->estacao] -
+                                         p.matriz_custo[no_destino->anterior->estacao][no_destino->estacao];
+
+                        ganho_ao_remover = (rota.custo_total_d2 + custo_remocao) - rota.custo_total_d2;
+                        ganho_ao_inserir = (rota_destino.custo_total_d2 + custo_insercao) - rota_destino.custo_total_d2;
+                    }
+
+                    if (ganho_ao_remover > ganho_ao_inserir)
+                    {
+                        no_destino = no_destino->proximo;
+                        pos++;
+                        continue;
+                    }
+
+                    // Cópia para teste
+                    Rota nova_rota_origem = rota;
+                    Rota nova_rota_destino;
+
+                    if (index_rota_origem == index_rota_destino)
+                    {
+                        nova_rota_destino = nova_rota_origem;
+                    }
+                    else
+                    {
+                        nova_rota_destino = rotas[index_rota_destino];
+                    }
+
+                    nova_rota_origem.RemoveAt(pos_origem);
+                    nova_rota_destino.InsertAt(pos, no_atual->estacao);
+
+                    if (ValidaDemanda(nova_rota_origem) &&
+                        ValidaDemanda(nova_rota_destino))
+                    {
+                        rotas[index_rota_origem] = nova_rota_origem;
+                        rotas[index_rota_destino] = nova_rota_destino;
+                        goto melhorar_solucao;
+                    }
+
+                    no_destino = rota_destino.rota_i->proximo;
+                    pos++;
+                }
+                index_rota_destino++;
             }
 
-            index_rota_origem++;
+            no_atual = no_atual->proximo;
+            pos_origem++;
         }
+
+        index_rota_origem++;
+    }
 
     return rotas;
 }
@@ -959,9 +965,12 @@ void PrintProblema(string p_name)
 // ================================================================================== //
 //                                      MAIN                                          //
 // ================================================================================== //
-int main() { _
+int main()
+{
+    _
 
-    cin >> p.qnt_estacoes >> p.qnt_veiculos >> p.capacidade_max;
+            cin >>
+        p.qnt_estacoes >> p.qnt_veiculos >> p.capacidade_max;
 
     p.demandas.resize(p.qnt_estacoes);
     p.matriz_custo.resize(p.qnt_estacoes + 1, vector<int>(p.qnt_estacoes + 1));
@@ -973,11 +982,9 @@ int main() { _
         for (int j = 0; j <= p.qnt_estacoes; j++)
             cin >> p.matriz_custo[i][j];
 
-
     melhor_solucao = InsercaoMaisBarata();
     melhor_solucao.rotas = MelhorarSolucao(melhor_solucao.rotas);
 
-    
     cout << "Custo total: " << melhor_solucao.custo_total << endl;
     cout << "Veículos usados: " << melhor_solucao.veiculos_usados << endl;
     for (Rota rota : melhor_solucao.rotas)
