@@ -5,12 +5,11 @@
 
 using namespace std;
 
-Problema p("../exemplos/instancia2.txt", true);
+Problema p("../exemplos/exemplo1.txt", true);
 
 int main(){
     cout << "====== Teste de Metodos ======" << endl;
     Solucao s = VizinhoMaisProximo();
-
 
     if(VerificaSolucao(s.rotas, true)){
         cout << "Solucao VALIDA" << endl;

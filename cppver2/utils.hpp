@@ -370,7 +370,6 @@
                 custo_total += p.matriz_custo[rota.estacoes[i]][rota.estacoes[i + 1]];
             }
         }
-
         return custo_total;
     }
 

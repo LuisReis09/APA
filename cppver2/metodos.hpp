@@ -115,10 +115,9 @@
 
             for (int j = 1; j < rotas[i].size(); j++) {
                 r.InsertEnd(rotas[i][j]);
-                // adiciona custo apenas se não for o último elemento
-                if (j + 1 < rotas[i].size())
-                    solucao.custo_total += p.matriz_custo[rotas[i][j]][rotas[i][j+1]];
+                solucao.custo_total += p.matriz_custo[rotas[i][j-1]][rotas[i][j]];
             }
+            solucao.custo_total += p.matriz_custo[rotas[i][rotas[i].size() - 1]][0];
             solucao.veiculos_usados++;
         }
         solucao.veiculos_disponiveis = p.qnt_veiculos - solucao.veiculos_usados;
@@ -149,25 +148,29 @@
     
                         for(int i=1; i<rota_destino.estacoes.size() - 1; i++){
     
-                            if(ind_rota_origem == ind_rota_destino && (i == ind_estacao_a_mover || i == ind_estacao_a_mover - 1))
-                                continue; // nao faz sentido inserir no mesmo lugar
+                            int estacao_destino = rota_destino.estacoes[i];
+                            int anterior_destino = rota_destino.estacoes[i - 1];
+
+                            if (estacao_a_mover == estacao_destino || estacao_a_mover == anterior_destino)
+                                continue; // não insere na mesma posição ou adjacente
     
                             custo_remocao = - p.matriz_custo[rota_origem.estacoes[ind_estacao_a_mover - 1]][rota_origem.estacoes[ind_estacao_a_mover]]
                                             - p.matriz_custo[rota_origem.estacoes[ind_estacao_a_mover]][rota_origem.estacoes[ind_estacao_a_mover + 1]]
                                             + p.matriz_custo[rota_origem.estacoes[ind_estacao_a_mover - 1]][rota_origem.estacoes[ind_estacao_a_mover + 1]];
     
-                            custo_insercao = + p.matriz_custo[rota_destino.estacoes[i - 1]][estacao_a_mover]
-                                             + p.matriz_custo[estacao_a_mover][rota_destino.estacoes[i]]
-                                             - p.matriz_custo[rota_destino.estacoes[i - 1]][rota_destino.estacoes[i]];
+                            custo_insercao = + p.matriz_custo[anterior_destino][estacao_a_mover]
+                                             + p.matriz_custo[estacao_a_mover][estacao_destino]
+                                             - p.matriz_custo[anterior_destino][estacao_destino];
     
                             if((custo_insercao + custo_remocao) < 0){
+
                                 if(ind_rota_destino == ind_rota_origem){
                                     Rota copia = rota_origem; // faz uma copia temporaria
                                     copia.RemoveAt(ind_estacao_a_mover);
                                     copia.InsertAt(i, estacao_a_mover);
                                     if(VerificaDemanda(copia)){
                                         rota_origem = copia;
-                                        melhorou = true;
+                                        // melhorou = true;
                                         goto fim_iteracao;
                                     }
     
@@ -181,7 +184,7 @@
                                     if(VerificaDemanda(copia_origem) && VerificaDemanda(copia_destino)){
                                         rota_origem = copia_origem;
                                         rota_destino = copia_destino;
-                                        melhorou = true;
+                                        // melhorou = true;
                                         goto fim_iteracao;
                                     }
                                 }
