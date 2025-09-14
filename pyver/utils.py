@@ -352,8 +352,13 @@ def VerificaSolucao(matriz: list[list[int]], necessidades: list[int], cap_max: i
     for rota in rotas:
         soma_carga = 0
 
+        if rota[0] != 0 or rota[-1] != 0:
+            if show_warnings:
+                print("Rota não começa e termina no galpão:", rota)
+            return False
+
         if rota != [0, 0]:
-            for i in range(1, len(rota)):
+            for i in range(len(rota)):
                 soma_carga += necessidades[rota[i]]
 
                 if abs(soma_carga) > cap_max:

@@ -14,18 +14,18 @@ print()
 
 
 # ---------- Inicialização ----------
-# v1, v2 = MelhoresVertices(matriz, necessidades, capmax_caminhao)
+v1, v2 = MelhoresVertices(matriz, necessidades, capmax_caminhao)
 
-# rotas = [[(0, v1), (v1, v2), (v2, 0)]]
-# caminhoes_restantes = caminhoes - 1
-# estacoes_restantes = [estacao+1 for estacao in range(estacoes)]
-# estacoes_restantes.remove(v1)
-# estacoes_restantes.remove(v2)
+rotas = [[(0, v1), (v1, v2), (v2, 0)]]
+caminhoes_restantes = caminhoes - 1
+estacoes_restantes = [estacao+1 for estacao in range(estacoes)]
+estacoes_restantes.remove(v1)
+estacoes_restantes.remove(v2)
 
 # Sem conjunto inicial
-rotas = []
-caminhoes_restantes = caminhoes
-estacoes_restantes = [estacao+1 for estacao in range(estacoes)]  # +1 pq 0 é o depósito
+# rotas = []
+# caminhoes_restantes = caminhoes
+# estacoes_restantes = [estacao+1 for estacao in range(estacoes)]  # +1 pq 0 é o depósito
 
 # ---------- Funções auxiliares ----------
 # calcula = verifica, nos arquivos cpp
@@ -42,7 +42,7 @@ def calcula_demanda(rota):
 def calcula_demandas(rotas):
     for rota in rotas:
         demanda_total = 0
-        for estacao in rota[1:-1]:  # Ignora depósitos
+        for estacao in rota:  # Ignora depósitos
             demanda_total += necessidades[estacao]
             if abs(demanda_total) > capmax_caminhao:
                 return False
@@ -139,50 +139,58 @@ def melhorar_solucao(rotas):
     Mantém depósitos nas pontas e aplica inserção mais barata.
     """
 
-    for ind_rota_origem, rota in enumerate(rotas):
-        for estacao in rota[1:-1]:  # ignora depósitos nas pontas
+    it = 0
 
-            for ind_rota_destino, rota_destino in enumerate(rotas):
-                # posições de inserção: ignorando primeiro e último
-                for pos in range(1, len(rota_destino) - 1):
+    def melhorar():
+        nonlocal it, rotas
+        if it > 500:
+            return rotas
+        
+        
+        for ind_rota_origem, rota in enumerate(rotas):
+            for estacao in rota[1:-1]:  # ignora depósitos nas pontas
 
-                    if estacao == 0:  # nunca mover depósitos
-                        continue
+                for ind_rota_destino, rota_destino in enumerate(rotas):
+                    # posições de inserção: ignorando primeiro e último
+                    for pos in range(1, len(rota_destino) - 1):
 
-                    # cópias para teste
-                    nova_rota_origem = rota[:]
+                        if estacao == 0:  # nunca mover depósitos
+                            continue
 
-                    if ind_rota_origem == ind_rota_destino:
-                        nova_rota_origem.remove(estacao)
-                        nova_rota_destino = nova_rota_origem
-                    else:
-                        # mover para outra rota
-                        nova_rota_origem.remove(estacao)
-                        nova_rota_destino = rota_destino[:]
+                        # cópias para teste
+                        nova_rota_origem = rota[:]
 
-                    # insere a estação na posição válida
-                    nova_rota_destino.insert(pos, estacao)
+                        if ind_rota_origem == ind_rota_destino:
+                            nova_rota_origem.remove(estacao)
+                            nova_rota_destino = nova_rota_origem
+                        else:
+                            # mover para outra rota
+                            nova_rota_origem.remove(estacao)
+                            nova_rota_destino = rota_destino[:]
 
-                    # checa viabilidade
-                    if not verifica_rota(nova_rota_destino) or not verifica_rota(nova_rota_origem):
-                        continue
+                        # insere a estação na posição válida
+                        nova_rota_destino.insert(pos, estacao)
 
-                    # calcula custos
-                    if ind_rota_origem == ind_rota_destino:
-                        custo_atual = SomaCusto([rota])
-                        custo_novo = SomaCusto([nova_rota_destino])
-                    else:
-                        custo_atual = SomaCusto([rota, rota_destino])
-                        custo_novo = SomaCusto([nova_rota_origem, nova_rota_destino])
+                        # checa viabilidade
+                        if not verifica_rota(nova_rota_destino) or not verifica_rota(nova_rota_origem):
+                            continue
 
-                    # aplica mudança se melhora
-                    if custo_novo < custo_atual:
-                        rotas[ind_rota_destino] = nova_rota_destino
-                        if ind_rota_origem != ind_rota_destino:
-                            rotas[ind_rota_origem] = nova_rota_origem
-                        return melhorar_solucao(rotas)
+                        # calcula custos
+                        if ind_rota_origem == ind_rota_destino:
+                            custo_atual = SomaCusto([rota])
+                            custo_novo = SomaCusto([nova_rota_destino])
+                        else:
+                            custo_atual = SomaCusto([rota, rota_destino])
+                            custo_novo = SomaCusto([nova_rota_origem, nova_rota_destino])
 
-    return rotas
+                        # aplica mudança se melhora
+                        if custo_novo < custo_atual:
+                            rotas[ind_rota_destino] = nova_rota_destino
+                            if ind_rota_origem != ind_rota_destino:
+                                rotas[ind_rota_origem] = nova_rota_origem
+                            return melhorar()
+
+    return melhorar() or rotas
 
 # def melhorar_solucao(rotas):
 #     """
@@ -264,6 +272,7 @@ def perturbacao_switch(rotas, trocas_a_realizar):
     return rotas
 
 
+
 def perturbacao_relocate(rotas, trocas_a_realizar, qtd_elementos_trocados, reverso=False):
     """
     Remove um bloco de elementos de uma rota e insere em outra.
@@ -324,14 +333,34 @@ def perturbacao_newroute(rotas, qtd_elementos):
 
     return rotas
 
-def perturbacao_inversao(rotas):
+def perturbacao_inverter(rotas):
     """
-        Escolhe aleatoriamente uma rota pra ser invertida.
-        Altera rotas por referência.
+        Escolhe aleatoriamente uma rota para ser invertida.
     """
 
-    rota_escolhida = random.randint(0, len(rotas) - 1)
-    rotas[rota_escolhida] = rotas[rota_escolhida][::-1]
+    if len(rotas) == 1:
+        return [rotas[0][::-1]]
+    
+    rota_ind = random.randint(0, len(rotas) - 1)
+    if len(rotas[rota_ind]) <= 3:
+        return rotas
+    
+    rotas[rota_ind] = rotas[rota_ind][::-1]
+    return rotas
+
+def perturbacao_recostura(rotas):
+    """
+        Escolhe aleatoriamente uma rota para ser recosturada.
+    """
+
+    rota_ind = random.randint(0, len(rotas) - 1)
+    if len(rotas[rota_ind]) <= 3:
+        return rotas
+    
+    ind_metade = len(rotas[rota_ind]) // 2
+    primeira_metade = rotas[rota_ind][1:ind_metade]
+    segunda_metade = rotas[rota_ind][ind_metade:len(rotas[rota_ind])-1]
+    rotas[rota_ind] = [0] + segunda_metade + primeira_metade + [0]
     return rotas
 
 
@@ -354,13 +383,12 @@ def pertubacao(rotas, opcao, grau_perturbacao=1):
             return perturbacao_newroute(rotas, 2 * grau_perturbacao)
         case 5:
             # Opção 5: inverte uma rota inteira
-            return perturbacao_inversao(rotas)
+            return perturbacao_recostura(rotas)
+        case 6:
+            # Opção 6: inverte uma rota inteira
+            return perturbacao_inverter(rotas)
         case _:
             return rotas
-
-import numpy as np
-import pandas as pd
-treino = np.zeros((5, 7), dtype=int)  # Matriz para registrar o treino das perturbações
 
 def ILS(rotas, max_iteracoes, max_sem_melhora):
     # Também deve receber a instância do Problema
@@ -379,19 +407,17 @@ def ILS(rotas, max_iteracoes, max_sem_melhora):
         Se 80% < sem_melhora <= 100% de max_sem_melhora:    grau de perturbação = 5
     """
     while iteracoes < max_iteracoes and sem_melhora < max_sem_melhora:
-
         grau_perturbacao = (sem_melhora // (max_sem_melhora // 7)) + 1
-        opcao_perturbacao = random.randint(1, 5)  # Escolhe uma das 5 opções de perturbação
+        opcao_perturbacao = random.randint(1, 6)  # Escolhe uma das 5 opções de perturbação
 
         solucao_perturbada = pertubacao(copy.deepcopy(rotas), opcao_perturbacao, grau_perturbacao)
         solucao_perturbada = melhorar_solucao(solucao_perturbada)
         custo_atual = SomaCusto(rotas)
         custo_novo  = SomaCusto(solucao_perturbada)
         if custo_novo < custo_atual and calcula_demandas(solucao_perturbada):
+            print(f"Iteração {iteracoes}: Custo melhorou de {custo_atual} para {custo_novo}")
             rotas = solucao_perturbada
             sem_melhora = 0
-            print(f"Melhoria geral encontrada: {custo_atual} -> {custo_novo}")
-            treino[opcao_perturbacao-1][grau_perturbacao-1] += 1
 
         else:
             sem_melhora += 1
@@ -399,42 +425,35 @@ def ILS(rotas, max_iteracoes, max_sem_melhora):
         iteracoes += 1
 
     return rotas
+
+def saveSolution(filename, rotas, custo):
+    with open(filename, 'w') as f:
+        f.write(f"{custo}\n")
+        f.write(f"{len(rotas)}\n")
+        for rota in rotas:
+            f.write(" ".join(map(str, rota)) + "\n")
     
 
-print("Iniciando busca gulosa...")
-rotas_guloso, custo = BuscaGulosa2(matriz, capmax_caminhao, necessidades, caminhoes)
-print("Custo inicial:", VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_guloso))
-rotas_guloso = [rota for rota in rotas_guloso if len(rota) > 2]  # Remove rotas vazias
-rotas_guloso = melhorar_solucao(rotas_guloso)
-print("Rotas melhora-guloso:", rotas_guloso)
-print("Custo melhora-guloso:", VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_guloso))
-# rotas_guloso = ILS(rotas_guloso, 5000, 50)
-# print("Rotas finais guloso:", rotas_guloso)
-# custo_final = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_guloso)
-# print("Custo final guloso:", custo_final)
 
-rotas_finais = execute()
-rotas_finais = arestas_para_rotas(rotas_finais)
-print("\nRotas IMB:", rotas_finais)
-custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais)
-print("Custo IMB:", custo_total, "\n")
+sol_1 = execute()
+sol_1 = arestas_para_rotas(sol_1)
+sol_2, custo_2 = BuscaGulosa2(matriz, capmax_caminhao, necessidades, caminhoes)
 
+custo_1 = VerificaSolucao(matriz, necessidades, capmax_caminhao, sol_1)
 
-rotas_finais = [rota for rota in rotas_finais if len(rota) > 2]  # Remove rotas vazias
-rotas_finais = melhorar_solucao(rotas_finais)
-print("Rotas IMB-melhorado:", rotas_finais)
-custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais, show_warnings=True)
-print("Custo IMB-melhorado:", custo_total)
+print(f"Custo IMB: {custo_1}, Custo VMP: {custo_2}")
 
-rotas_finais = ILS(rotas_finais, 5000, 50)
-print("Rotas finais IMB:", rotas_finais)
-custo_total = VerificaSolucao(matriz, necessidades, capmax_caminhao, rotas_finais)
-print("Custo total IMB:", custo_total)
-
-print("\nTreino ILS (opção de perturbação x grau de perturbação):")
-df_treino = pd.DataFrame(
-    treino,
-    index=["Switch", "Relocate", "Relocate Inverso", "Nova Rota", "Inversão"],
-    columns=[1, 2, 3, 4, 5, 6, 7]
-)
-print(df_treino)
+if custo_1 < custo_2:
+    print("Usando solução IMB")
+    sol_1 = [rota for rota in sol_1 if len(rota) > 2]  # Remove rotas vazias
+    sol_1 = melhorar_solucao(sol_1)
+    VerificaSolucao(matriz, necessidades, capmax_caminhao, sol_1, show_warnings=True)
+    sol_1 = ILS(sol_1, 5000, 200)
+    saveSolution("solucao_final.txt", sol_1, VerificaSolucao(matriz, necessidades, capmax_caminhao, sol_1))
+else:
+    print("Usando solução Gulosa")
+    sol_2 = [rota for rota in sol_2 if len(rota) > 2]  # Remove rotas vazias
+    sol_2 = melhorar_solucao(sol_2)
+    VerificaSolucao(matriz, necessidades, capmax_caminhao, sol_2, show_warnings=True)
+    sol_2 = ILS(sol_2, 5000, 250)
+    saveSolution("solucao_final.txt", sol_2, VerificaSolucao(matriz, necessidades, capmax_caminhao, sol_2, show_warnings=True))
