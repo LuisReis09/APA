@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, FileText, AlertCircle } from "lucide-react";
+import { Upload, FileText, AlertCircle, BookmarkCheck } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AboutProject } from "./AboutProject";
 
@@ -19,38 +19,57 @@ async function LerArquivo(file: File){
 export const DataInput = ({ onDataSubmit }: DataInputProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [optimalValue, setOptimalValue] = useState("");
-  const [maxIterations, setMaxIterations] = useState("1000");
-  const [maxIterationsWithoutImprovement, setMaxIterationsWithoutImprovement] = useState("100");
+  const [maxIterations, setMaxIterations] = useState("2000");
+  const [maxIterationsWithoutImprovement, setMaxIterationsWithoutImprovement] = useState("200");
   const [error, setError] = useState("");
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const selectedFile = acceptedFiles[0];
-    (LerArquivo(selectedFile).then((res) => console.log(res)))
+    
+    if (!selectedFile) return;
+    
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const input = event.target?.result as string;
+      
+      console.log(input)
 
       setFile(selectedFile);
-      if (selectedFile && selectedFile.name.endsWith('.txt')) {
-
-        fetch("http://localhost:4000/carregarArquivo", {
+      
+      if (selectedFile.name.endsWith('.txt')) {
+        fetch("api/carregarArquivo", {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
-            "input": LerArquivo(file).then(res => res)
+            "input": input
           })
-      })
-      .then(response => {
-        if (!response.ok) throw new Error("Erro ao carregar arquivo");
-        return response.json();
-      })
-      .then(data => {
-        if(!data.success){
-          throw new Error(data.message);
-        }
-      })
-      .catch(error => {
-        setError(error.message);
-      })
-    } else {
-      setError("Por favor, selecione um arquivo .txt válido");
-    }
+        })
+        .then(response => {
+          return response.json();
+        })
+        .then(data => {
+          if(!data.success){
+            throw new Error(data.message);
+          }else{
+            setError(data.message);
+          }
+        })
+        .catch(error => {
+          setError(error.message);
+        });
+      } else {
+        setError("Por favor, selecione um arquivo .txt válido");
+      }
+    };
+
+    reader.onerror = () => {
+      setError("Erro ao ler o arquivo");
+    };
+
+    reader.readAsText(selectedFile);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -85,9 +104,9 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
           "Content-Type": "application/json"
         },
       body: JSON.stringify({
-        valor_otimo: data.optimalValue,
-        maximo_iteracoes: data.maxIterations,
-        maximo_iteracoes_sem_melhora: data.maxIterationsWithoutImprovement
+        valor_otimo: data.optimalValue || null,
+        max_iteracoes: data.maxIterations || 2000,
+        max_sem_melhora: data.maxIterationsWithoutImprovement || 200
       })
     })
     .then(response => {
@@ -167,7 +186,7 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
           <CardHeader>
             <CardTitle>Parâmetros de Otimização</CardTitle>
             <CardDescription>
-              Configure os parâmetros para os algoritmos de otimização
+              Configure os parâmetros para os algoritmos de otimização da metaheurística ILS (Iterated Local Search)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -210,8 +229,8 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
               variant="hero"
               size="lg"
             >
-              <Upload className="w-4 h-4 mr-2" />
-              Processar Dados
+              <BookmarkCheck className="w-4 h-4 mr-2" />
+              Definir Parâmetros
             </Button>
           </CardContent>
         </Card>

@@ -18,8 +18,17 @@
             int qnt_estacoes;
             int veiculos_disponiveis;
             vector<vector<int>> matriz_custo;
+            int max_iteracoes = 2000;
+            int max_sem_melhora = 200;
+            int valor_otimo = -1;
+
+            Problema() : qnt_veiculos(0), capacidade_max(0), qnt_estacoes(0), veiculos_disponiveis(0) {}
 
             Problema(string file_content, bool isFile = false){
+                this->init(file_content, isFile);
+            }
+
+            void init(string file_content, bool isFile = false){
                 if(isFile){
                     ifstream mfile(file_content);
                     ostringstream outputStr;
@@ -72,6 +81,25 @@
                     }
                 }
             }
+
+            void PrintProblema() const {
+                cout << "Numero de estacoes: " << this->qnt_estacoes << endl;
+                cout << "Numero de veiculos: " << this->qnt_veiculos << endl;
+                cout << "Capacidade maxima: " << this->capacidade_max << endl;
+                cout << "Demandas: ";
+                for(const int& d : this->demandas){
+                    cout << d << " ";
+                }
+                cout << endl;
+
+                cout << "Matriz de custos: " << endl;
+                for(int i = 0; i <= this->qnt_estacoes; i++){
+                    for(int j = 0; j <= this->qnt_estacoes; j++){
+                        cout << this->matriz_custo[i][j] << " ";
+                    }
+                    cout << endl;
+                }
+            }
     };
 
     extern Problema p;
@@ -117,6 +145,15 @@
                     cout << e << " ";
                 }
                 cout << endl;
+            }
+
+            int RefreshCost(){
+                this->custo_total_d1 = 0;
+                for(int i = 0; i < this->estacoes.size() - 1; i++){
+                    this->custo_total_d1 += p.matriz_custo[this->estacoes[i]][this->estacoes[i+1]];
+                }
+
+                return this->custo_total_d1;
             }
 
             void InsertEnd(int estacao){
@@ -202,7 +239,7 @@
                 ofstream output(nome_arquivo);
 
                 output << custo_total << endl;
-                output << veiculos_usados << endl;
+                output << this->rotas.size() << endl;
                 for (const vector<int>& r : rotas)
                 {
                     for (const int &e : r)
@@ -213,6 +250,23 @@
                 }
 
                 output.close();
+            }
+
+            int AtualizarCusto() {
+                this->custo_total = 0;
+                for (const auto& rota : rotas) {
+                    this->custo_total += this->CalculaCusto(rota);
+                }
+                return this->custo_total;
+            }
+
+            private:
+            int CalculaCusto(vector<int> rota){
+                int custo = 0;
+                for(int i = 0; i < rota.size() - 1; i++){
+                    custo += p.matriz_custo[rota[i]][rota[i+1]];
+                }
+                return custo;
             }
     };
 
@@ -230,5 +284,149 @@
         Solucao* resultado;
         int pool_count;
     } ParametrosILS;
+
+    class No
+    {
+    public:
+        int estacao;
+        No *proximo;  // Ponteiro para próximo nó
+        No *anterior; // Ponteiro para o nó anterior
+
+        No(int e = 0) : estacao(e), proximo(nullptr), anterior(nullptr) {}
+    };
+
+    class LinkedList{
+    No *rota_i; // Início da lista encadeada
+        No *rota_f; // Fim da lista encadeada
+        int custo_total_d1, custo_total_d2;
+        int rotaTam; // Número de estações na rota (excluindo os depósitos)
+        DirecaoRota direcao_atual;
+
+        // Construtor padrão
+        LinkedList() : custo_total_d1(0), custo_total_d2(0),
+                rotaTam(0), direcao_atual(INICIO_FIM)
+        {
+            rota_i = new No(0); // Nó inicial (depósito)
+            rota_f = new No(0); // Nó final (depósito)
+            rota_i->proximo = rota_f;
+            rota_f->anterior = rota_i;
+        }
+
+        // Construtor de cópia (deep copy)
+        LinkedList(const LinkedList &other)
+        {
+            custo_total_d1 = other.custo_total_d1;
+            custo_total_d2 = other.custo_total_d2;
+            rotaTam = other.rotaTam;
+            direcao_atual = other.direcao_atual;
+            rota_i = copiaLista(other.rota_i, other.rota_f, &rota_f);
+        }
+
+        // Operador de atribuição (deep copy)
+        LinkedList &operator=(const LinkedList &other)
+        {
+            if (this == &other)
+                return *this;
+
+            limpa(); // libera a lista atual
+
+            custo_total_d1 = other.custo_total_d1;
+            custo_total_d2 = other.custo_total_d2;
+            rotaTam = other.rotaTam;
+            direcao_atual = other.direcao_atual;
+            rota_i = copiaLista(other.rota_i, other.rota_f, &rota_f);
+
+            return *this;
+        }
+
+        int stationAtIndex(int posicao)
+        {
+            if (posicao > (rotaTam + 1) || posicao < 0)
+                return -1;
+
+            No *atual = rota_i;
+            int index_atual = 0;
+            while (index_atual != posicao)
+            {
+                atual = atual->proximo;
+                index_atual++;
+            }
+            return index_atual;
+        }
+
+        void InsertAt(int posicao, int estacao)
+        {
+            extern Problema p;
+            if (posicao < 1 || posicao > (rotaTam + 1))
+                return; // Posição inválida
+
+            // Se a posição for mais perto do início, percorre a partir do início
+            // Caso contrário, percorre a partir do fim
+
+            No *novo = new No(estacao);
+            No *atual;
+
+            if (posicao <= rotaTam / 2)
+            {
+                atual = rota_i->proximo;
+                for (int i = 1; i < posicao; i++)
+                    atual = atual->proximo;
+
+                // Quando eu chego na posição que eu quero, a estação vai ser o novo elemento daquela posição
+                // Ou seja, o atual que está na posição posicao vai ser empurrado para frente, ficando na posição posicao + 1
+                novo->proximo = atual;
+                novo->anterior = atual->anterior;
+                atual->anterior->proximo = novo;
+                atual->anterior = novo;
+                rotaTam++;
+            }
+            else
+            {
+                atual = rota_f->anterior;
+                for (int i = rotaTam; i > posicao; i--)
+                    atual = atual->anterior;
+
+                // Quando eu chego na posição que eu quero, a estação vai ser o novo elemento daquela posição
+                // Ou seja, o atual que está na posição posicao vai ser empurrado para frente, ficando na posição posicao + 1
+                novo->proximo = atual;
+                novo->anterior = atual->anterior;
+                atual->anterior->proximo = novo;
+                atual->anterior = novo;
+                rotaTam++;
+            }
+
+            // Atualiza custos da direcao INICIO_FIM
+            custo_total_d1 -= p.matriz_custo[novo->anterior->estacao][atual->estacao];
+            custo_total_d1 += p.matriz_custo[novo->anterior->estacao][estacao] + p.matriz_custo[estacao][atual->estacao];
+
+            // Atualiza custos da direcao FIM_INICIO
+            custo_total_d2 -= p.matriz_custo[atual->estacao][novo->anterior->estacao];
+            custo_total_d2 += p.matriz_custo[atual->estacao][estacao] + p.matriz_custo[estacao][novo->anterior->estacao];
+
+        }
+
+        void InsertEnd(int estacao)
+        {
+            extern Problema p;
+            No *novo = new No(estacao);
+            novo->anterior = rota_f->anterior;
+            novo->proximo = rota_f;
+            rota_f->anterior->proximo = novo;
+            rota_f->anterior = novo;
+            rotaTam++;
+
+            // Retira o custo matriz[rota_f->anterior->estacao][0] do custo_total_d1
+            // E incrementa o custo da antiga última estação até a nova estação + o custo da nova estação até o galpão
+            custo_total_d1 -= p.matriz_custo[novo->anterior->estacao][0];
+            custo_total_d1 += p.matriz_custo[novo->anterior->estacao][estacao] + p.matriz_custo[estacao][0];
+
+            // Retira o custo matriz[0][rota_f->anterior->estacao] do custo_total_d2
+            // E incrementa o custo do galpão até a nova estação + o custo da nova estação até a antiga última estação
+            custo_total_d2 -= p.matriz_custo[0][novo->anterior->estacao];
+            custo_total_d2 += p.matriz_custo[0][estacao] + p.matriz_custo[estacao][novo->anterior->estacao];
+
+            // Agora temos a estação inserida e o novo custo atualizado
+        }
+    }
 
 #endif

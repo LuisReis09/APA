@@ -10,7 +10,7 @@
     #include "structures.hpp"
 
     /**
-     * Instância de Problema que será utilizada por todas as funções que envolverem problema,
+     * Instância de Problema que MelhoresVerticesserá utilizada por todas as funções que envolverem problema,
      * a fim de reduzir a empilhagem e desempilhagem do mesmo parametro múltiplas vezes.
      * Deve ser instânciada por meio da função `SetProblema`, usando como parâmetro um problema ou seus atributos
      */
@@ -44,6 +44,89 @@
      */
     Problema GetProblema(){
         return p;
+    }
+
+    typedef struct
+    {
+        bool success;       // Indica se a leitura foi bem sucedida
+        string message;     // Mensagem de erro ou sucesso
+        Problema problema;  // Estrutura do problema lido
+    } RespostaLeitura;
+
+    RespostaLeitura LerDadosStr(const string conteudo_arq)
+    {
+        istringstream input(conteudo_arq);
+
+        RespostaLeitura resultado;
+        string aux;
+
+        try
+        {
+            Problema retorno;
+
+            // ---- Leitura básica ----
+            if (!(input >> retorno.qnt_estacoes) || retorno.qnt_estacoes <= 0)
+                throw runtime_error("Número inválido de estações.");
+
+            if (!(input >> retorno.qnt_veiculos) || retorno.qnt_veiculos <= 0)
+                throw runtime_error("Número inválido de veículos.");
+
+            if (!(input >> retorno.capacidade_max) || retorno.capacidade_max <= 0)
+                throw runtime_error("Capacidade máxima inválida.");
+
+            retorno.veiculos_disponiveis = retorno.qnt_veiculos;
+
+            getline(input, aux); // consome resto da linha
+
+            // ---- Demandas ----
+            retorno.demandas.resize(retorno.qnt_estacoes);
+            for (int i = 0; i < retorno.qnt_estacoes; i++)
+            {
+                if (!(input >> retorno.demandas[i]))
+                    throw runtime_error("Demandas incompletas no arquivo.");
+
+                if (abs(retorno.demandas[i]) > retorno.capacidade_max)
+                {
+                    throw runtime_error(
+                        "Demanda da estação " + to_string(i) +
+                        " excede a capacidade máxima de um veículo.");
+                }
+            }
+
+            getline(input, aux); // consome resto da linha
+
+            // ---- Matriz de custos ----
+            retorno.matriz_custo.resize(retorno.qnt_estacoes + 1,
+                                        vector<int>(retorno.qnt_estacoes + 1));
+            for (int i = 0; i <= retorno.qnt_estacoes; i++)
+            {
+                for (int j = 0; j <= retorno.qnt_estacoes; j++)
+                {
+                    if (!(input >> retorno.matriz_custo[i][j]))
+                    {
+                        throw runtime_error("Matriz de custo incompleta.");
+                    }
+                }
+            }
+
+            // Dados extras?
+            int lixo;
+            if (input >> lixo)
+            {
+                throw runtime_error("Dados extras encontrados no fim do arquivo.");
+            }
+
+            resultado.success = true;
+            resultado.message = "Leitura concluída com sucesso.";
+            resultado.problema = move(retorno);
+        }
+        catch (const exception &e)
+        {
+            resultado.success = false;
+            resultado.message = e.what();
+        }
+
+        return resultado;
     }
 
     void PrintProblema(Problema prob){
@@ -121,19 +204,49 @@
      *  @return `bool` - Indica se a demanda de uma rota é válida, baseando-se no `Problema p`
      * */
     bool VerificaDemanda(const vector<int>& rota){
-        int demanda = 0;
+        int n_rota = rota.size();
+        // vector<int> prefix(n_rota - 1);
+        int max = 0, min = p.demandas[rota[1] - 1];
+        int prefix = 0;
+        // soma acumulada das demandas
+        // prefix[0] = 0;
+        for(int i = 1; i < n_rota - 1; i++){
+            // prefix[i] = prefix[i-1] + p.demandas[rota[i] - 1];
+            // if(prefix[i] > max)
+            //     max = prefix[i];
+            // else if(prefix[i] < min)
+            //     min = prefix[i];
+            prefix += p.demandas[rota[i] - 1];
 
-        for(int i=rota.size()-2; i>0; i--){
-            int estacao = rota[i];
-            demanda += p.demandas[estacao - 1];
-
-            if (abs(demanda) > p.capacidade_max)
-                return false;
+            if(prefix > max)
+                max = prefix;
+            else if(prefix < min)
+                min = prefix;
         }
+
+        // ajustando o intervalo de checagem
+        min = -min;
+        max = p.capacidade_max - max;
+
+        if(max < min || max < 0 || min > p.capacidade_max){
+            return false;
+        }
+
+        // verifica se algum numero de bicicletas inicial é válido.
+        for(int i = max; i >= min && i >= 0; i--)
+            if(i <= p.capacidade_max)
+                return true;
         
-        
-        /* retorna verdadeiro caso a demanda da rota esteja válida */
-        return true;
+
+        return false;
+    }
+
+    int CalculaCusto(vector<int> rota){
+        int custo = 0;
+        for(int i = 0; i < rota.size() - 1; i++){
+            custo += p.matriz_custo[rota[i]][rota[i+1]];
+        }
+        return custo;
     }
 
     /**
@@ -209,57 +322,118 @@
     }
 
     bool ReinsertionTest(const vector<int>& rota, int posicao_original, int posicao_destino){
-        int carga = 0;
+        int prefix = 0;
+        int min = p.demandas[rota[1] - 1];
+        int max = min;
 
-        for(int i = rota.size() - 1; i > 0; i++){
-            // Se for a posicao original, desconsideramos pq estamos movendo a estacao.
+        for(int i = 1; i < rota.size(); i++){
             if(i == posicao_original) continue;
 
-            // Se for a posicao destino, alem da que esta no momento, ja verificamos a que vamos tentar inserir
-            if((i+1) == posicao_destino){
-                carga += p.demandas[rota[posicao_original]];
-                if(abs(carga) > p.capacidade_max) return false;
+            if(i == posicao_destino){
+                prefix += p.demandas[rota[posicao_original] - 1];
+                if(prefix > max)
+                    max = prefix;
+                else if(prefix < min)
+                    min = prefix;
             }
 
-            // Por ultimo, caso geral
-            carga += p.demandas[rota[i] - 1];
-            if(abs(carga) > p.capacidade_max) return false;
+            //  acumula e verifica a adicao da demanda
+            prefix += p.demandas[rota[i] - 1];
+
+            if(prefix > max)
+                max = prefix;
+            else if(prefix < min)
+                min = prefix;
         }
 
-        return true;
+        // ajustando o intervalo de checagem
+        min = -min;
+        max = p.capacidade_max - max;
+
+        if(max < min || max < 0 || min > p.capacidade_max){
+            return false;
+        }
+
+        // verifica se algum numero de bicicletas inicial é válido.
+        for(int i = max; i >= min && i >= 0; i--)
+            if(i <= p.capacidade_max)
+                return true;
+
+        return false;
     }
 
     bool RemovalTest(const vector<int>& rota, int posicao_original){
-        int carga = 0;
+        int prefix = 0;
+        int min = p.demandas[rota[1] - 1];
+        int max = min;
 
-        for(int i = rota.size() - 2; i > 0; i++){
-            if(i == posicao_original) continue;
-
-            carga += p.demandas[rota[i] - 1];
-            if(abs(carga) > p.capacidade_max){
-                return false;
+        for(int i = 1; i < rota.size(); i++){
+            if(i == posicao_original){
+                continue;
             }
+            //  acumula e verifica a adicao da demanda
+            prefix += p.demandas[rota[i] - 1];
+
+            if(prefix > max)
+                max = prefix;
+            else if(prefix < min)
+                min = prefix;
         }
 
-        return true;
+        // ajustando o intervalo de checagem
+        min = -min;
+        max = p.capacidade_max - max;
+
+        if(max < min || max < 0 || min > p.capacidade_max){
+            return false;
+        }
+
+        // verifica se algum numero de bicicletas inicial é válido.
+        for(int i = max; i >= min && i >= 0; i--)
+            if(i <= p.capacidade_max)
+                return true;
+
+        return false;
     }
 
     bool InsertionTest(const vector<int>& rota, int posicao_destino, int estacao){
-        int carga = 0;
+        int prefix = 0;
+        int min = p.demandas[rota[1] - 1];
+        int max = min;
 
-        for(int i = rota.size() - 2; i>0; i++){
-            if((i+1) == posicao_destino){
-                carga += p.demandas[estacao - 1];
-                if(abs(carga) > p.capacidade_max) return false;
-            }
+        for(int i = 1; i < rota.size(); i++){
+            if(i == posicao_destino){
+                //  acumula e verifica a adicao da demanda da nova estacao
+                prefix += p.demandas[estacao -1];
 
-            carga += p.demandas[rota[i] - 1];
-            if(abs(carga) > p.capacidade_max){
-                return false;
+                if(prefix > max)
+                    max = prefix;
+                else if(prefix < min)
+                    min = prefix;
             }
+            //  acumula e verifica a adicao da demanda
+            prefix += p.demandas[rota[i] - 1];
+
+            if(prefix > max)
+                max = prefix;
+            else if(prefix < min)
+                min = prefix;
         }
 
-        return true;
+        // ajustando o intervalo de checagem
+        min = -min;
+        max = p.capacidade_max - max;
+
+        if(max < min || max < 0 || min > p.capacidade_max){
+            return false;
+        }
+
+        // verifica se algum numero de bicicletas inicial é válido.
+        for(int i = max; i >= min && i >= 0; i--)
+            if(i <= p.capacidade_max)
+                return true;
+
+        return false;
     }
 
     int CustoTotal(vector<vector<int>>& rotas){
@@ -371,6 +545,33 @@
                 return false;
             }
         }
+
+        return true;
     }
+
+    LinkedList transformarEmLinkedList(vector<int> rota_vector)
+{
+    LinkedList vectorTurnedRoute = LinkedList();
+    for (int termo = 1; termo < rota_vector.size() - 1; termo++)
+    {
+        vectorTurnedRoute.InsertEnd(rota_vector[termo]);
+    }
+
+    return vectorTurnedRoute;
+}
+
+vector<int> transformarEmVector(LinkedList linked_list)
+{
+    No_LinkedList *aux = linked_list.rota_i->proximo;
+    vector<int> resultado = {0};
+
+    while (aux->estacao)
+    {
+        resultado.push_back(aux->estacao);
+        aux = aux->proximo;
+    }
+    resultado.push_back(0);
+    return resultado;
+}
 
 #endif
