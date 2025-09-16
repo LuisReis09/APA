@@ -64,111 +64,6 @@
         }
     }
 
-   /**
-     *  @brief Verifica as rotas de uma solução com base em regras como: 
-     * - Posicionamento das garagens nas extremidades;
-     * - Não repetição de estações
-     * - Demanda acumulada dentro da capacidade de um caminhão em uma rota
-     *
-     *---
-     *  @param rotas Um vector de rotas de uma solução para o Problema p
-     *  @param verbose Booleano para log de erros detalhados
-     * 
-     *---
-     *  @return `bool` - Indica se as rotas são uma solução válida ou não
-     * */
-    bool VerificaSolucao(const vector<Rota>& rotas, bool verbose = false){
-        vector<bool> visitados(p.qnt_estacoes, false);
-        int soma_demandas;
-
-        /* Testa cada rota */
-        int ind_rota = 0;
-        for(const Rota& rota : rotas){
-            soma_demandas = 0;
-
-            /* Verifica se a rota começa e termina na garagem (0) */
-            if(rota.estacoes[0] != 0 && rota.estacoes[rota.estacoes.size() - 1] != 0){
-                if (verbose) 
-                    cerr << "Rota [" << ind_rota <<"] nao começa ou termina na garagem." << endl;
-                return false;
-            }
-            /* Percorre o miolo da lista dada, fazendo as devidas verifcações */
-            if(rota.direcao_atual == DirecaoRota::INICIO_FIM){   
-
-                for(size_t i = 1; i < rota.estacoes.size() - 1; i++){
-                    int estacao = rota.estacoes[i];
-
-                    /* Caso haja uma estação no meio da rota */
-                    if(!estacao){
-                        if (verbose)
-                            cerr << "Rota ["<< ind_rota << "] com galpao fora do lugar" << endl;
-                        return false;
-                    }
-
-                    /* Caso hajam estacoes repetidas */
-                    if(visitados[estacao - 1]){
-                        if (verbose)
-                            cerr << "Estacao " << estacao << " visitada mais de uma vez: " << estacao << endl;
-                        return false;
-                    }
-                    
-                    /* Verifica se a demanda continua limitada à capacidade do caminhão */
-                    soma_demandas += p.demandas[estacao - 1];
-                    if(abs(soma_demandas) > p.capacidade_max){
-                        if (verbose)
-                            cerr << "Capacidade excedida na estacao: " << estacao << endl;
-                        return false;
-                    }
-
-                    /* marca a estação como visitada */
-                    visitados[estacao - 1] = true;
-                }
-
-            /* Caso a rota esteja na direção contrária: */
-            }else{
-
-                /* Percorre o miolo da lista dada, fazendo as devidas verifcações */
-                for(size_t i = rota.estacoes.size() - 2; i >=0; i--){
-                    int estacao = rota.estacoes[i];
-
-                    /* Caso haja uma estação no meio da rota */
-                    if(!estacao){
-                        if (verbose)
-                            cerr << "Rota ["<< ind_rota << "] com galpao fora do lugar" << endl;
-                        return false;
-                    }
-
-                    /* Caso hajam estacoes repetidas */
-                    if(visitados[estacao - 1]){
-                        if (verbose)
-                            cerr << "Estacao " << estacao << " visitada mais de uma vez: " << estacao << endl;
-                        return false;
-                    }
-                    
-                    /* Verifica se a demanda continua limitada à capacidade do caminhão */
-                    soma_demandas += p.demandas[estacao - 1];
-                    if(abs(soma_demandas) > p.capacidade_max){
-                        if (verbose)
-                            cerr << "Capacidade excedida na estacao: " << estacao << endl;
-                        return false;
-                    }
-                    /* marca a estação como visitada */
-                    visitados[estacao - 1] = true;
-                }
-            }
-
-            ind_rota++;
-        }
-
-        /* Verifica se todas as estacoes foram devidamente alocadas nas rotas */
-        for (size_t i = 0; i < visitados.size(); i++){
-            if(!visitados[i]){
-                if (verbose)
-                    cerr << "Estação "<< visitados[i] <<" nao visitada: " << i + 1 << endl;
-                return false;
-            }
-        }
-    }
 
     /**
      *  @brief Retona um par de `Demanda` e `Custo` da rota dada;
@@ -225,29 +120,18 @@
      *  ---
      *  @return `bool` - Indica se a demanda de uma rota é válida, baseando-se no `Problema p`
      * */
-    bool VerificaDemanda(const Rota& rota){
+    bool VerificaDemanda(const vector<int>& rota){
         int demanda = 0;
 
-        /* Se a rota estiver na direção INICIO_FIM */
-        if(rota.direcao_atual == INICIO_FIM){
-            /* Para cada estação, exceto as garagens */
-            for(size_t i = 1; i < rota.estacoes.size()-1; i++){
-                /* acumula a demanda e verifica se esta repeita a capacidade máxima imposta */
-                demanda += p.demandas[rota.estacoes[i] - 1];
-                if (abs(demanda) > p.capacidade_max) {
-                    /* Retorna falso, caso exceda a capacidade */
-                    return false;
-                }
-            }
-        } else {
-            /* mesma lógica, percorrendo ao contrário */
-            for(size_t i = rota.estacoes.size() - 2; i > 0; i--){
-                demanda += p.demandas[rota.estacoes[i] - 1];
-                if (abs(demanda) > p.capacidade_max) {
-                    return false;
-                }
-            }
+        for(int i=rota.size()-2; i>0; i--){
+            int estacao = rota[i];
+            demanda += p.demandas[estacao - 1];
+
+            if (abs(demanda) > p.capacidade_max)
+                return false;
         }
+        
+        
         /* retorna verdadeiro caso a demanda da rota esteja válida */
         return true;
     }
@@ -261,9 +145,9 @@
      *  ---
      *  @return `bool` - Indica se as demandas das rotas são válidas, baseando-se no `Problema p`
      * */
-    bool VerificaDemandas(const vector<Rota>& rotas){
+    bool VerificaDemandas(const vector<vector<int>>& rotas){
         /* Para cada rota, aplica a função que veriifca individualmente */
-        for(const Rota& rota : rotas){
+        for(const vector<int>& rota : rotas){
             if(!VerificaDemanda(rota)){
                 return false;
             }
@@ -314,60 +198,76 @@
         return make_pair(melhor_1, melhor_2);
     }
 
-    bool VerificaNovaDemanda(Rota& rota, int ind_antigo, int ind_novo){
-        if(ind_antigo == ind_novo)
-            return true; 
+    bool TestaRota(const vector<int>& rota, int estacao_teste){
+        int carga = p.demandas[estacao_teste - 1];
 
-        int soma_demandas = 0;
-        
-        for(int i = 1; i < ind_novo; i++){
-            if(i == ind_antigo) continue;
-            soma_demandas += p.demandas[rota.estacoes[i] - 1];
-            if(abs(soma_demandas) > p.capacidade_max)
-                return false;
+        for(int i = rota.size() - 1; i > 0; i--){
+            carga += p.demandas[rota[i] - 1];
+            if(abs(carga) > p.capacidade_max) return false;
         }
+        return true;
+    }
 
-        soma_demandas += p.demandas[rota.estacoes[ind_antigo] - 1];
-        if(abs(soma_demandas) > p.capacidade_max)
-            return false;
+    bool ReinsertionTest(const vector<int>& rota, int posicao_original, int posicao_destino){
+        int carga = 0;
 
-        for(int i = ind_novo; i < rota.estacoes.size() - 1; i++){
-            if(i == ind_antigo) continue;
-            soma_demandas += p.demandas[rota.estacoes[i] - 1];
-            if(abs(soma_demandas) > p.capacidade_max)
-                return false;
+        for(int i = rota.size() - 1; i > 0; i++){
+            // Se for a posicao original, desconsideramos pq estamos movendo a estacao.
+            if(i == posicao_original) continue;
+
+            // Se for a posicao destino, alem da que esta no momento, ja verificamos a que vamos tentar inserir
+            if((i+1) == posicao_destino){
+                carga += p.demandas[rota[posicao_original]];
+                if(abs(carga) > p.capacidade_max) return false;
+            }
+
+            // Por ultimo, caso geral
+            carga += p.demandas[rota[i] - 1];
+            if(abs(carga) > p.capacidade_max) return false;
         }
 
         return true;
     }
 
+    bool RemovalTest(const vector<int>& rota, int posicao_original){
+        int carga = 0;
 
-    bool VerificaNovoElemento(Rota& rota, int posicao, int estacao){
-        int soma_demandas = 0;
+        for(int i = rota.size() - 2; i > 0; i++){
+            if(i == posicao_original) continue;
 
-        for(int i = 1; i < posicao; i++){
-            soma_demandas += p.demandas[rota.estacoes[i] - 1];
-        }
-
-        soma_demandas += p.demandas[estacao - 1];
-        if (abs(soma_demandas) > p.capacidade_max)
-            return false;
-        
-        for(int i = posicao; i < rota.estacoes.size() - 1; i++){
-            soma_demandas += p.demandas[rota.estacoes[i] - 1];
-            if (abs(soma_demandas) > p.capacidade_max)
+            carga += p.demandas[rota[i] - 1];
+            if(abs(carga) > p.capacidade_max){
                 return false;
+            }
         }
 
         return true;
     }
 
-    int CustoTotal(vector<Rota>& rotas){
+    bool InsertionTest(const vector<int>& rota, int posicao_destino, int estacao){
+        int carga = 0;
+
+        for(int i = rota.size() - 2; i>0; i++){
+            if((i+1) == posicao_destino){
+                carga += p.demandas[estacao - 1];
+                if(abs(carga) > p.capacidade_max) return false;
+            }
+
+            carga += p.demandas[rota[i] - 1];
+            if(abs(carga) > p.capacidade_max){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    int CustoTotal(vector<vector<int>>& rotas){
         int custo_total = 0;
 
-        for(Rota& rota : rotas){
-            for(size_t i = 0; i < rota.estacoes.size() - 1; i++){
-                custo_total += p.matriz_custo[rota.estacoes[i]][rota.estacoes[i + 1]];
+        for(const vector<int>& rota : rotas){
+            for(size_t i = 0; i < (rota.size() - 1); i++){
+                custo_total += p.matriz_custo[rota[i]][rota[i + 1]];
             }
         }
         return custo_total;
@@ -388,6 +288,89 @@
         static mt19937 gen(rd());  
         uniform_int_distribution<> dis(min, max);
         return dis(gen);
+    }
+
+    void PrintaDemandas(vector<Rota>& rotas){
+        int demanda;
+        for(const Rota& rota : rotas){
+            demanda = 0;
+            cout << "[ ";
+            for(size_t i = 0; i < rota.estacoes.size(); i++){
+                if(rota.estacoes[i] == 0) continue;
+                
+                demanda += p.demandas[rota.estacoes[i] - 1];
+                cout << demanda << " ";
+                if(abs(demanda) > p.capacidade_max){
+                    throw runtime_error("Demanda excedida na rota: " + to_string(rota.estacoes[i]));
+                    return;
+                }
+            }
+            cout << "] - Demanda: " << demanda << endl;
+        }
+    }
+
+    /**
+     *  @brief Verifica as rotas de uma solução com base em regras como: 
+     * - Posicionamento das garagens nas extremidades;
+     * - Não repetição de estações
+     * - Demanda acumulada dentro da capacidade de um caminhão em uma rota
+     *
+     *---
+     *  @param rotas Um vector de rotas de uma solução para o Problema p
+     *  @param verbose Booleano para log de erros detalhados
+     * 
+     *---
+     *  @return `bool` - Indica se as rotas são uma solução válida ou não
+     * */
+    bool VerificaSolucao(const vector<vector<int>>& rotas, bool verbose = false){
+        vector<bool> visitados(p.qnt_estacoes, false);
+
+        /* Testa cada rota */
+        int ind_rota = 0;
+        for(const vector<int>& rota : rotas){
+
+            /* Verifica se a rota começa e termina na garagem (0) */
+            if(rota[0] != 0 && rota[rota.size() - 1] != 0){
+                if (verbose) 
+                    cerr << "Rota [" << ind_rota <<"] nao começa ou termina na garagem." << endl;
+                return false;
+            }
+
+            for(size_t i = 1; i < rota.size() - 1; i++){
+                int estacao = rota[i];
+
+                /* Caso haja uma estação no meio da rota */
+                if(!estacao){
+                    if (verbose)
+                        cerr << "Rota ["<< ind_rota << "] com galpao fora do lugar" << endl;
+                    return false;
+                }
+
+                /* Caso hajam estacoes repetidas */
+                if(visitados[estacao - 1]){
+                    if (verbose)
+                        cerr << "Estacao " << estacao << " visitada mais de uma vez: " << estacao << endl;
+                    return false;
+                }
+
+                /* marca a estação como visitada */
+                visitados[estacao - 1] = true;
+            }
+
+            VerificaDemanda(rota);
+
+
+            ind_rota++;
+        }
+
+        /* Verifica se todas as estacoes foram devidamente alocadas nas rotas */
+        for (size_t i = 0; i < visitados.size(); i++){
+            if(!visitados[i]){
+                if (verbose)
+                    cerr << "Estação "<< visitados[i] <<" nao visitada: " << i + 1 << endl;
+                return false;
+            }
+        }
     }
 
 #endif
