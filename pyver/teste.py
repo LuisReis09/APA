@@ -41,11 +41,8 @@ def calcula_demanda(rota):
 
 def calcula_demandas(rotas):
     for rota in rotas:
-        demanda_total = 0
-        for estacao in rota:  # Ignora depósitos
-            demanda_total += necessidades[estacao]
-            if abs(demanda_total) > capmax_caminhao:
-                return False
+        if not calcula_demanda(rota):
+            return False
             
     return True
 

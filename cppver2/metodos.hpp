@@ -14,281 +14,235 @@
 
     using namespace std;
 
-    /**
-     *  @brief `Algoritmo Guloso` de vizinho
-     *
-     *  ---
-     *  @param rota será verificada na função
-     *
-     *  ---
-     *  @return `bool` - Indica se a demanda de uma rota é válida, baseando-se no `Problema p`
-     * */
-    Solucao VizinhoMaisProximo() {
+    
+    Solucao VizinhoMaisProximo(){
         vector<vector<int>> rotas(p.qnt_veiculos, vector<int>(1, 0)); // inicia todas as rotas com o depósito
-        vector<int> necessidades(p.qnt_veiculos, 0);
-        vector<int> restam_visitar(p.qnt_estacoes);
+        int custo_total = 0;
+        int qtd_iteracoes = p.qnt_estacoes;
 
-        for(int i=0; i<p.qnt_estacoes; i++){
-            restam_visitar[i] = i+1;
-        }
+        /*
+            Para cada estacao, guarda:
+            [
+                1: [1: 0, 2: 10, 3: 15 ...] // custos para cada estacao
+                2: [1: 5, 2: 0, 3: 20 ...]  // custos para cada estacao
+                ...
+            ]
+        */
+        typedef vector<vector<pair<int, int>>> FilaPrioridade;
+        FilaPrioridade fila_prioridade(p.qnt_estacoes + 1);
 
-        typedef vector<pair<int, int>> FilaPrioridade;
-
-        vector<FilaPrioridade> filas_prioridade(p.qnt_veiculos);
-
-        FilaPrioridade modelo_inicial(p.qnt_estacoes);
-        for(int i=0; i<p.qnt_estacoes; i++){
-            modelo_inicial[i] = make_pair(i+1, p.matriz_custo[0][i+1]);
-        }
-
-        sort(modelo_inicial.begin(), modelo_inicial.end(),
-            [](const pair<int, int>& a, const pair<int, int>& b) {
-                return a.second < b.second;
-            });
-
-        for(int i=0; i<p.qnt_veiculos; i++){
-            filas_prioridade[i] = modelo_inicial;
-        }
-
-        while(restam_visitar.size()){
-            // Primeiro descobrimos a melhor rota para inserir
-            int menor_custo = INT_MAX;
-            int melhor_rota;
-
-            for(int i=0; i<filas_prioridade.size(); i++){
-                if(filas_prioridade[i].size() == 0) continue;
-
-                if(filas_prioridade[i][0].second < menor_custo){
-                    menor_custo = filas_prioridade[i][0].second;
-                    melhor_rota = i;
-                }
+        for(int i=0; i<(p.qnt_estacoes+1); i++){
+            vector<pair<int, int>> custos(p.qnt_estacoes);
+            for(int j=0; j<p.qnt_estacoes; j++){
+                custos[j] = make_pair(j+1, p.matriz_custo[i][j+1]);
             }
 
-            // Agora descobrimos a melhor estação para inserir
-            int melhor_estacao = filas_prioridade[melhor_rota][0].first;
-            int custo_ao_inserir = filas_prioridade[melhor_rota][0].second;
-
-            rotas[melhor_rota].push_back(melhor_estacao);
-            necessidades[melhor_rota] += p.demandas[melhor_estacao - 1];
-
-            // Remove a estação do array de restam_visitar
-            restam_visitar.erase(remove(restam_visitar.begin(), restam_visitar.end(), melhor_estacao), restam_visitar.end());
-
-            // Para a rota que acabou de inserir, atualiza a fila de prioridades
-            for(auto it = filas_prioridade[melhor_rota].begin(); it != filas_prioridade[melhor_rota].end(); ){
-                if(it->first == melhor_estacao || abs(necessidades[melhor_rota] + p.demandas[it->first - 1]) > p.capacidade_max){
-                    it = filas_prioridade[melhor_rota].erase(it);
-                }else{
-                    it->second = p.matriz_custo[melhor_estacao][it->first];
-                    it++;
-                }
-            }
-
-            sort(filas_prioridade[melhor_rota].begin(), filas_prioridade[melhor_rota].end(),
+            sort(custos.begin(), custos.end(),
                 [](const pair<int, int>& a, const pair<int, int>& b) {
                     return a.second < b.second;
                 });
-            
-            // Remove a estação escolhida das outras filas de prioridade
-            for(int i=0; i<filas_prioridade.size(); i++){
-                if(i == melhor_rota) continue;
 
-                for(auto it = filas_prioridade[i].begin(); it != filas_prioridade[i].end(); ){
-                    if(it->first == melhor_estacao){
-                        it = filas_prioridade[i].erase(it);
+            fila_prioridade[i] = custos;
+        }
+
+        while(qtd_iteracoes--){
+            int melhor_rota, melhor_custo = INT_MAX, melhor_estacao;
+
+            for(int i=0; i<rotas.size(); i++){
+                int ultimo_elemento = rotas[i].back();
+
+                for(int j=0; j<fila_prioridade[ultimo_elemento].size(); j++){
+                    int estacao = fila_prioridade[ultimo_elemento][j].first;
+                    int custo = fila_prioridade[ultimo_elemento][j].second;
+
+                    bool pode_inserir = TestaRota(rotas[i], estacao);
+                    if(pode_inserir){
+                        if(custo < melhor_custo){
+                            melhor_custo = custo;
+                            melhor_rota = i;
+                            melhor_estacao = estacao;
+                        }
+                        break; // nao adianta olhar as outras, pq serao mais caras
+                    }
+                }
+            }
+
+
+            // Agora que temos a melhor rota e a melhor estação, inserimos
+            rotas[melhor_rota].push_back(melhor_estacao);
+            custo_total += melhor_custo;
+
+            // Remove a estação escolhida das filas de prioridades
+            for(int i=0; i<fila_prioridade.size(); i++){
+                for(int j=0; j < fila_prioridade[i].size(); j++){
+                    if(fila_prioridade[i][j].first == melhor_estacao){
+                        fila_prioridade[i].erase(fila_prioridade[i].begin() + j);
                         break;
-                    }else{
-                        it++;
                     }
                 }
             }
         }
 
         Solucao solucao;
-        solucao.custo_total = 0;
-        solucao.veiculos_usados = 0;
-        for (int i=0; i<rotas.size(); i++){
+        for(int i=0; i<rotas.size(); i++){
             if(rotas[i].size() <= 1) break;
-
-            solucao.rotas.push_back(Rota());
-            Rota& r = solucao.rotas.back(); // pega referência para a rota recém-criada
-
-            for (int j = 1; j < rotas[i].size(); j++) {
-                r.InsertEnd(rotas[i][j]);
-                solucao.custo_total += p.matriz_custo[rotas[i][j-1]][rotas[i][j]];
-            }
-            solucao.custo_total += p.matriz_custo[rotas[i][rotas[i].size() - 1]][0];
-            solucao.veiculos_usados++;
+            
+            custo_total += p.matriz_custo[rotas[i].back()][0];
+            rotas[i].push_back(0); // volta para o depósito
+            solucao.rotas.push_back(rotas[i]);
         }
+        solucao.custo_total = custo_total;
+        solucao.veiculos_usados = solucao.rotas.size();
         solucao.veiculos_disponiveis = p.qnt_veiculos - solucao.veiculos_usados;
         return solucao;
     }
 
-    void MelhorarSolucao(vector<Rota>& rotas){
-        int ind_rota_origem, ind_rota_destino;
+    void MelhorarSolucao(vector<vector<int>>& rotas){
         int custo_remocao, custo_insercao;
-        int estacao_a_mover;
-        bool melhorou = true;
-        int iter = 0;
+        int estacao_origem, estacao_destino;
 
-        while(melhorou && iter < 500){
-            melhorou = false;
-            iter++;
+        
+        for(int id_rota_origem=0; id_rota_origem < rotas.size(); id_rota_origem++){
+            for(int id_estacao_origem = 1; id_estacao_origem < (rotas[id_rota_origem].size() - 1); id_estacao_origem++){
+                estacao_origem = rotas[id_rota_origem][id_estacao_origem];
+                
+                
+                for(int id_rota_destino=0; id_rota_destino < rotas.size(); id_rota_destino++){
+                    for(int id_estacao_destino = 1; id_estacao_destino < rotas[id_rota_destino].size(); id_estacao_destino++){
+                        estacao_destino = rotas[id_rota_destino][id_estacao_destino];
 
-            ind_rota_origem = -1;
-            for(Rota& rota_origem : rotas){
-                ind_rota_origem++;
-    
-                for(int ind_estacao_a_mover = 1; ind_estacao_a_mover < rota_origem.estacoes.size() -1; ind_estacao_a_mover++){
-                    estacao_a_mover = rota_origem.estacoes[ind_estacao_a_mover];
-                    ind_rota_destino = -1;
-    
-                    for(Rota& rota_destino : rotas){
-                        ind_rota_destino++;
-    
-                        for(int i=1; i<rota_destino.estacoes.size() - 1; i++){
-    
-                            int estacao_destino = rota_destino.estacoes[i];
-                            int anterior_destino = rota_destino.estacoes[i - 1];
+                        
+                        if(id_rota_destino == id_rota_origem){
+                            if(estacao_origem == estacao_destino || estacao_origem == rotas[id_rota_destino][id_estacao_destino - 1]){
+                                continue;
+                            }
+                        }
+                        
+                        
+                        custo_remocao = -p.matriz_custo[rotas[id_rota_origem][id_estacao_origem - 1]][estacao_origem];
+                        custo_remocao -= p.matriz_custo[estacao_origem][rotas[id_rota_origem][id_estacao_origem + 1]];
+                        custo_remocao += p.matriz_custo[rotas[id_rota_origem][id_estacao_origem - 1]][rotas[id_rota_origem][id_estacao_origem + 1]];
+                        
+                        
+                        
+                        custo_insercao =  -p.matriz_custo[rotas[id_rota_destino][id_estacao_destino - 1]][estacao_destino];
+                        custo_insercao +=  p.matriz_custo[rotas[id_rota_destino][id_estacao_destino - 1]][estacao_origem];
+                        custo_insercao +=  p.matriz_custo[estacao_origem][estacao_destino];
 
-                            if (estacao_a_mover == estacao_destino || estacao_a_mover == anterior_destino)
-                                continue; // não insere na mesma posição ou adjacente
-    
-                            custo_remocao = - p.matriz_custo[rota_origem.estacoes[ind_estacao_a_mover - 1]][rota_origem.estacoes[ind_estacao_a_mover]]
-                                            - p.matriz_custo[rota_origem.estacoes[ind_estacao_a_mover]][rota_origem.estacoes[ind_estacao_a_mover + 1]]
-                                            + p.matriz_custo[rota_origem.estacoes[ind_estacao_a_mover - 1]][rota_origem.estacoes[ind_estacao_a_mover + 1]];
-    
-                            custo_insercao = + p.matriz_custo[anterior_destino][estacao_a_mover]
-                                             + p.matriz_custo[estacao_a_mover][estacao_destino]
-                                             - p.matriz_custo[anterior_destino][estacao_destino];
-    
-                            if((custo_insercao + custo_remocao) < 0){
+                        int delta = custo_remocao + custo_insercao;
+                        if(delta < 0){
 
-                                if(ind_rota_destino == ind_rota_origem){
-                                    Rota copia = rota_origem; // faz uma copia temporaria
-                                    copia.RemoveAt(ind_estacao_a_mover);
-                                    copia.InsertAt(i, estacao_a_mover);
-                                    if(VerificaDemanda(copia)){
-                                        rota_origem = copia;
-                                        // melhorou = true;
-                                        goto fim_iteracao;
-                                    }
-    
-                                }else{
-                                    Rota copia_origem = rota_origem;  
-                                    Rota copia_destino = rota_destino;
-    
-                                    copia_origem.RemoveAt(ind_estacao_a_mover);
-                                    copia_destino.InsertAt(i, estacao_a_mover);
+                            if(id_rota_origem == id_rota_destino){
+                                if(ReinsertionTest(rotas[id_rota_origem], id_estacao_origem, id_estacao_destino)){
+                                    // Reposiciona o elemento estacao_origem 
 
-                                    if(VerificaDemanda(copia_origem) && VerificaDemanda(copia_destino)){
-                                        rota_origem = copia_origem;
-                                        rota_destino = copia_destino;
-                                        // melhorou = true;
-                                        goto fim_iteracao;
+                                    rotas[id_rota_origem].erase(rotas[id_rota_origem].begin() + id_estacao_origem);
+                                    if(id_estacao_origem < id_estacao_destino){
+                                        rotas[id_rota_origem].insert(rotas[id_rota_origem].begin() + id_estacao_destino - 1, estacao_origem);
+                                    }else{
+                                        rotas[id_rota_origem].insert(rotas[id_rota_origem].begin() + id_estacao_destino, estacao_origem);
                                     }
                                 }
-    
+                            }else{
+                                if(RemovalTest(rotas[id_rota_origem], id_estacao_origem) && InsertionTest(rotas[id_rota_destino], id_estacao_destino, estacao_origem)){
+                                    // Retira o elemento estacao_origem da rota_origem, colocando-o na rota_destino
+
+                                    rotas[id_rota_origem].erase(rotas[id_rota_origem].begin() + id_estacao_origem);
+                                    rotas[id_rota_destino].insert(rotas[id_rota_destino].begin() + id_estacao_destino, estacao_origem);
+                                }
                             }
                         }
                     }
                 }
             }
-
-            fim_iteracao: ;
         }
-
-        rotas.erase(remove_if(rotas.begin(), rotas.end(),
-                              [](const Rota& r){ return r.estacoes.size() < 3; }),
-                    rotas.end());
     }
 
-    void PerturbacaoSwitch(vector<Rota>& rotas, int trocar_a_realizar){
+    void PerturbacaoSwitch(vector<vector<int>>& rotas, int trocar_a_realizar){
         int qtd_rotas = rotas.size();
         int id_rota_origem, id_rota_destino;
         int pos1, pos2;
 
+        id_rota_origem = id_rota_destino = 0;
         while(trocar_a_realizar--){
             if(qtd_rotas > 1){
                 id_rota_origem = rand() % qtd_rotas;
                 id_rota_destino = rand() % qtd_rotas;
-            }else{
-                id_rota_origem = id_rota_destino = 0;
             }
 
             // O range deve ser [1, rota.size() - 1], para nao incluir o galpao do inicio e do fim
-            pos1 = rand() % (rotas[id_rota_origem].estacoes.size()  -1);
-            pos2 = rand() % (rotas[id_rota_destino].estacoes.size() -1);
+            pos1 = rand() % (rotas[id_rota_origem].size()  -2);
+            pos2 = rand() % (rotas[id_rota_destino].size() -2);
 
             // Para evitar de ser índice 0, onde esta o galpao
             pos1++;
             pos2++;
 
-            swap(rotas[id_rota_origem].estacoes[pos1], rotas[id_rota_destino].estacoes[pos2]);
+            swap(rotas[id_rota_origem][pos1], rotas[id_rota_destino][pos2]);
         }
     }    
 
-    // void PerturbacaoRelocate(
-    //     vector<Rota>& rotas,
-    //     int trocas_a_realizar,
-    //     int qtd_el_trocados,
-    //     bool reverso = false
-    // ) {
-    //     while (trocas_a_realizar-- && !rotas.empty()) {
-    //         int qtd_rotas = rotas.size();
-    //         int id_rota_origem = rand() % qtd_rotas;
-    //         int id_rota_destino = rand() % qtd_rotas;
+    void PerturbacaoRelocate(
+        vector<Rota>& rotas,
+        int trocas_a_realizar,
+        int qtd_el_trocados,
+        bool reverso = false
+    ) {
+        while (trocas_a_realizar--) {
+            int qtd_rotas = rotas.size();
+            int id_rota_origem = rand() % qtd_rotas;
+            int id_rota_destino = rand() % qtd_rotas;
 
-    //         Rota& rota_origem = rotas[id_rota_origem];
-    //         Rota& rota_destino = rotas[id_rota_destino];
+            Rota& rota_origem = rotas[id_rota_origem];
+            Rota& rota_destino = rotas[id_rota_destino];
 
-    //         // precisa de espaço pra remover
-    //         if ((int)rota_origem.estacoes.size() <= qtd_el_trocados + 2) {
-    //             continue;
-    //         }
+            // precisa de espaço pra remover
+            if ((int)rota_origem.estacoes.size() <= qtd_el_trocados + 2) {
+                continue;
+            }
 
-    //         // intervalo válido de retirada (não inclui depósitos)
-    //         int id_max = (int)rota_origem.estacoes.size() - 1 - qtd_el_trocados;
-    //         int indice_retirada_inicio = RandomEntre(1, id_max - 1);
-    //         int indice_retirada_final = indice_retirada_inicio + qtd_el_trocados - 1;
+            // intervalo válido de retirada (não inclui depósitos)
+            int id_max = (int)rota_origem.estacoes.size() - 1 - qtd_el_trocados;
+            int indice_retirada_inicio = RandomEntre(1, id_max - 1);
+            int indice_retirada_final = indice_retirada_inicio + qtd_el_trocados - 1;
 
-    //         // índice de inserção válido (não depósitos)
-    //         int limite_insercao = (int)rota_destino.estacoes.size() - 1;
-    //         if (limite_insercao <= 1) continue;
-    //         int indice_onde_colocar = RandomEntre(1, limite_insercao - 1);
+            // índice de inserção válido (não depósitos)
+            int limite_insercao = (int)rota_destino.estacoes.size() - 1;
+            if (limite_insercao <= 1) continue;
+            int indice_onde_colocar = RandomEntre(1, limite_insercao - 1);
 
-    //         // pega o bloco
-    //         vector<int> bloco;
-    //         for (int i = indice_retirada_inicio; i <= indice_retirada_final; i++) {
-    //             bloco.push_back(rota_origem.estacoes[i]);
-    //         }
+            // pega o bloco
+            vector<int> bloco;
+            for (int i = indice_retirada_inicio; i <= indice_retirada_final; i++) {
+                bloco.push_back(rota_origem.estacoes[i]);
+            }
 
-    //         if (reverso) {
-    //             reverse(bloco.begin(), bloco.end());
-    //         }
+            if (reverso) {
+                reverse(bloco.begin(), bloco.end());
+            }
 
-    //         // remove no origem (sempre do mesmo índice, pq a cada remoção a lista encurta)
-    //         for (int i = indice_retirada_inicio; i <= indice_retirada_final; i++) {
-    //             rota_origem.RemoveAt(indice_retirada_inicio);
-    //         }
+            // remove no origem (sempre do mesmo índice, pq a cada remoção a lista encurta)
+            for (int i = indice_retirada_inicio; i <= indice_retirada_final; i++) {
+                rota_origem.RemoveAt(indice_retirada_inicio);
+            }
 
-    //         // se origem == destino e a remoção foi antes da inserção, ajusta
-    //         if (id_rota_origem == id_rota_destino &&
-    //             indice_onde_colocar > indice_retirada_inicio) {
-    //             indice_onde_colocar -= bloco.size();
-    //         }
+            // se origem == destino e a remoção foi antes da inserção, ajusta
+            if (id_rota_origem == id_rota_destino &&
+                indice_onde_colocar > indice_retirada_inicio) {
+                indice_onde_colocar -= bloco.size();
+            }
 
-    //         // insere no destino
-    //         for (int i = 0; i < (int)bloco.size(); i++) {
-    //             rota_destino.InsertAt(indice_onde_colocar + i, bloco[i]);
-    //         }
+            // insere no destino
+            for (int i = 0; i < (int)bloco.size(); i++) {
+                rota_destino.InsertAt(indice_onde_colocar + i, bloco[i]);
+            }
 
-    //         // remove rota inútil (só depósitos)
-    //         if ((int)rota_origem.estacoes.size() < 3) {
-    //             rotas.erase(rotas.begin() + id_rota_origem);
-    //         }
-    //     }
-    // }
+            // remove rota inútil (só depósitos)
+            if ((int)rota_origem.estacoes.size() < 3) {
+                rotas.erase(rotas.begin() + id_rota_origem);
+            }
+        }
+    }
 
     /**
      * @brief Perturbação que cria uma nova rota, movendo elementos de outras rotas para ela
@@ -297,94 +251,99 @@
      * @param rotas Array de rotas que serao perturbadas
      * @param qtd_elementos Quantidade de elementos a serem movidos para a nova rota
      */
-    void PerturbacaoNewRoute(vector<Rota>& rotas, int qtd_elementos){
+    void PerturbacaoNewRoute(vector<vector<int>>& rotas, int qtd_elementos){
         // Tal perturbacao nao eh possivel se ja estivermos usando todos os veiculos
         if(p.qnt_veiculos <= rotas.size())
             return;
 
         vector<int> elementos_retirados(qtd_elementos);
-        qtd_elementos = min(qtd_elementos, (int)(p.qnt_estacoes - rotas.size())); // garante um teto maximo
         int aux = 0;
 
         while(qtd_elementos--){
             int id_rota_origem = rand() % rotas.size();
-            int id_max = rotas[id_rota_origem].estacoes.size() - 2;
+            if (rotas[id_rota_origem].size() < 3){
+                qtd_elementos++; // tenta de novo
+                continue;
+            }
+            int id_max = rotas[id_rota_origem].size() - 2;
 
             if(id_max < 1) id_max = 1;
 
             int indice_retirada = RandomEntre(1, id_max);
-            elementos_retirados[aux++] = rotas[id_rota_origem].estacoes[indice_retirada];
-            rotas[id_rota_origem].RemoveAt(indice_retirada);
+            elementos_retirados[aux++] = rotas[id_rota_origem][indice_retirada];
+            rotas[id_rota_origem].erase(rotas[id_rota_origem].begin() + indice_retirada);
 
             // Se a rota ficar sem elementos, remove ela
-            if(rotas[id_rota_origem].estacoes.size() < 3){
+            if(rotas[id_rota_origem].size() < 3){
                 rotas.erase(rotas.begin() + id_rota_origem);
             }
         }
 
         // Cria a nova rota
-        Rota nova_rota;
+        vector<int> nova_rota;
+        nova_rota.push_back(0); // depósito inicial
         for(int i=0; i<aux; i++){
-            nova_rota.InsertEnd(elementos_retirados[i]);
+            nova_rota.push_back(elementos_retirados[i]);
         }
+        nova_rota.push_back(0); // depósito final
         rotas.push_back(nova_rota);
     }
 
-    void PerturbacaoHalfSwap(vector<Rota>& rotas, bool reverso = false){
+    void PerturbacaoHalfSwap(vector<vector<int>>& rotas, bool reverso = false){
         int rota_alvo;
         
         do{
             rota_alvo = rand() % rotas.size();
-        }while(rotas[rota_alvo].estacoes.size() <= 3); // garante que a rota tenha ao menos 2 elementos para trocar
+        }while(rotas[rota_alvo].size() <= 3); // garante que a rota tenha ao menos 2 elementos para trocar
         
-        int metade = 1 + (rotas[rota_alvo].estacoes.size() - 2) / 2;
+        int metade = 1 + (rotas[rota_alvo].size() - 2) / 2;
 
         if(!reverso){
             int i = 1, j = metade ;
             
             while (i < metade) {
-                swap(rotas[rota_alvo].estacoes[i], rotas[rota_alvo].estacoes[j]);
+                swap(rotas[rota_alvo][i], rotas[rota_alvo][j]);
                 i++;
                 j++;
             }
         }else{
-            int i = 1, j = rotas[rota_alvo].estacoes.size() - 2;
+            int i = 1, j = rotas[rota_alvo].size() - 2;
 
             while (i < j) {
-                swap(rotas[rota_alvo].estacoes[i], rotas[rota_alvo].estacoes[j]);
+                swap(rotas[rota_alvo][i], rotas[rota_alvo][j]);
                 i++;
                 j--;
             }
         }
     }
 
-    void PerturbacaoHalfSwapRoutes(vector<Rota>& rotas){
+    void PerturbacaoHalfSwapRoutes(vector<vector<int>>& rotas){
         if(rotas.size() < 2) return; // precisa de ao menos 2 rotas
 
         int rota1, rota2;
         do{
             rota1 = rand() % rotas.size();
             rota2 = rand() % rotas.size();
-        }while(rota1 == rota2 || rotas[rota1].estacoes.size() <= 3 || rotas[rota2].estacoes.size() <= 3);
+        }while(rota1 == rota2 || rotas[rota1].size() <= 3 || rotas[rota2].size() <= 3);
 
-        int metade1 = 1 + (rotas[rota1].estacoes.size() - 2) / 2;
-        int metade2 = 1 + (rotas[rota2].estacoes.size() - 2) / 2;
+        int metade1 = 1 + (rotas[rota1].size() - 2) / 2;
+        int metade2 = 1 + (rotas[rota2].size() - 2) / 2;
 
         int i = 1, j = 1;
 
         while (i < metade1 && j < metade2) {
-            swap(rotas[rota1].estacoes[i], rotas[rota2].estacoes[j]);
+            swap(rotas[rota1][i], rotas[rota2][j]);
             i++;
             j++;
         }
     }
 
 
-    void Perturbar(vector<Rota>& rotas, int opcao, int nivel_perturbacao){
+    void Perturbar(vector<vector<int>>& rotas, int opcao, int nivel_perturbacao){
         switch (opcao)
         {
             case 1:
-                PerturbacaoSwitch(rotas, 3*nivel_perturbacao);
+                PerturbacaoSwitch(rotas, 1 < nivel_perturbacao);
                 break;
             case 2:
                 PerturbacaoNewRoute(rotas, 2 * nivel_perturbacao);
@@ -398,25 +357,32 @@
             case 5:
                 PerturbacaoHalfSwapRoutes(rotas);
                 break;
+            // case 6:
+            //     PerturbacaoRelocate(rotas, 2 * nivel_perturbacao, 1, false);
+            //     break;
+            // case 7:
+            //     PerturbacaoRelocate(rotas, 2 * nivel_perturbacao, 1, true);
+            //     break;
             default:
                 break;
         }
     }
 
-    void ILS(vector<Rota>& rotas, int max_iteracoes = 2000, int max_sem_melhora = 200){
+    void ILS(vector<vector<int>>& rotas, int max_iteracoes = 10000, int max_sem_melhora = 1000){
         srand(time(NULL));
         int iteracoes = 0, sem_melhora = 0;
         int melhor_custo = CustoTotal(rotas), custo_teste;
 
         while(iteracoes < max_iteracoes && sem_melhora < max_sem_melhora){
             int opcao_perturbacao = 1 + rand() % 5;
-            int nivel_perturbacao = (sem_melhora / (max_sem_melhora / 5)) + 1;
+            int nivel_perturbacao = (sem_melhora / (max_sem_melhora / 7)) + 1;
 
-            vector<Rota> rotas_copia = rotas;
+            vector<vector<int>> rotas_copia = rotas;
             Perturbar(rotas_copia, opcao_perturbacao, nivel_perturbacao);
             MelhorarSolucao(rotas_copia);
 
             custo_teste = CustoTotal(rotas_copia);
+            // cout << " - Custo teste: " << custo_teste << endl;
 
             if (custo_teste < melhor_custo && VerificaDemandas(rotas_copia)){
                 rotas = move(rotas_copia);

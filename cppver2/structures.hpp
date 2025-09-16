@@ -113,8 +113,6 @@
             }
 
             void PrintRota() const {
-                cout << "Custo total (d1): " << custo_total_d1 << endl;
-                cout << "Custo total (d2): " << custo_total_d2 << endl;
                 for(const int& e : estacoes){
                     cout << e << " ";
                 }
@@ -167,8 +165,11 @@
             void RemoveAt(int indice){
                 int n = (int) this->estacoes.size();
 
-                if(indice <= 0 || indice >= n-1)
+                if(indice <= 0 || indice >= n-1){
+                    cout << "Tentou remover indice " << indice << " de rota com tamanho " << n << endl;
+                    this->PrintRota();
                     throw runtime_error("Remocao invalida (Garagem)");
+                }
 
                 // custo na direcao 1
                 int custo =   p.matriz_custo[this->estacoes[indice-1]][this->estacoes[indice+1]]
@@ -195,16 +196,16 @@
             int custo_total;
             int veiculos_usados;
             int veiculos_disponiveis;
-            vector<Rota> rotas;
+            vector<vector<int>> rotas;
 
             void SalvarSolucao(string nome_arquivo) const {
                 ofstream output(nome_arquivo);
 
                 output << custo_total << endl;
                 output << veiculos_usados << endl;
-                for (const Rota &r : rotas)
+                for (const vector<int>& r : rotas)
                 {
-                    for (const int &e : r.estacoes)
+                    for (const int &e : r)
                     {
                         output << e << " ";
                     }
