@@ -21,29 +21,35 @@ interface ProcessingPanelProps {
   inputData: any;
 }
 
+let colorIndex = 0;
+
 export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
   const [currentStep, setCurrentStep] = useState<string>("waiting");
   const [results, setResults] = useState<any>(null);
   const [statistics, setStatistics] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [colorUsed, setColorUsed] = useState<number>(0);
 
   const colors = [
-    "hsl(200, 70%, 50%)",
-    "hsl(260, 70%, 50%)",
-    "hsl(320, 70%, 50%)",
-    "hsl(20, 70%, 50%)",
-    "hsl(80, 70%, 50%)",
-    "hsl(140, 70%, 50%)",
-    "hsl(340, 70%, 50%)",
-    "hsl(110, 70%, 50%)",
-    "hsl(170, 70%, 50%)",
-    "hsl(230, 70%, 50%)"
+    "#FF5733", // vermelho
+    "#33FF57", // verde
+    "#3357FF", // azul
+    "#F1C40F", // amarelo
+    "#9B59B6", // roxo
+    "#E67E22", // laranja
+    "#1ABC9C", // turquesa
+    "#E74C3C", // vermelho escuro
+    "#2ECC71", // verde escuro
+    "#3498DB", // azul escuro
+    "#F39C12", // amarelo escuro
+    "#8E44AD", // roxo escuro
+    "#D35400", // laranja escuro
+    "#16A085", // verde azulado
+    "#C0392B"  // vermelho mais escuro
   ]
 
-  const getNextColor = () => {
-    const color = colors[colorUsed];
-    setColorUsed((prev => (prev + 1) % colors.length));
+  async function fetchColor() {
+    const color = colors[colorIndex];
+    colorIndex = (colorIndex + 1) % colors.length;
     return color;
   }
 
@@ -90,30 +96,34 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
 
     fetch(`http://localhost:4000/${rota}`)
       .then(res => res.json())
-      .then(data => {
+      .then(async data => {
         console.log("Dados recebidos do backend:", data);
 
-        let nearestNeighborRoutes = data.vizinho_mais_proximo.map((route: any, id: number) => ({
-          id: id,
-          nodes: route,
-          color: getNextColor()
-        }));
-        let cheapestInsertionRoutes = data.insercao_mais_barata.map((route: any, id: number) => ({
-          id: id,
-          nodes: route,
-          color: getNextColor()
-        }));
+        const nearestNeighborRoutes = await Promise.all(
+          data.vizinho_mais_proximo.map(async (route: any, id: number) => ({
+            id: id,
+            nodes: route,
+            color: await fetchColor()
+          }))
+        );
+        const cheapestInsertionRoutes = await Promise.all(
+          data.insercao_mais_barata.map(async (route: any, id: number) => ({
+            id: id,
+            nodes: route,
+            color: await fetchColor()
+          }))
+        );
 
         const nearestNeighborResult = {
           totalCost: data.custo_vizinho_mais_proximo,
-          executionTime: data.tempo_vizinho_mais_proximo, // Convertendo ms para s
-          gapIndex: data.gap_vizinho_mais_proximo // Novo campo de gap
+          executionTime: data.tempo_vizinho_mais_proximo, 
+          gapIndex: data.gap_vizinho_mais_proximo
         };
 
         const cheapestInsertionResult = {
           totalCost: data.custo_insercao_mais_barata,
-          executionTime: data.tempo_insercao_mais_barata, // Convertendo ms para s
-          gapIndex: data.gap_insercao_mais_barata // Novo campo de gap
+          executionTime: data.tempo_insercao_mais_barata,
+          gapIndex: data.gap_insercao_mais_barata
         };
 
         const resultData = {
@@ -135,7 +145,7 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
             algorithm: stepId,
             baseMethod: "inserção mais barata",
             ...cheapestInsertionResult,
-            timestamp: Date.now() + 1
+            timestamp: Date.now() 
           }
         ]);
         setIsProcessing(false);

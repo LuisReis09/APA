@@ -396,6 +396,37 @@
         return false;
     }
 
+    // bool TestaRota(const vector<int>& rota, int estacao){
+    //     if(rota.size() < 2) return true; // rota vazia, sempre ok
+    //     int prefix = p.demandas[rota[1] - 1];
+    //     int max = prefix, min = prefix;
+
+    //     for(size_t i = 2; i < rota.size() - 1; i++){
+    //         if(rota[i] == estacao) return false; // estação já está na rota
+
+    //         prefix += p.demandas[rota[i] - 1];
+    //         if(prefix > max)
+    //             max = prefix;
+    //         else if(prefix < min)
+    //             min = prefix;
+    //     }
+
+    //     prefix += p.demandas[estacao - 1];
+    //     if(prefix > max)
+    //         max = prefix;
+    //     else if(prefix < min)
+    //         min = prefix;
+
+    //     min = -min;
+    //     max = p.capacidade_max - max;
+    //     if(max < min || max < 0 || min > p.capacidade_max) return false;
+
+    //     for(int i = max; i >= min && i >= 0; i--)
+    //         if(i <= p.capacidade_max) return true;
+
+    //     return false;
+    // }
+
     bool InsertionTest(const vector<int>& rota, int posicao_destino, int estacao){
         int prefix = 0;
         int min = p.demandas[rota[1] - 1];
@@ -562,7 +593,7 @@
 
 vector<int> transformarEmVector(LinkedList linked_list)
 {
-    No_LinkedList *aux = linked_list.rota_i->proximo;
+    No *aux = linked_list.rota_i->proximo;
     vector<int> resultado = {0};
 
     while (aux->estacao)

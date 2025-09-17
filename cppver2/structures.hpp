@@ -235,6 +235,8 @@
             int veiculos_disponiveis;
             vector<vector<int>> rotas;
 
+            Solucao() : custo_total(0), veiculos_usados(0), veiculos_disponiveis(0) {}
+
             void SalvarSolucao(string nome_arquivo) const {
                 ofstream output(nome_arquivo);
 
@@ -296,15 +298,16 @@
     };
 
     class LinkedList{
-    No *rota_i; // Início da lista encadeada
+    public:
+        No *rota_i; // Início da lista encadeada
         No *rota_f; // Fim da lista encadeada
         int custo_total_d1, custo_total_d2;
         int rotaTam; // Número de estações na rota (excluindo os depósitos)
-        DirecaoRota direcao_atual;
 
+    public:
         // Construtor padrão
         LinkedList() : custo_total_d1(0), custo_total_d2(0),
-                rotaTam(0), direcao_atual(INICIO_FIM)
+                rotaTam(0)
         {
             rota_i = new No(0); // Nó inicial (depósito)
             rota_f = new No(0); // Nó final (depósito)
@@ -318,7 +321,6 @@
             custo_total_d1 = other.custo_total_d1;
             custo_total_d2 = other.custo_total_d2;
             rotaTam = other.rotaTam;
-            direcao_atual = other.direcao_atual;
             rota_i = copiaLista(other.rota_i, other.rota_f, &rota_f);
         }
 
@@ -333,7 +335,6 @@
             custo_total_d1 = other.custo_total_d1;
             custo_total_d2 = other.custo_total_d2;
             rotaTam = other.rotaTam;
-            direcao_atual = other.direcao_atual;
             rota_i = copiaLista(other.rota_i, other.rota_f, &rota_f);
 
             return *this;
@@ -427,6 +428,63 @@
 
             // Agora temos a estação inserida e o novo custo atualizado
         }
+
+        // Destrutor
+    ~LinkedList()
+    {
+        limpa();
     }
+
+private:
+    // Copia profunda da lista encadeada
+    No *copiaLista(No *inicio, No *fim, No **novoFim)
+    {
+        if (!inicio)
+        {
+            *novoFim = nullptr;
+            return nullptr;
+        }
+
+        No *novoInicio = new No(*inicio); // construtor de cópia de No
+        novoInicio->anterior = nullptr;
+
+        No *atualNovo = novoInicio;
+        No *atualVelho = inicio->proximo;
+
+        while (atualVelho)
+        {
+            No *novoNo = new No(*atualVelho); // copia todos os campos
+            atualNovo->proximo = novoNo;
+            novoNo->anterior = atualNovo;
+
+            atualNovo = novoNo;
+
+            if (atualVelho == fim)
+            {
+                *novoFim = atualNovo;
+                break;
+            }
+
+            atualVelho = atualVelho->proximo;
+        }
+
+        return novoInicio;
+    }
+
+        // Libera memória da lista
+        void limpa()
+        {
+            No *atual = rota_i;
+            while (atual)
+            {
+                No *prox = atual->proximo;
+                delete atual;
+                atual = prox;
+            }
+            rota_i = rota_f = nullptr;
+            rotaTam = 0;
+            custo_total_d1 = custo_total_d2 = 0;
+        }
+    };
 
 #endif

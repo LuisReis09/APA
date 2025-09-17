@@ -1,12 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, GraduationCap, Calendar, MapPin } from "lucide-react";
+import { Users, GraduationCap, Calendar, MapPin, Github } from "lucide-react";
 
 export const AboutProject = () => {
   const teamMembers = [
-    "Josué Guedes",
-    "Herick José", 
-    "Luis Reis"
+    { nome: "Josué Guedes", github: "JosueGuedes"},
+    { nome: "Herick José", github: "Herickjf"}, 
+    { nome: "Luis Reis", github: "LuisReis09"}
   ];
 
   return (
@@ -56,13 +56,13 @@ export const AboutProject = () => {
 
           <div className="pt-4 border-t">
             <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Users className="w-4 h-4" />
+              <Github className="w-5 h-5 mt-0.5 text-pink-600"/>
               Equipe de Desenvolvimento
             </h4>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 cursor-pointer">
               {teamMembers.map((member, index) => (
-                <Badge key={index} variant="secondary">
-                  {member}
+                <Badge key={index} variant="secondary" onClick={() => window.open("https://github.com/" + member.github, "_blank")}>
+                  {member.nome}
                 </Badge>
               ))}
             </div>
@@ -70,7 +70,7 @@ export const AboutProject = () => {
         </CardContent>
       </Card>
 
-      <Card className="shadow-card bg-gradient-accent text-accent-foreground">
+      <Card className="shadow-card bg-purple-700 text-accent-foreground">
         <CardContent className="pt-6">
           <div className="text-center space-y-2">
             <h3 className="font-semibold">Objetivo do Projeto</h3>

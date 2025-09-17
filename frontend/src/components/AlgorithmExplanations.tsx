@@ -107,7 +107,7 @@ export const AlgorithmExplanations = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-card bg-gradient-accent text-accent-foreground">
+      <Card className="shadow-card bg-purple-700 text-accent-foreground">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="w-5 h-5" />

@@ -13,7 +13,6 @@ interface Statistic {
   algorithm: string;
   baseMethod: string;
   totalCost: number;
-  totalLoad: number;
   executionTime: number;
   gapIndex: number;
   timestamp: number;
@@ -25,7 +24,9 @@ interface StatisticsPanelProps {
 
 export const StatisticsPanel = ({ statistics }: StatisticsPanelProps) => {
   // Ordenar estatísticas por custo total (melhor primeiro)
-  const sortedStats = [...statistics].sort((a, b) => a.totalCost - b.totalCost);
+  const sortedStats = [...statistics].sort((a, b) => {
+    return Number(a.totalCost) - Number(b.totalCost);
+  });
 
   const getAlgorithmName = (algorithm: string, baseMethod: string) => {
     const names: Record<string, string> = {
@@ -78,12 +79,8 @@ export const StatisticsPanel = ({ statistics }: StatisticsPanelProps) => {
                       Custo: {stat.totalCost.toFixed(2)}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Package className="w-3 h-3" />
-                      Carga: {stat.totalLoad.toFixed(2)}
-                    </span>
-                    <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {stat.executionTime.toFixed(3)}s
+                      {stat.executionTime}ms
                     </span>
                   </div>
                 </div>

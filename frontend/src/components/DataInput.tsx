@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Upload, FileText, AlertCircle, BookmarkCheck } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AboutProject } from "./AboutProject";
+import { Form } from "react-router-dom";
 
 interface DataInputProps {
   onDataSubmit: (data: any) => void;
@@ -33,19 +34,15 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
     reader.onload = (event) => {
       const input = event.target?.result as string;
       
-      console.log(input)
 
       setFile(selectedFile);
       
       if (selectedFile.name.endsWith('.txt')) {
-        fetch("api/carregarArquivo", {
+        const formData = new FormData();
+        formData.append("input", input);
+        fetch("http://localhost:4000/carregarArquivo", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            "input": input
-          })
+          body: formData
         })
         .then(response => {
           return response.json();
@@ -54,7 +51,12 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
           if(!data.success){
             throw new Error(data.message);
           }else{
-            setError(data.message);
+           onDataSubmit({
+            file: input,
+            valor_otimo: optimalValue ? parseFloat(optimalValue) : null,
+            max_iteracoes: parseInt(maxIterations),
+            max_sem_melhora: parseInt(maxIterationsWithoutImprovement)
+           });
           }
         })
         .catch(error => {
@@ -98,19 +100,16 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
       maxIterationsWithoutImprovement: parseInt(maxIterationsWithoutImprovement)
     };
 
+    const formData = new FormData();
+    formData.append("valor_otimo", optimalValue || null);
+    formData.append("max_iteracoes", maxIterations || "2000");
+    formData.append("max_sem_melhora", maxIterationsWithoutImprovement || "200");
+
     fetch("http://localhost:4000/configuracoes", {
       method: "POST",
-      headers: {
-          "Content-Type": "application/json"
-        },
-      body: JSON.stringify({
-        valor_otimo: data.optimalValue || null,
-        max_iteracoes: data.maxIterations || 2000,
-        max_sem_melhora: data.maxIterationsWithoutImprovement || 200
-      })
+      body: formData
     })
     .then(response => {
-      if (!response.ok) throw new Error("Erro ao enviar configurações");
       return response.json();
     })
     .then(data => {

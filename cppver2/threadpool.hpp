@@ -149,6 +149,11 @@
                 pthread_mutex_unlock(&mtx);
             }
 
+            void WaitAllThreads(){
+                for(size_t i=0; i<threads.size(); i++){
+                    pthread_join(threads[i], NULL);
+                }
+            }
     
             void StopAllThreads(){
                 pthread_mutex_lock(&mtx);
@@ -171,6 +176,16 @@
                 T* var = static_cast<T*>(shared_var);
                 pthread_mutex_unlock(&sh_mtx);
                 return var;
+            }
+
+            void lock(){
+                pthread_mutex_lock(&sh_mtx);
+                return;
+            }
+
+            void release(){
+                pthread_mutex_unlock(&sh_mtx);
+                return;
             }
 
             ~ThreadPool(){
