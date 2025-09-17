@@ -6,7 +6,7 @@
 #include <vector>
 #include "structures.hpp"
 #include "utils.hpp"
-#include "threadpool.hpp"
+// #include "threadpool.hpp"
 #include <time.h>
 #include <map>
 #include <functional>
@@ -244,13 +244,14 @@ void MelhorarSolucao(vector<vector<int>> &rotas, int custo_atual, int iter = 1)
                 {
                     // Se for a mesma rota e estivermos analisando a troca do mesmo termo
                     // Ou de um termo de origem e o seu anterior equivalente na outra rota, pula.
-                    if (id_rota_origem == id_rota_destino && (id_estacao_origem == id_estacao_destino || id_estacao_origem == id_estacao_destino - 1))
-                        continue;
-
+                    
                     // Define estações de destino analisadas
                     est2_anterior = rotas[id_rota_destino][id_estacao_destino - 1];
                     est2 = rotas[id_rota_destino][id_estacao_destino];
                     est2_proximo = rotas[id_rota_destino][id_estacao_destino + 1];
+                    
+                    if (est1 == est2)
+                        continue;
 
                     int custo_teste = custo_atual;
 
@@ -1086,86 +1087,86 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melh
 }
 
 // Struct auxiliar para uso das threads que carrega os valores dos parametros
-struct ThreadData
-{
-    int thread_id;
-    vector<vector<int>> &rotas;
-    int max_iteracoes;
-    int max_sem_melhora;
-    int &melhor_custo;
-    ThreadPool &pool;
+// struct ThreadData
+// {
+//     int thread_id;
+//     vector<vector<int>> &rotas;
+//     int max_iteracoes;
+//     int max_sem_melhora;
+//     int &melhor_custo;
+//     ThreadPool &pool;
 
-    ThreadData(int id,
-               vector<vector<int>> &r,
-               int maxIt,
-               int maxNoImprove,
-               int &custo,
-               ThreadPool &p)
-        : thread_id(id),
-          rotas(r),
-          max_iteracoes(maxIt),
-          max_sem_melhora(maxNoImprove),
-          melhor_custo(custo),
-          pool(p) {}
-};
+//     ThreadData(int id,
+//                vector<vector<int>> &r,
+//                int maxIt,
+//                int maxNoImprove,
+//                int &custo,
+//                ThreadPool &p)
+//         : thread_id(id),
+//           rotas(r),
+//           max_iteracoes(maxIt),
+//           max_sem_melhora(maxNoImprove),
+//           melhor_custo(custo),
+//           pool(p) {}
+// };
 
-/**
- * @brief Algoritmo ILS em thread individual, parametros a seguir devem estar dentro de um struct ThreadData
- * ---
- * @param rotas Vetor de vetor de inteiros. Rotas de uma dada solução
- * @param max_iteracoes Máximo de iterações que o ILS deve executar antes de parar de vez.
- * @param max_sem_melhora Máximo de iterações que o ILS tolera sem melhorar o custo encontrado.
- * @param melhor_custo Apontador ou endereço para inteiro do melhor custo
- * @param thread_id Identificador da thread executante
- * @param pool Endereço para o pool de threads envolvendo essa thread
- * ---
- */
-void ThreadILS(void *data)
-{
-    ThreadData *threadData = (ThreadData *)data;
-    srand(time(NULL) + threadData->thread_id); // seed diferente para cada thread
-    cout << "[Thread " << threadData->thread_id << "] Iniciando ILS..." << endl;
+// /**
+//  * @brief Algoritmo ILS em thread individual, parametros a seguir devem estar dentro de um struct ThreadData
+//  * ---
+//  * @param rotas Vetor de vetor de inteiros. Rotas de uma dada solução
+//  * @param max_iteracoes Máximo de iterações que o ILS deve executar antes de parar de vez.
+//  * @param max_sem_melhora Máximo de iterações que o ILS tolera sem melhorar o custo encontrado.
+//  * @param melhor_custo Apontador ou endereço para inteiro do melhor custo
+//  * @param thread_id Identificador da thread executante
+//  * @param pool Endereço para o pool de threads envolvendo essa thread
+//  * ---
+//  */
+// void ThreadILS(void *data)
+// {
+//     ThreadData *threadData = (ThreadData *)data;
+//     srand(time(NULL) + threadData->thread_id); // seed diferente para cada thread
+//     cout << "[Thread " << threadData->thread_id << "] Iniciando ILS..." << endl;
 
-    int iteracoes = 0, sem_melhora = 0, custo_teste;
+//     int iteracoes = 0, sem_melhora = 0, custo_teste;
 
-    while (iteracoes < threadData->max_iteracoes && sem_melhora < threadData->max_sem_melhora)
-    {
-        int opcao_perturbacao = 1 + rand() % 7;
-        int nivel_perturbacao = (sem_melhora / (threadData->max_sem_melhora / 6)) + 2;
+//     while (iteracoes < threadData->max_iteracoes && sem_melhora < threadData->max_sem_melhora)
+//     {
+//         int opcao_perturbacao = 1 + rand() % 7;
+//         int nivel_perturbacao = (sem_melhora / (threadData->max_sem_melhora / 6)) + 2;
 
-        threadData->pool.lock();
-        vector<vector<int>> rotas_copia = threadData->rotas;
-        threadData->pool.release();
+//         threadData->pool.lock();
+//         vector<vector<int>> rotas_copia = threadData->rotas;
+//         threadData->pool.release();
 
-        Perturbar(rotas_copia, opcao_perturbacao, nivel_perturbacao);
-        cout << "perturbou" << endl;
+//         Perturbar(rotas_copia, opcao_perturbacao, nivel_perturbacao);
+//         cout << "perturbou" << endl;
 
-        MelhorarSolucao(rotas_copia, CustoTotal(rotas_copia));
-        cout << "melhorou" << endl;
+//         MelhorarSolucao(rotas_copia, CustoTotal(rotas_copia));
+//         cout << "melhorou" << endl;
 
-        VNDIntraInter(rotas_copia);
-        cout << "vnd intra inter" << endl;
+//         VNDIntraInter(rotas_copia);
+//         cout << "vnd intra inter" << endl;
 
-        int custo_teste = CustoTotal(rotas_copia);
+//         int custo_teste = CustoTotal(rotas_copia);
 
-        threadData->pool.lock();
-        if (custo_teste < threadData->melhor_custo && VerificaDemandas(rotas_copia))
-        {
-            threadData->rotas = move(rotas_copia);
-            threadData->melhor_custo = custo_teste;
-            sem_melhora = 0;
-            cout << "[Thread " << threadData->thread_id << "] Melhora! Novo custo: " << threadData->melhor_custo << endl;
-        }
-        else
-        {
-            sem_melhora++;
-        }
-        threadData->pool.release();
+//         threadData->pool.lock();
+//         if (custo_teste < threadData->melhor_custo && VerificaDemandas(rotas_copia))
+//         {
+//             threadData->rotas = move(rotas_copia);
+//             threadData->melhor_custo = custo_teste;
+//             sem_melhora = 0;
+//             cout << "[Thread " << threadData->thread_id << "] Melhora! Novo custo: " << threadData->melhor_custo << endl;
+//         }
+//         else
+//         {
+//             sem_melhora++;
+//         }
+//         threadData->pool.release();
 
-        iteracoes++;
-    }
+//         iteracoes++;
+//     }
 
-    cout << "[Thread " << threadData->thread_id << "] Finalizando." << endl;
-}
+//     cout << "[Thread " << threadData->thread_id << "] Finalizando." << endl;
+// }
 
 #endif
