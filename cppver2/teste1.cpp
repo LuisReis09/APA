@@ -7,22 +7,28 @@ using namespace std;
 
 Problema p("../exemplos/instancia1.txt", true);
 
-int main(){
+int main()
+{
     cout << "====== Teste de Metodos ======" << endl;
     Solucao s = VizinhoMaisProximo();
     s.custo_total = CustoTotal(s.rotas);
 
-    if(VerificaSolucao(s.rotas, true)){
+    if (VerificaSolucao(s.rotas, true))
+    {
         cout << "Solucao VALIDA" << endl;
         cout << "Custo: " << s.custo_total << endl;
         cout << "Veiculos usados: " << s.rotas.size() << endl;
-        for(const vector<int>& r : s.rotas){
-            for(const int& e : r){
+        for (const vector<int> &r : s.rotas)
+        {
+            for (const int &e : r)
+            {
                 cout << e << " ";
             }
             cout << endl;
         }
-    }else{
+    }
+    else
+    {
         cout << "Solucao INVALIDA" << endl;
     }
 
@@ -50,37 +56,47 @@ int main(){
     VNDIntraInter(s.rotas);
     s.custo_total = CustoTotal(s.rotas);
 
-    if(VerificaSolucao(s.rotas, true)){
+    if (VerificaSolucao(s.rotas, true))
+    {
         cout << "Solucao VALIDA" << endl;
         cout << "Custo: " << s.custo_total << endl;
         cout << "Veiculos usados: " << s.rotas.size() << endl;
-        for(const vector<int>& r : s.rotas){
-            for(const int& e : r){
+        for (const vector<int> &r : s.rotas)
+        {
+            for (const int &e : r)
+            {
                 cout << e << " ";
             }
             cout << endl;
         }
         s.SalvarSolucao("solucao_teste_VND1.txt");
-    }else{
+    }
+    else
+    {
         cout << "Solucao INVALIDA" << endl;
     }
-    
+
     cout << "====== ILS ======" << endl;
     ILS(s.rotas);
     s.custo_total = CustoTotal(s.rotas);
-    
-    if(VerificaSolucao(s.rotas, true)){
+
+    if (VerificaSolucao(s.rotas, true))
+    {
         cout << "Solucao VALIDA" << endl;
         cout << "Custo: " << s.custo_total << endl;
         cout << "Veiculos usados: " << s.rotas.size() << endl;
-        for(const vector<int>& r : s.rotas){
-            for(const int& e : r){
+        for (const vector<int> &r : s.rotas)
+        {
+            for (const int &e : r)
+            {
                 cout << e << " ";
             }
             cout << endl;
         }
         s.SalvarSolucao("solucao_teste_ILS1.txt");
-    }else{
+    }
+    else
+    {
         cout << "Solucao INVALIDA" << endl;
     }
 
