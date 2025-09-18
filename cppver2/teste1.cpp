@@ -6,7 +6,7 @@
 
 using namespace std;
 
-Problema p("../exemplos/instancia1.txt", true);
+Problema p("../exemplos/instancia3.txt", true);
 
 int main()
 {
@@ -56,7 +56,7 @@ int main()
     // }
 
     cout << "====== VND 2 ======" << endl;
-    VND2(s.rotas);
+    VNDIntraInter(s.rotas);
     s.custo_total = CustoTotal(s.rotas);
 
     if (VerificaSolucao(s.rotas, true))
@@ -102,6 +102,12 @@ int main()
     {
         cout << "Solucao INVALIDA" << endl;
     }
+
+    VNDIntraInter(s.rotas);
+    s.custo_total = CustoTotal(s.rotas);
+
+    cout << "Custo Ultimate: " << s.custo_total << endl;
+    s.SalvarSolucao("solucao_ultimate.txt");
 
     return 0;
 }

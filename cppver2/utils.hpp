@@ -348,6 +348,7 @@ bool InsertionTest(const vector<int> &rota, int posicao_destino, int estacao)
             else if (prefix < min)
                 min = prefix;
         }
+        if(rota[i] == 0) continue;
         //  acumula e verifica a adicao da demanda
         prefix += p.demandas[rota[i] - 1];
 
@@ -387,6 +388,8 @@ bool RemovalTest(const vector<int>& rota, int posicao_original){
         //  acumula e verifica a adicao da demanda
         prefix += p.demandas[rota[i] - 1];
 
+        if(rota[i] == 0) continue;
+
         if(prefix > max)
             max = prefix;
         else if(prefix < min)
@@ -425,6 +428,8 @@ bool ReinsertionTest(const vector<int>& rota, int posicao_original, int posicao_
             else if(prefix < min)
                 min = prefix;
         }
+
+        if(rota[i] == 0) continue;
 
         //  acumula e verifica a adicao da demanda
         prefix += p.demandas[rota[i] - 1];
