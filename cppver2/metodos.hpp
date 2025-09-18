@@ -1465,6 +1465,12 @@ int VNDReinsertion(vector<vector<int>>& rotas, int custo_antigo){
         }
     }
 
+    for(int i = rotas.size() - 1; i >= 0; i--){
+        if(rotas[i].size() < 3){
+            rotas.erase(rotas.begin() + i);
+        }
+    }
+
     custo_antigo = CustoTotal(rotas);
     return custo_antigo;
 }

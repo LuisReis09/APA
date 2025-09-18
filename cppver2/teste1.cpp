@@ -80,7 +80,7 @@ int main()
     }
 
     // cout << "====== ILS ======" << endl;
-    ILS(s.rotas);
+    ILS(s.rotas, 2000, 300);
     s.custo_total = CustoTotal(s.rotas);
 
     if (VerificaSolucao(s.rotas, true))

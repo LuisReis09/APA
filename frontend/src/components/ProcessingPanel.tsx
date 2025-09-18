@@ -55,7 +55,8 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
 
   const steps = [
     { id: "greedy", name: "Buscas Gulosas", description: "Vizinho mais próximo e Inserção mais barata" },
-    { id: "vnd", name: "VND", description: "Variable Neighborhood Descent" },
+    { id: "vnd1", name: "VND1", description: "Variable Neighborhood Descent Intra e Inter Rotas" },
+    { id: "vnd2", name: "VND2", description: "Variable Neighborhood Descent" },
     { id: "ils", name: "ILS", description: "Iterated Local Search" },
   ];
 
@@ -82,8 +83,11 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
       case "greedy":
         rota = "processarGulosos";
         break;
-      case "vnd":
-        rota = "aplicarVND";
+      case "vnd1":
+        rota = "aplicarVND1";
+        break;
+      case "vnd2":
+        rota = "aplicarVND2";
         break;
       case "ils":
         rota = "aplicarILS";
@@ -174,7 +178,7 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
             Status do Processamento
           </CardTitle>
           <CardDescription>
-            Arquivo: {inputData.file?.name} • Parâmetros configurados
+            Arquivo: {inputData.file_name}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -185,7 +189,7 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
             </div>
           )}
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-center mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {steps.map((step) => (
               <Button
                 key={step.id}
@@ -224,7 +228,7 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Tempo:</span>
-                      <Badge variant="outline">{results.nearestNeighborResult.executionTime?.toFixed(3)}s</Badge>
+                      <Badge variant="outline">{results.nearestNeighborResult.executionTime}ms</Badge>
                     </div>
                   </div>
                 </div>
@@ -238,7 +242,7 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Tempo:</span>
-                      <Badge variant="outline">{results.cheapestInsertionResult.executionTime?.toFixed(3)}s</Badge>
+                      <Badge variant="outline">{results.cheapestInsertionResult.executionTime}ms</Badge>
                     </div>
                   </div>
                 </div>

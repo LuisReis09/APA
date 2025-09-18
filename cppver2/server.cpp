@@ -7,7 +7,7 @@
 
 using namespace std;
 
-Problema p = Problema();
+Problema p;
 static double gap_antigo_imb = -1, gap_antigo_vmp = -1;
 static Solucao melhor_vizinho_mais_proximo = Solucao(), melhor_insercao_mais_barata = Solucao();
 
@@ -65,7 +65,14 @@ int main()
         res.set_header("Access-Control-Allow-Origin", "*");
 
         try{
-            p.init(get_form_field(req, "input"));
+            string content = get_form_field(req, "input");
+            // Salva o conteúdo em um arquivo temporário
+            ofstream temp_file("temp_instance.txt");
+            temp_file << content;
+            temp_file.close();
+            
+            // Inicializa o problema com o arquivo
+            p = Problema("temp_instance.txt", true);
             cout << "Arquivo recebido e instanciado com sucesso!" << endl;
 
             res.status = 200;
@@ -201,17 +208,83 @@ int main()
                                ", \"tempo_insercao_mais_barata\": " + to_string(duration_insercao_mais_barata) +
                                ", \"gap_insercao_mais_barata\": " + to_string(gap_imb) +
                                " }";
+        cout << "Retornando resultado dos gulosos" << endl;
         res.set_content(json_response, "application/json");
     });
 
-
-    server.Options("/aplicarVND", [](const httplib::Request &, httplib::Response &res) {
+    server.Options("/aplicarVND1", [](const httplib::Request &, httplib::Response &res) {
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
         res.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization");
         res.status = 200; // precisa responder OK
     });
-    server.Get("/aplicarVND", [](const httplib::Request &, httplib::Response &res){ 
+    server.Get("/aplicarVND1", [](const httplib::Request &, httplib::Response &res){ 
+        res.set_header("Access-Control-Allow-Origin", "*"); 
+
+        cout << "Aplicando VND nas soluções gulosas..." << endl;
+        try{
+            auto start = chrono::high_resolution_clock::now();
+            VNDIntraInter(melhor_vizinho_mais_proximo.rotas);
+            auto end = chrono::high_resolution_clock::now();
+            
+            long long duration_vnd_vmp = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+            
+            cout << "Aplicou VND 1" << endl;
+            
+            start = chrono::high_resolution_clock::now();
+            VNDIntraInter(melhor_insercao_mais_barata.rotas);
+            end = chrono::high_resolution_clock::now();
+            
+            cout << "Aplicou VND 2" << endl;
+            long long duration_vnd_imb = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+
+            melhor_insercao_mais_barata.custo_total = CustoTotal(melhor_insercao_mais_barata.rotas);
+            melhor_vizinho_mais_proximo.custo_total = CustoTotal(melhor_vizinho_mais_proximo.rotas);
+
+            double gap_vmp , gap_imb = -1;
+            if(p.valor_otimo != -1){
+                gap_vmp = ((double)(melhor_vizinho_mais_proximo.custo_total - p.valor_otimo) / p.valor_otimo) * 100.0;
+                gap_imb = ((double)(melhor_insercao_mais_barata.custo_total - p.valor_otimo) / p.valor_otimo) * 100.0;
+            }else{
+                // Retorna o quanto melhorou em relação à última vez
+                if(gap_antigo_vmp != -1){
+                    gap_vmp = ((double)(gap_antigo_vmp - melhor_vizinho_mais_proximo.custo_total) / gap_antigo_vmp) * 100.0;
+                    gap_imb = ((double)(gap_antigo_imb - melhor_insercao_mais_barata.custo_total) / gap_antigo_imb) * 100.0;
+
+                    gap_antigo_vmp = melhor_vizinho_mais_proximo.custo_total;
+                    gap_antigo_imb = melhor_insercao_mais_barata.custo_total;
+                }else{
+                    gap_vmp = gap_imb = 0;
+                    gap_antigo_vmp = melhor_vizinho_mais_proximo.custo_total;
+                    gap_antigo_imb = melhor_insercao_mais_barata.custo_total;
+                }
+            }
+            string json_response = "{ \"insercao_mais_barata\": " + MatrizToString(melhor_insercao_mais_barata.rotas) +
+                                   ", \"custo_insercao_mais_barata\": " + to_string(melhor_insercao_mais_barata.custo_total) +
+                                   ", \"tempo_insercao_mais_barata\": " + to_string(duration_vnd_imb) +
+                                   ", \"gap_insercao_mais_barata\": " + to_string(gap_imb) +
+                                   ", \"vizinho_mais_proximo\": " + MatrizToString(melhor_vizinho_mais_proximo.rotas) +
+                                   ", \"custo_vizinho_mais_proximo\": " + to_string(melhor_vizinho_mais_proximo.custo_total) +
+                                   ", \"tempo_vizinho_mais_proximo\": " + to_string(duration_vnd_vmp) +
+                                   ", \"gap_vizinho_mais_proximo\": " + to_string(gap_vmp) +
+                                   " }";
+            cout << "Retornando resultado do VND 1" << endl;
+            res.set_content(json_response, "application/json");
+        }catch( exception& e){
+            cout << "Error: " << e.what() << endl;
+            res.status = 400;
+            string json_response = "{\"success\": false, \"message\": \"" + string(e.what()) + "\"}";
+            res.set_content(json_response, "application/json");
+        }
+    });
+
+    server.Options("/aplicarVND2", [](const httplib::Request &, httplib::Response &res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        res.status = 200; // precisa responder OK
+    });
+    server.Get("/aplicarVND2", [](const httplib::Request &, httplib::Response &res){ 
         res.set_header("Access-Control-Allow-Origin", "*"); 
 
         cout << "Aplicando VND nas soluções gulosas..." << endl;
@@ -255,14 +328,14 @@ int main()
 
             string json_response = "{ \"insercao_mais_barata\": " + MatrizToString(melhor_insercao_mais_barata.rotas) +
                                    ", \"custo_insercao_mais_barata\": " + to_string(melhor_insercao_mais_barata.custo_total) +
-                                   ", \"tempo_vnd_insercao_mais_barata\": " + to_string(duration_vnd_imb) +
-                                   ", \"gap_vnd_insercao_mais_barata\": " + to_string(gap_imb) +
+                                   ", \"tempo_insercao_mais_barata\": " + to_string(duration_vnd_imb) +
+                                   ", \"gap_insercao_mais_barata\": " + to_string(gap_imb) +
                                    ", \"vizinho_mais_proximo\": " + MatrizToString(melhor_vizinho_mais_proximo.rotas) +
                                    ", \"custo_vizinho_mais_proximo\": " + to_string(melhor_vizinho_mais_proximo.custo_total) +
-                                   ", \"tempo_vnd_vizinho_mais_proximo\": " + to_string(duration_vnd_vmp) +
-                                   ", \"gap_vnd_vizinho_mais_proximo\": " + to_string(gap_vmp) +
+                                   ", \"tempo_vizinho_mais_proximo\": " + to_string(duration_vnd_vmp) +
+                                   ", \"gap_vizinho_mais_proximo\": " + to_string(gap_vmp) +
                                    " }";
-            cout << json_response << endl;
+            cout << "Retornando resultado do VND 2" << endl;
             res.set_content(json_response, "application/json");
         }catch( exception& e){
             cout << "Error: " << e.what() << endl;
@@ -286,7 +359,7 @@ int main()
 
         try{
             auto start = chrono::high_resolution_clock::now();
-            ILS(melhor_vizinho_mais_proximo.rotas);
+            ILS(melhor_insercao_mais_barata.rotas, p.max_iteracoes, p.max_sem_melhora);
             auto end = chrono::high_resolution_clock::now();
             
             long long duration_ils_vmp = chrono::duration_cast<chrono::milliseconds>(end - start).count();
@@ -294,7 +367,7 @@ int main()
             cout << "Aplicou ILS 1" << endl;
             
             start = chrono::high_resolution_clock::now();
-            ILS(melhor_insercao_mais_barata.rotas);
+            ILS(melhor_vizinho_mais_proximo.rotas, p.max_iteracoes, p.max_sem_melhora);
             end = chrono::high_resolution_clock::now();
             
             cout << "Aplicou ILS 2" << endl;
@@ -325,14 +398,14 @@ int main()
 
             string json_response = "{ \"insercao_mais_barata\": " + MatrizToString(melhor_insercao_mais_barata.rotas) +
                                    ", \"custo_insercao_mais_barata\": " + to_string(melhor_insercao_mais_barata.custo_total) +
-                                   ", \"tempo_ils_insercao_mais_barata\": " + to_string(duration_ils_imb) +
-                                   ", \"gap_ils_insercao_mais_barata\": " + to_string(gap_ils) +
+                                   ", \"tempo_insercao_mais_barata\": " + to_string(duration_ils_imb) +
+                                   ", \"gap_insercao_mais_barata\": " + to_string(gap_ils) +
                                    ", \"vizinho_mais_proximo\": " + MatrizToString(melhor_vizinho_mais_proximo.rotas) +
                                    ", \"custo_vizinho_mais_proximo\": " + to_string(melhor_vizinho_mais_proximo.custo_total) +
-                                   ", \"tempo_ils_vizinho_mais_proximo\": " + to_string(duration_ils_vmp) +
-                                   ", \"gap_ils_vizinho_mais_proximo\": " + to_string(gap_ils) +
+                                   ", \"tempo_vizinho_mais_proximo\": " + to_string(duration_ils_vmp) +
+                                   ", \"gap_vizinho_mais_proximo\": " + to_string(gap_ils) +
                                    " }";
-            cout << json_response << endl;
+            cout << "Retornando resultado do ILS" << endl;
             res.set_content(json_response, "application/json");
         }catch( exception& e){
             cout << "Error: " << e.what() << endl;

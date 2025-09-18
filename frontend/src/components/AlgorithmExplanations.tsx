@@ -52,8 +52,27 @@ export const AlgorithmExplanations = () => {
       disadvantages: ["Mais lento que vizinho mais próximo", "Ainda pode ser subótimo"]
     },
     {
-      id: "vnd",
-      name: "Variable Neighborhood Descent (VND)",
+      id: "vnd1",
+      name: "Variable Neighborhood Descent Intra e Inter Rotas (VNDIntraInter)",
+      category: "Otimização",
+      icon: TrendingUp,
+      description: "Aplica movimentos locais para melhorar uma solução existente.",
+      steps: [
+        "Recebe uma solução inicial",
+        "Para cada estação em cada rota:",
+        "Avalia se movê-la para outra posição na mesma rota ou para outra rota reduz o custo total",
+        "Avalia também se tal alteração respeita a capacidade e as demandas",
+        "Se encontrar uma melhoria, aplica a alteração e reinicia o processo",
+        "Repete até que nenhuma melhoria seja possível",
+        "Retorna a solução otimizada"
+      ],
+      complexity: "O(n²) por iteração",
+      advantages: ["Melhora qualidade da solução", "Convergência garantida"],
+      disadvantages: ["Pode ficar preso em ótimos locais", "Depende da solução inicial", "Pode ser lento"]
+    },
+    {
+      id: "vnd2",
+      name: "Variable Neighborhood Descent 2 (VND)",
       category: "Metaheurística",
       icon: Search,
       description: "Explora sistematicamente diferentes estruturas de vizinhança.",

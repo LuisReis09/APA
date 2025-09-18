@@ -31,7 +31,8 @@ export const StatisticsPanel = ({ statistics }: StatisticsPanelProps) => {
   const getAlgorithmName = (algorithm: string, baseMethod: string) => {
     const names: Record<string, string> = {
       greedy: "Buscas Gulosas",
-      vnd: "VND",
+      vnd1: "VND1",
+      vnd: "VND2",
       ils: "ILS"
     };
     const algorithmName = names[algorithm] || algorithm;

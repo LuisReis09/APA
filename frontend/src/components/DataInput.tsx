@@ -53,6 +53,7 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
           }else{
            onDataSubmit({
             file: input,
+            file_name: selectedFile.name,
             valor_otimo: optimalValue ? parseFloat(optimalValue) : null,
             max_iteracoes: parseInt(maxIterations),
             max_sem_melhora: parseInt(maxIterationsWithoutImprovement)
