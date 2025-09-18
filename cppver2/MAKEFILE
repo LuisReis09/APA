@@ -1,0 +1,25 @@
+# Compilador
+CXX = g++
+# Flags de compilação (pode adicionar -Wall para avisos ou -O2 para otimização)
+CXXFLAGS = -std=c++17 -Wall
+
+# Nome do executável
+TARGET = teste
+
+# Arquivos fonte
+SRC = teste.cpp
+
+# Regra padrão (primeira a ser executada)
+all: $(TARGET)
+
+# Como compilar o executável
+$(TARGET): $(SRC)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC)
+
+# Rodar o programa
+run: $(TARGET)
+	./$(TARGET)
+
+# Limpar arquivos compilados
+clean:
+	rm -f $(TARGET)

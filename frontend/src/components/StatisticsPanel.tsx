@@ -31,7 +31,6 @@ export const StatisticsPanel = ({ statistics }: StatisticsPanelProps) => {
   const getAlgorithmName = (algorithm: string, baseMethod: string) => {
     const names: Record<string, string> = {
       greedy: "Buscas Gulosas",
-      local: "Melhoria Local", 
       vnd: "VND",
       ils: "ILS"
     };
@@ -76,7 +75,7 @@ export const StatisticsPanel = ({ statistics }: StatisticsPanelProps) => {
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Target className="w-3 h-3" />
-                      Custo: {stat.totalCost.toFixed(2)}
+                      Custo: {stat.totalCost?.toFixed(2)}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
@@ -88,7 +87,7 @@ export const StatisticsPanel = ({ statistics }: StatisticsPanelProps) => {
               
               <div className="text-right">
                 <div className="text-sm font-medium text-foreground">
-                  GAP: {stat.gapIndex.toFixed(2)}%
+                  GAP: {stat.gapIndex?.toFixed(2)}%
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {new Date(stat.timestamp).toLocaleTimeString()}

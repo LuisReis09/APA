@@ -52,25 +52,6 @@ export const AlgorithmExplanations = () => {
       disadvantages: ["Mais lento que vizinho mais próximo", "Ainda pode ser subótimo"]
     },
     {
-      id: "local-improvement",
-      name: "Melhoria Local",
-      category: "Otimização",
-      icon: TrendingUp,
-      description: "Aplica movimentos locais para melhorar uma solução existente.",
-      steps: [
-        "Recebe uma solução inicial",
-        "Para cada estação em cada rota:",
-        "Avalia se movê-la para outra posição na mesma rota ou para outra rota reduz o custo total",
-        "Avalia também se tal alteração respeita a capacidade e as demandas",
-        "Se encontrar uma melhoria, aplica a alteração e reinicia o processo",
-        "Repete até que nenhuma melhoria seja possível",
-        "Retorna a solução otimizada"
-      ],
-      complexity: "O(n²) por iteração",
-      advantages: ["Melhora qualidade da solução", "Convergência garantida"],
-      disadvantages: ["Pode ficar preso em ótimos locais", "Depende da solução inicial", "Pode ser lento"]
-    },
-    {
       id: "vnd",
       name: "Variable Neighborhood Descent (VND)",
       category: "Metaheurística",

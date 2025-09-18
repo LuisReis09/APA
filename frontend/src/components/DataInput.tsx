@@ -157,7 +157,7 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
                   <div className="text-sm">
                     <p className="font-medium text-foreground">{file.name}</p>
                     <p className="text-muted-foreground">
-                      {(file.size / 1024).toFixed(2)} KB
+                      {(file.size / 1024)?.toFixed(2)} KB
                     </p>
                   </div>
                 ) : isDragActive ? (

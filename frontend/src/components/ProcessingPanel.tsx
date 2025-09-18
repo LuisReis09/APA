@@ -55,7 +55,6 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
 
   const steps = [
     { id: "greedy", name: "Buscas Gulosas", description: "Vizinho mais próximo e Inserção mais barata" },
-    { id: "local", name: "Melhoria Local", description: "Otimização local das rotas" },
     { id: "vnd", name: "VND", description: "Variable Neighborhood Descent" },
     { id: "ils", name: "ILS", description: "Iterated Local Search" },
   ];
@@ -82,9 +81,6 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
     switch(stepId) {
       case "greedy":
         rota = "processarGulosos";
-        break;
-      case "local":
-        rota = "melhorarGulosos";
         break;
       case "vnd":
         rota = "aplicarVND";
@@ -189,7 +185,7 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
             </div>
           )}
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 justify-center mx-auto">
             {steps.map((step) => (
               <Button
                 key={step.id}
@@ -224,11 +220,11 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Custo:</span>
-                      <Badge variant="outline">{results.nearestNeighborResult.totalCost.toFixed(2)}</Badge>
+                      <Badge variant="outline">{results.nearestNeighborResult.totalCost?.toFixed(2)}</Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Tempo:</span>
-                      <Badge variant="outline">{results.nearestNeighborResult.executionTime.toFixed(3)}s</Badge>
+                      <Badge variant="outline">{results.nearestNeighborResult.executionTime?.toFixed(3)}s</Badge>
                     </div>
                   </div>
                 </div>
@@ -238,11 +234,11 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Custo:</span>
-                      <Badge variant="outline">{results.cheapestInsertionResult.totalCost.toFixed(2)}</Badge>
+                      <Badge variant="outline">{results.cheapestInsertionResult.totalCost?.toFixed(2)}</Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Tempo:</span>
-                      <Badge variant="outline">{results.cheapestInsertionResult.executionTime.toFixed(3)}s</Badge>
+                      <Badge variant="outline">{results.cheapestInsertionResult.executionTime?.toFixed(3)}s</Badge>
                     </div>
                   </div>
                 </div>
