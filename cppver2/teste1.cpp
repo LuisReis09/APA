@@ -2,6 +2,7 @@
 #include "structures.hpp"
 #include "metodos.hpp"
 #include "utils.hpp"
+#include <time.h>
 
 using namespace std;
 
@@ -9,6 +10,8 @@ Problema p("../exemplos/instancia1.txt", true);
 
 int main()
 {
+    srand(time(NULL)); // seed para aleatorizar o tamanho do segmento
+
     cout << "====== Teste de Metodos ======" << endl;
     Solucao s = VizinhoMaisProximo();
     s.custo_total = CustoTotal(s.rotas);
@@ -52,8 +55,8 @@ int main()
     //     cout << "Solucao INVALIDA" << endl;
     // }
 
-    cout << "====== VND Intra e Inter-Rotas ======" << endl;
-    VNDIntraInter(s.rotas);
+    cout << "====== VND 2 ======" << endl;
+    VND2(s.rotas);
     s.custo_total = CustoTotal(s.rotas);
 
     if (VerificaSolucao(s.rotas, true))

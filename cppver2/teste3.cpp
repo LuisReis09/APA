@@ -2,12 +2,15 @@
 #include "structures.hpp"
 #include "metodos.hpp"
 #include "utils.hpp"
+#include <time.h>
 
 using namespace std;
 
 Problema p("../exemplos/instancia3.txt", true);
 
 int main(){
+    srand(time(NULL)); // seed para aleatorizar o tamanho do segmento
+
     cout << "====== Teste de Metodos ======" << endl;
     Solucao s = VizinhoMaisProximo();
     s.custo_total = CustoTotal(s.rotas);

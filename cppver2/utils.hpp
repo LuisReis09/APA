@@ -374,6 +374,84 @@ bool InsertionTest(const vector<int> &rota, int posicao_destino, int estacao)
     return false;
 }
 
+bool RemovalTest(const vector<int>& rota, int posicao_original){
+    int prefix = 0;
+    int min = p.demandas[rota[1] - 1];
+    int max = min;
+
+
+    for(int i = 1; i < rota.size(); i++){
+        if(i == posicao_original){
+            continue;
+        }
+        //  acumula e verifica a adicao da demanda
+        prefix += p.demandas[rota[i] - 1];
+
+        if(prefix > max)
+            max = prefix;
+        else if(prefix < min)
+            min = prefix;
+    }
+
+    // ajustando o intervalo de checagem
+    min = -min;
+    max = p.capacidade_max - max;
+
+    if(max < min || max < 0 || min > p.capacidade_max){
+        return false;
+    }
+
+    // verifica se algum numero de bicicletas inicial é válido.
+    for(int i = max; i >= min && i >= 0; i--)
+        if(i <= p.capacidade_max)
+            return true;
+
+    return false;
+}
+
+bool ReinsertionTest(const vector<int>& rota, int posicao_original, int posicao_destino){
+    int prefix = 0;
+    int min = p.demandas[rota[1] - 1];
+    int max = min;
+
+    for(int i = 1; i < rota.size(); i++){
+
+        if(i == posicao_original) continue;
+
+        if(i == posicao_destino){
+            prefix += p.demandas[rota[posicao_original] - 1];
+            if(prefix > max)
+                max = prefix;
+            else if(prefix < min)
+                min = prefix;
+        }
+
+        //  acumula e verifica a adicao da demanda
+        prefix += p.demandas[rota[i] - 1];
+
+        if(prefix > max)
+            max = prefix;
+        else if(prefix < min)
+            min = prefix;
+    }
+
+    // ajustando o intervalo de checagem
+    min = -min;
+    max = p.capacidade_max - max;
+
+    if(max < min || max < 0 || min > p.capacidade_max){
+        return false;
+    }
+
+    // verifica se algum numero de bicicletas inicial é válido.
+    for(int i = max; i >= min && i >= 0; i--)
+        if(i <= p.capacidade_max)
+            return true;
+
+    return false;
+}
+
+
 /**
  * @brief Calcula o custo combinado entre rotas
  * ---
@@ -393,6 +471,14 @@ int CustoTotal(vector<vector<int>> &rotas)
         }
     }
     return custo_total;
+}
+
+int CustoRota(vector<int> &rota){
+    int custo = 0;
+    for(size_t i=0; i < (rota.size() - 1); i++){
+        custo += p.matriz_custo[rota[i]][rota[i+1]];
+    }
+    return custo;
 }
 
 /**

@@ -2,6 +2,7 @@
 #include "structures.hpp"
 #include "metodos.hpp"
 #include "utils.hpp"
+#include <time.h>
 // #include "threadpool.hpp"
 
 using namespace std;
@@ -10,6 +11,7 @@ Problema p("../exemplos/instancia3.txt", true);
 
 int main(){
     // ThreadPool pool(5);
+    srand(time(NULL)); // seed para aleatorizar o tamanho do segmento
 
     cout << "====== Teste de Metodos ======" << endl;
     Solucao s = VizinhoMaisProximo();

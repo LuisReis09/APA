@@ -356,6 +356,45 @@ vector<int> VND_ReInsertion(const vector<int> &rota)
     return rota_ret;
 }
 
+vector<int> VND_Shift_N(const vector<int> &rota)
+{
+    vector<int> rota_ret = rota;
+    int melhor_custo = CalculaCusto(rota);
+
+    int nMax = rota.size() - 2;
+    if (nMax > 4) nMax = 4; // limite no tamanho do bloco
+
+    for (int i = 1; i < rota_ret.size() - 1; i++) 
+    {
+        for (int j = i + 1; j < rota_ret.size() - 1; j++)
+        {
+            int max_seg = min(nMax, (int)rota_ret.size() - 1 - i);
+            if (max_seg < 1) continue;
+
+            int segmento = 1 + rand() % max_seg;
+
+            vector<int> bloco(rota_ret.begin() + i, rota_ret.begin() + i + segmento);
+
+            vector<int> rota_teste = rota_ret;
+            rota_teste.erase(rota_teste.begin() + i, rota_teste.begin() + i + segmento);
+
+            int pos = j - segmento;
+            if (pos < 1) pos = 1;
+            if (pos > (int)rota_teste.size() - 1) pos = rota_teste.size() - 1;
+
+            rota_teste.insert(rota_teste.begin() + pos, bloco.begin(), bloco.end());
+
+            int custo_shift = CalculaCusto(rota_teste);
+            if (custo_shift < melhor_custo && VerificaDemanda(rota_teste))
+            {
+                rota_ret = rota_teste;
+                melhor_custo = custo_shift;
+            }
+        }
+    }
+    return rota_ret;
+}
+
 /**
  * @brief Algoritmo parte do VND. Para todos os subintervalos da rota, os reverte e vê se é benefico ao custo, se sim, aplica a mudança
  *
@@ -408,9 +447,11 @@ void VND(vector<int> &rota)
 
     // Funções a serem aplicadas
     vector<function<vector<int>(vector<int>)>> estruturas_VND = {
+        VND_Shift_N,
         VND_Swap,
+        VND_Inversion, 
         VND_ReInsertion,
-        VND_Inversion};
+    };
 
     int k = 0; // estrutura swap primeiro
     int N = estruturas_VND.size();
@@ -451,8 +492,10 @@ int VNDIntra(vector<int> &rota)
     // Funções a serem aplicadas
     vector<function<vector<int>(vector<int>)>> estruturas_VND = {
         VND_Swap,
+        VND_Shift_N,
         VND_ReInsertion,
-        VND_Inversion};
+        VND_Inversion,
+    };
 
     int k = 0; // estrutura swap primeiro
     int N = estruturas_VND.size();
@@ -603,7 +646,7 @@ int VNDInterRelocate(vector<int> &r1, vector<int> &r2)
  */
 int VNDInterCrossover(vector<int> &r1, vector<int> &r2)
 {
-    // Ignora rotas muito pequenas
+    // Ignora rotas vazias
     if (r1.size() < 3 || r2.size() < 3)
         return CalculaCusto(r1) + CalculaCusto(r2);
 
@@ -615,7 +658,7 @@ int VNDInterCrossover(vector<int> &r1, vector<int> &r2)
 
     int limite = r1.size() > r2.size() ? r2.size() - 3 : r1.size() - 3;
 
-    // para cada segmento, tenta fazer um swap de segmentos:
+    // para cada rota, tenta fazer um swap de segmentos:
     for (int i = 1; i < r1.size() - 1; i++)
     {
         for (int j = 1; j < r2.size() - 1; j++)
@@ -650,6 +693,154 @@ int VNDInterCrossover(vector<int> &r1, vector<int> &r2)
     return melhor_custo;
 }
 
+// melhorar doc: Função que reinsere uma fatia (1 a N elementos) de r1 em r2
+int VNDInterNOpt1(vector<int> &r1, vector<int> &r2){
+    // cout << "[VNDInterNOpt1]: " << endl;
+
+    // se alguma rota não tiver pelo menos duas estacoes, pula
+    if (r1.size() < 4 || r2.size() < 4){
+        return CalculaCusto(r1) + CalculaCusto(r2);
+    }
+
+    // cout << "Tamanho de r1: " << r1.size() << endl;
+    // cout << "Tamanho de r2: " << r2.size() << endl;
+
+    // Custo combinado das rotas
+    int melhor_custo = CalculaCusto(r1) + CalculaCusto(r2);
+    int novo_custo;
+    vector<int> copy_r1, copy_r2;
+
+    int max_seg = r1.size() - 2; // no máximo até antes do depósito
+    if (max_seg < 4) return melhor_custo; // não tem segmento válido
+
+    int tamanho_seg = 2 + rand() % (max_seg - 3);
+
+    
+
+    for (int i = 1; i + tamanho_seg < r1.size() - 1; i++)
+    {
+        for (int j = 1; j < r2.size() - 1; j++)
+        {
+            copy_r1 = r1;
+            copy_r2 = r2;
+
+            if (i + tamanho_seg >= copy_r1.size()-1) {
+                continue;
+            }
+
+            // cout << "i = " << i << ", j = " << j << ", tam_seg = " << tamanho_seg << endl;
+            copy_r2.insert(copy_r2.begin() + j, copy_r1.begin() + i, copy_r1.begin() + i + tamanho_seg);
+            copy_r1.erase(copy_r1.begin() + i, copy_r1.begin() + i + tamanho_seg);
+
+            novo_custo = CalculaCusto(copy_r1) + CalculaCusto(copy_r2);
+
+            // Se o custo obtido for menor que o atual e ambas as novas rotas foram válidas, altera
+            if (novo_custo < melhor_custo && VerificaDemanda(copy_r1) && VerificaDemanda(copy_r2))
+            {
+                melhor_custo = novo_custo;
+                r1 = copy_r1;
+                r2 = copy_r2;
+            }
+        }
+    }
+
+    // cout << "OK" << endl;
+    return melhor_custo;
+}
+
+// melhorar doc: Função que reinsere uma fatia (1 a N elementos) de r2 em r1
+int VNDInterNOpt2(vector<int> &r1, vector<int> &r2){
+    // se alguma rota não tiver pelo menos duas estacoes, pula
+    if (r1.size() < 4 || r2.size() < 4){
+        return CalculaCusto(r1) + CalculaCusto(r2);
+    }
+
+    // cout << "Tamanho de r1: " << r1.size() << endl;
+    // cout << "Tamanho de r2: " << r2.size() << endl;
+
+    // Custo combinado das rotas
+    int melhor_custo = CalculaCusto(r1) + CalculaCusto(r2);
+    int novo_custo;
+    vector<int> copy_r1, copy_r2;
+
+    int max_seg = r2.size() - 2; // no máximo até antes do depósito
+    if (max_seg < 4) return melhor_custo; // não tem segmento válido
+
+    int tamanho_seg = 2 + rand() % (max_seg - 3);
+
+    
+
+    for (int i = 1; i + tamanho_seg < r2.size() - 1; i++)
+    {
+        for (int j = 1; j < r1.size() - 1; j++)
+        {
+            copy_r1 = r1;
+            copy_r2 = r2;
+
+            if (i + tamanho_seg >= copy_r2.size()-1) {
+                continue;
+            }
+
+            // cout << "i = " << i << ", j = " << j << ", tam_seg = " << tamanho_seg << endl;
+            copy_r1.insert(copy_r1.begin() + j, copy_r2.begin() + i, copy_r2.begin() + i + tamanho_seg);
+            copy_r2.erase(copy_r2.begin() + i, copy_r2.begin() + i + tamanho_seg);
+
+            novo_custo = CalculaCusto(copy_r1) + CalculaCusto(copy_r2);
+
+            // Se o custo obtido for menor que o atual e ambas as novas rotas foram válidas, altera
+            if (novo_custo < melhor_custo && VerificaDemanda(copy_r1) && VerificaDemanda(copy_r2))
+            {
+                melhor_custo = novo_custo;
+                r1 = copy_r1;
+                r2 = copy_r2;
+            }
+        }
+    }
+
+    // cout << "OK" << endl;
+    return melhor_custo;
+}
+    
+int VNDInterSwap2x2(vector<int> &r1, vector<int> &r2){
+    // cout << "swap2x2: " << endl;
+    if (r1.size() < 3 || r2.size() < 3){
+        return CalculaCusto(r1) + CalculaCusto(r2);
+    }
+
+    // cout << "Tamanho de r1: " << r1.size() << endl;
+    // cout << "Tamanho de r2: " << r2.size() << endl;
+
+    // Custo combinado das rotas
+    int melhor_custo = CalculaCusto(r1) + CalculaCusto(r2);
+    int novo_custo;
+    vector<int> copy_r1, copy_r2;
+        
+    for (int i = 1; i < r1.size() - 2; i++)
+    {
+        for (int j = 1; j < r2.size() - 2; j++)
+        {
+            copy_r1 = r1;
+            copy_r2 = r2;
+
+            // cout << "i = " << i << ", j = " << j << endl;
+            swap(copy_r1[i], copy_r2[j]);
+            swap(copy_r1[i+1], copy_r2[j+1]);
+
+            novo_custo = CalculaCusto(copy_r1) + CalculaCusto(copy_r2);
+
+            // Se o custo obtido for menor que o atual e ambas as novas rotas foram válidas, altera
+            if (novo_custo < melhor_custo && VerificaDemanda(copy_r1) && VerificaDemanda(copy_r2))
+            {
+                melhor_custo = novo_custo;
+                r1 = copy_r1;
+                r2 = copy_r2;
+            }
+        }
+    }
+    // cout << "OK" << endl;
+    return melhor_custo;
+}
+
 /**
  * @brief Algoritmo VND aplicado entre duas rotas. Aplica as funções VNDInterSwap, VNDInterRelocate e VNDInterCrossover em ordem para melhorar custo de uma rota, termina apenas quando as três forem bem sucedidas em melhorar o custo.
  * Usado em conjunto com VND intra rotas apresentado anteriormente
@@ -668,8 +859,12 @@ int VNDInter(vector<int> &r1, vector<int> &r2)
     // Funções a serem aplicadas
     vector<function<int(vector<int> &, vector<int> &)>> estruturasInterRota = {
         VNDInterSwap,
+        VNDInterRelocate,
+        VNDInterSwap2x2,
         VNDInterCrossover,
-        VNDInterRelocate};
+        // VNDInterNOpt2,
+        VNDInterNOpt1,
+    };
 
     int k = 0;
     int N = estruturasInterRota.size();
@@ -719,7 +914,7 @@ void VNDIntraInter(vector<vector<int>> &rotas)
             // Se o custo for melhor, seta que melhora é true
             if (novo_custo < custo_anterior)
             {
-                // cout << "Melhora na rota " << i << "! Diferenca: " << novo_custo - custo_anterior << endl;
+                cout << "Melhora na rota " << i << "! Diferenca: " << novo_custo - custo_anterior << endl;
                 melhorou = true;
             }
         }
@@ -736,14 +931,14 @@ void VNDIntraInter(vector<vector<int>> &rotas)
 
                 if (novo_custo < custo_anterior)
                 {
-                    // cout << "Melhora nas rotas " << i << " e " << j << " ! Diferenca: " << novo_custo - custo_anterior << endl;
+                    cout << "Melhora nas rotas " << i << " e " << j << " ! Diferenca: " << novo_custo - custo_anterior << endl;
                     melhorou = true;
                 }
             }
         }
 
         // opcional: mostrar custo total aproximado (soma das rotas)
-        // cout << "[VND] Custo total: " << CustoTotal(rotas) << " | rotas: " << rotas.size() << endl;
+        cout << "[VND] Custo total: " << CustoTotal(rotas) << " | rotas: " << rotas.size() << endl;
     }
 }
 
@@ -996,6 +1191,66 @@ void PerturbacaoHalfSwapRoutes(vector<vector<int>> &rotas)
     }
 }
 
+void PerturbacaoMergeRoutes(vector<vector<int>>& rotas){
+    // Escolhe duas rotas aleatorias para dar merge
+    if(rotas.size() == 1) return;
+    int id1, id2;
+
+    do{
+        id1 = rand() % rotas.size();
+        id2 = rand() % rotas.size();
+    }while(id1 == id2);
+
+    vector<int> rota_resultante(rotas[id1].size() + rotas[id2].size() - 2);
+    rota_resultante[0] = rota_resultante[rota_resultante.size() - 1] = 0;
+
+    int i = 1;
+    for(; i < rotas[id1].size() - 1; i++){
+        rota_resultante[i] = rotas[id1][i];   
+    }
+
+    for(int j=1; j < rotas[id2].size() - 1; j++){
+        rota_resultante[i] = rotas[id2][j];
+    }
+
+
+    if(id1 < id2){
+        rotas.erase(rotas.begin() + id2);
+        rotas.erase(rotas.begin() + id1);
+    }else{
+        rotas.erase(rotas.begin() + id1);
+        rotas.erase(rotas.begin() + id2);
+    }
+
+    rotas.push_back(rota_resultante);
+}
+
+void PerturbacaoSplitRoute(vector<vector<int>>& rotas){
+    // Se tiver caminhao suficiente, quebra uma rota aleatoria ao meio
+
+    if(rotas.size() >= p.qnt_veiculos) return;
+
+    int id;
+    
+    do{
+        id = rand() % rotas.size();
+    }while(rotas[id].size() < 4);
+
+    int meio = rotas[id].size() / 2;
+
+    vector<int> nova_rota(rotas[id].size() - meio + 1);
+    nova_rota[0] = 0;
+
+    int aux = 1;
+    for(int i = meio; i<rotas[id].size(); i++){
+        nova_rota[aux] = rotas[id][i];
+    }
+
+    rotas[id].erase(rotas[id].begin() + meio, rotas[id].end());
+    rotas[id].push_back(0);
+    rotas.push_back(nova_rota);
+}
+
 /**
  * @brief Algoritmo parte do ILS. Switch-case entre as várias opções de perturbação.
  * ---
@@ -1008,81 +1263,33 @@ void Perturbar(vector<vector<int>> &rotas, int opcao, int nivel_perturbacao)
 {
     switch (opcao)
     {
+    // case 1:
+    //     PerturbacaoSwitch(rotas, 1 < nivel_perturbacao);
+    //     break;
     case 1:
-        PerturbacaoSwitch(rotas, 1 < nivel_perturbacao);
-        break;
-    case 2:
         PerturbacaoNewRoute(rotas, 2 * nivel_perturbacao);
         break;
-    case 3:
-        PerturbacaoHalfSwap(rotas);
-        break;
-    case 4:
-        PerturbacaoHalfSwap(rotas, true);
-        break;
-    case 5:
+    // case 3:
+    //     PerturbacaoHalfSwap(rotas);
+    //     break;
+    // case 4:
+    //     PerturbacaoHalfSwap(rotas, true);
+    //     break;
+    case 2:
         PerturbacaoHalfSwapRoutes(rotas);
         break;
-    case 6:
-        PerturbacaoScramble(rotas, 2 * nivel_perturbacao);
-        break;
-    case 7:
+    // case 6:
+    //     PerturbacaoScramble(rotas, 2 * nivel_perturbacao);
+    //     break;
+    case 3:
         PerturbacaoReverse(rotas, nivel_perturbacao);
         break;
+    case 4:
+        PerturbacaoMergeRoutes(rotas);
+    case 5:
+        PerturbacaoSplitRoute(rotas);
     default:
         break;
-    }
-}
-
-/**
- * @brief Algoritmo ILS. Provoca várias perturbações em uma dada solução a fim de escapar de ótimos locais
- * ---
- * @param rotas Vetor de vetor de inteiros. Rotas de uma dada solução
- * @param max_iteracoes Máximo de iterações que o ILS deve executar antes de parar de vez.
- * @param max_sem_melhora Máximo de iterações que o ILS tolera sem melhorar o custo encontrado.
- * ---
- */
-void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melhora = 1000)
-{
-    srand(time(NULL));
-    int iteracoes = 0, sem_melhora = 0;
-    int melhor_custo = CustoTotal(rotas), custo_teste;
-
-    // Enquanto não bater o limite de iterações ou de iterações sem melhora ...
-    while (iteracoes < max_iteracoes && sem_melhora < max_sem_melhora)
-    {
-        // Define a perturbação escolhida e o grau de perturbação
-        int opcao_perturbacao = 1 + rand() % 7;
-        int nivel_perturbacao = (sem_melhora / (max_sem_melhora / 6)) + 2;
-
-        // Perturbar as rotas
-        vector<vector<int>> rotas_copia = rotas;
-        Perturbar(rotas_copia, opcao_perturbacao, nivel_perturbacao);
-
-        // A partir dessas rotas modificadas, aplica MelhorarSolucao e VND
-        MelhorarSolucao(rotas_copia, CustoTotal(rotas_copia));
-        VNDIntraInter(rotas_copia);
-
-        custo_teste = CustoTotal(rotas_copia);
-
-        // Se o custo for de fato melhor e as rotas forem todas válidas, atualizar solução
-        if (custo_teste < melhor_custo && VerificaDemandas(rotas_copia))
-        {
-            rotas = move(rotas_copia);
-            melhor_custo = custo_teste;
-            Solucao sol = Solucao();
-            sol.rotas = rotas;
-            sol.custo_total = melhor_custo;
-            sol.SalvarSolucao("ILS_melhorou.sol");
-            sem_melhora = 0;
-            cout << "Melhora! Novo custo: " << melhor_custo << endl;
-        }
-        else
-        {
-            sem_melhora++;
-        }
-
-        iteracoes++;
     }
 }
 
@@ -1168,5 +1375,270 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melh
 
 //     cout << "[Thread " << threadData->thread_id << "] Finalizando." << endl;
 // }
+
+int VNDSwap(vector<vector<int>>& rotas, int custo_antigo){
+    int id_r1, id_r2, id_e1, id_e2;
+    int e1_ant, e1, e1_pos;
+    int e2_ant, e2, e2_pos;
+    int custo_teste;
+
+    cout << "[VNDSwap] Iniciando..." << endl;
+    for(id_r1 = 0; id_r1 < rotas.size(); id_r1++){
+        for(id_e1 = 1; id_e1 < (rotas[id_r1].size() - 1); id_e1++){
+            e1_ant = rotas[id_r1][id_e1 - 1];
+            e1 = rotas[id_r1][id_e1];
+            e1_pos = rotas[id_r1][id_e1 + 1];
+
+            for(id_r2 = 0; id_r2 < rotas.size(); id_r2){
+                for(id_e2 = 1; id_e2 < (rotas[id_r2].size() - 1); id_e2++){
+                    e2_ant = rotas[id_r2][id_e2 - 1];
+                    e2 = rotas[id_r2][id_e2];
+                    e2_pos = rotas[id_r2][id_e2 + 1];
+
+                    custo_teste = custo_antigo;
+
+                    custo_teste -= p.matriz_custo[e1_ant][e1];
+                    custo_teste -= p.matriz_custo[e1][e1_pos];
+                    custo_teste -= p.matriz_custo[e2_ant][e2];
+                    custo_teste -= p.matriz_custo[e2][e2_pos];
+
+                    custo_teste += p.matriz_custo[e1_ant][e2];
+                    custo_teste += p.matriz_custo[e2][e1_pos];
+                    custo_teste += p.matriz_custo[e2_ant][e1];
+                    custo_teste += p.matriz_custo[e1][e2_pos];
+
+                    if(custo_teste < custo_antigo){
+                        swap(rotas[id_r1][id_e1], rotas[id_r2][id_e2]);
+                        if(!VerificaDemanda(rotas[id_r1]) || !VerificaDemanda(rotas[id_r2])){
+                            // Desfaz swap
+                            swap(rotas[id_r1][id_e1], rotas[id_r2][id_e2]);
+                        }else{
+                            custo_antigo = custo_teste;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    cout << "[VNDSwap] Finalizando..." << endl;
+    return custo_antigo;
+}
+
+int VNDTwoOpt(vector<vector<int>>& rotas, int custo_antigo){
+    for(int r1=0; r1 < rotas.size(); r1++){
+        for(int r2=0; r2 < rotas.size(); r2++){
+            vector<int>& rota1 = rotas[r1];
+            vector<int>& rota2 = rotas[r2];
+
+            int n1 = rota1.size();
+            int n2 = rota2.size();
+
+            // Caso 1: intra-rota
+            if(r1 == r2 && n1 >= 6){
+                for(int e1 = 1; e1 < (n1 - 3); e1++){
+                    for(int e2 = e1+2; e2 < (n1-2); e2++){
+                        int a, b, c, d;
+                        a = rota1[e1];
+                        b = rota1[e1 + 1];
+                        c = rota2[e2];
+                        d = rota2[e2 + 1];
+
+                        int delta = 0;
+                        delta -= p.matriz_custo[a][b];
+                        delta -= p.matriz_custo[c][d];
+                        delta += p.matriz_custo[a][c];
+                        delta += p.matriz_custo[b][d];
+
+                        if(delta < 0){
+                            vector<int> copia = rota1;
+                            reverse(copia.begin() + (e1+1), copia.begin() + (e2+1));
+                            if(VerificaDemanda(copia) && CustoRota(copia) < custo_antigo){
+                                rota1 = copia;
+                            }
+                        }
+                    }
+                }
+
+            // Caso 2: inter-rotas
+            }else if(n1>=4 && n2>=4){
+                for(int e1 = 1; e1 < (n1 - 2); e1++){
+                    for(int e2 = 1; e2 < (n2-2); e2++){
+                        int a, b, c, d;
+                        a = rota1[e1];
+                        b = rota1[e1 + 1];
+                        c = rota2[e2];
+                        d = rota2[e2 + 1];
+
+                        int delta = 0;
+                        delta -= p.matriz_custo[a][b];
+                        delta -= p.matriz_custo[c][d];
+                        delta += p.matriz_custo[a][c];
+                        delta += p.matriz_custo[b][d];
+
+                        if(delta < 0){
+                            vector<int> copia1 = rota1;
+                            vector<int> copia2 = rota2;
+
+                            swap(copia1[e1+1], copia2[e2]);
+
+                            reverse(copia1.begin() + (e1+2), copia1.end() - 1);
+                            reverse(copia2.begin() + 1, copia2.begin() + (e2 - 1));
+
+                            if(VerificaDemanda(copia1) && VerificaDemanda(copia2)){
+                                if((CustoRota(copia1) + CustoRota(copia2)) < (CustoRota(rota1) + CustoRota(rota2))){
+                                    rota1 = copia1;
+                                    rota2 = copia2;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return CustoTotal(rotas);
+}
+
+int VNDReinsertion(vector<vector<int>>& rotas, int custo_antigo){
+    for(int id_r1 = 0; id_r1 < rotas.size(); id_r1++){
+        for(int id_e1 = 1; id_e1 < (rotas[id_r1].size() - 1); id_e1++){
+
+            for(int id_r2 = 0; id_r2 < rotas.size(); id_r2++){
+                for(int id_e2 = 1; id_e2 < (rotas[id_r2].size() - 1); id_e2++){
+
+                    if(id_r1 == id_r2 && (id_e1 == id_e2 || id_e1 == (id_e2 - 1))) continue;
+
+                    int custo_remocao = 0;
+                    custo_remocao -= p.matriz_custo[rotas[id_r1][id_e1 - 1]][rotas[id_r1][id_e1]];
+                    custo_remocao -= p.matriz_custo[rotas[id_r1][id_e1]][rotas[id_r1][id_e1 + 1]];
+                    custo_remocao += p.matriz_custo[rotas[id_r1][id_e1 - 1]][rotas[id_r1][id_e1 + 1]];
+
+                    int custo_insercao = 0;
+                    custo_insercao += p.matriz_custo[rotas[id_r2][id_e2 - 1]][rotas[id_r1][id_e1]];
+                    custo_insercao += p.matriz_custo[rotas[id_r1][id_e1]][rotas[id_r2][id_e2]];
+                    custo_insercao -= p.matriz_custo[rotas[id_r2][id_e2 - 1]][rotas[id_r2][id_e2]];
+
+                    if((custo_remocao + custo_insercao) < 0){
+                        if(id_r1 == id_r2 && ReinsertionTest(rotas[id_r1], id_e1, id_e2)){
+                            int estacao = rotas[id_r1][id_e1];
+
+                            if(id_e1 < id_e2){
+                                for(int i = id_e1; i < id_e2; i++){
+                                    rotas[id_r1][i] = rotas[id_r1][i+1];
+                                }
+                                rotas[id_r1][id_e2] = estacao;
+                            }else{
+                                for(int i = id_e1; i > id_e2; i--){
+                                    rotas[id_r1][i] = rotas[id_r1][i-1];
+                                }
+                                rotas[id_r1][id_e2] = estacao;
+                            }
+
+                            custo_antigo += (custo_remocao + custo_insercao);
+
+                        }else if(RemovalTest(rotas[id_r1], id_e1) && InsertionTest(rotas[id_r2], id_e2, rotas[id_r1][id_e1])){
+                            int estacao = rotas[id_r1][id_e1];
+                            for(int i = id_e1; i < (rotas[id_r1].size() - 1); i++){
+                                rotas[id_r1][i] = rotas[id_r1][i+1];
+                            }
+                            rotas[id_r1].pop_back();
+
+                            rotas[id_r2].reserve(rotas[id_r2].size() + 1);
+                            rotas[id_r2].push_back(0);
+
+                            for(int i = rotas[id_r2].size() - 2; i > id_e2; i--){
+                                rotas[id_r2][i] = rotas[id_r2][i-1]; 
+                            }
+                            rotas[id_r2][id_e2] = estacao;
+
+                            custo_antigo += (custo_remocao + custo_insercao);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return custo_antigo;
+}
+
+void VND2(vector<vector<int>> &rotas){
+    int vizinhanca = 1;
+    int melhor_custo = CustoTotal(rotas);
+    int teste;
+
+    while(vizinhanca < 3){
+        cout << "VND2: vizinhanca " << vizinhanca << " | custo atual: " << melhor_custo << endl;
+
+        switch(vizinhanca){
+            case 1: teste = VNDSwap(rotas, melhor_custo); break;
+            case 2: teste = VNDTwoOpt(rotas, melhor_custo); break;
+            case 3: teste = VNDReinsertion(rotas, melhor_custo); break;
+        }
+
+        if(teste < melhor_custo){
+            vizinhanca = 1;
+        }else{
+            vizinhanca++;
+        }
+
+    }
+}
+
+/**
+ * @brief Algoritmo ILS. Provoca várias perturbações em uma dada solução a fim de escapar de ótimos locais
+ * ---
+ * @param rotas Vetor de vetor de inteiros. Rotas de uma dada solução
+ * @param max_iteracoes Máximo de iterações que o ILS deve executar antes de parar de vez.
+ * @param max_sem_melhora Máximo de iterações que o ILS tolera sem melhorar o custo encontrado.
+ * ---
+ */
+void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melhora = 1000)
+{
+    // srand(time(NULL)); deve ser chamado na main
+    int iteracoes = 0, sem_melhora = 0;
+    int melhor_custo = CustoTotal(rotas), custo_teste;
+
+    // Enquanto não bater o limite de iterações ou de iterações sem melhora ...
+    while (iteracoes < max_iteracoes && sem_melhora < max_sem_melhora)
+    {
+        if(iteracoes & 1) cout << "It: " << iteracoes << endl;
+        // Define a perturbação escolhida e o grau de perturbação
+        int opcao_perturbacao = 1 + rand() % 5;
+        int nivel_perturbacao = (sem_melhora / (max_sem_melhora / 6)) + 2;
+
+        // Perturbar as rotas
+        vector<vector<int>> rotas_copia = rotas;
+        Perturbar(rotas_copia, opcao_perturbacao, nivel_perturbacao);
+
+        // A partir dessas rotas modificadas, aplica MelhorarSolucao e VND
+        MelhorarSolucao(rotas_copia, CustoTotal(rotas_copia));
+        // VNDIntraInter(rotas_copia);
+        VND2(rotas_copia);
+
+        custo_teste = CustoTotal(rotas_copia);
+
+        // Se o custo for de fato melhor e as rotas forem todas válidas, atualizar solução
+        if (custo_teste < melhor_custo && VerificaDemandas(rotas_copia))
+        {
+            rotas = move(rotas_copia);
+            melhor_custo = custo_teste;
+            Solucao sol = Solucao();
+            sol.rotas = rotas;
+            sol.custo_total = melhor_custo;
+            sol.SalvarSolucao("ILS_melhorou.sol");
+            sem_melhora = 0;
+            cout << "Melhora! Novo custo: " << melhor_custo << endl;
+        }
+        else
+        {
+            sem_melhora++;
+        }
+
+        iteracoes++;
+    }
+}
 
 #endif
