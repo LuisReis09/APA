@@ -35,7 +35,7 @@ int main()
         cout << "Solucao INVALIDA" << endl;
     }
 
-    s.SalvarSolucao("solucao_so_guloso1.txt");
+    // s.SalvarSolucao("solucao_so_guloso1.txt");
 
     // cout << "====== Melhorando Solucao ======" << endl;
     // MelhorarSolucao(s.rotas);

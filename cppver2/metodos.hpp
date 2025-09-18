@@ -1231,9 +1231,6 @@ void Perturbar(vector<vector<int>> &rotas, int opcao, int nivel_perturbacao)
     case 7:
         PerturbacaoHalfSwap(rotas, false);
         break;
-    case 8:
-        PerturbacaoSwitch(rotas, 3*nivel_perturbacao);
-        break;
     default:
         break;
     }
@@ -1521,7 +1518,7 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melh
     {
         // if(iteracoes & 1) cout << "It: " << iteracoes << endl;
         // Define a perturbação escolhida e o grau de perturbação
-        int opcao_perturbacao = 1 + rand() % 8; // 1 a 8
+        int opcao_perturbacao = 1 + rand() % 7; // 1 a 7
         int nivel_perturbacao = (sem_melhora / (max_sem_melhora / 6)) + 2;
 
         // Perturbar as rotas
