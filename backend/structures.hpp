@@ -266,6 +266,11 @@ public:
     void SalvarSolucao(string nome_arquivo) const
     {
         ofstream output(nome_arquivo);
+        if (!output.is_open())
+        {
+            cout << "n conseguiu abrir o arquivo" << endl;
+            return;
+        }
 
         output << custo_total << endl;
         output << this->rotas.size() << endl;

@@ -22,3 +22,15 @@ Arquivo de Entrada, Algoritmo Usado, Custo conseguido, Tempo de execução (ms),
 "n12_q30.txt","ILS - IMB",16300,16,14600,11.64
 "n12_q30.txt","ILS - VMP",15000,9,14600,2.74
 "exemplo2.txt","Inserção Mais Barata",397,0,"null","null"
+"instancia1.txt","Vizinho Mais Próximo",9029,0,"null","null"
+"instancia1.txt","Inserção Mais Barata",27389,0,"null","null"
+"instancia1.txt","VND 2 - IMB",22872,0,"null","null"
+"instancia1.txt","VND 2 - VMP",7386,0,"null","null"
+"instancia1.txt","ILS - IMB",22872,134129,"null","null"
+"instancia1.txt","ILS - VMP",7386,111909,"null","null"
+"instancia2.txt","Vizinho Mais Próximo",7513,0,"null","null"
+"instancia2.txt","Inserção Mais Barata",37207,0,"null","null"
+"instancia2.txt","VND 2 - IMB",230622,134129,"null","null"
+"instancia2.txt","VND 2 - VMP",248240,111909,"null","null"
+"instancia2.txt","ILS - IMB",230622,531839,"null","null"
+"instancia2.txt","ILS - VMP",248240,952203,"null","null"

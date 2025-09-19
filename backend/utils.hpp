@@ -348,7 +348,8 @@ bool InsertionTest(const vector<int> &rota, int posicao_destino, int estacao)
             else if (prefix < min)
                 min = prefix;
         }
-        if(rota[i] == 0) continue;
+        if (rota[i] == 0)
+            continue;
         //  acumula e verifica a adicao da demanda
         prefix += p.demandas[rota[i] - 1];
 
@@ -375,24 +376,27 @@ bool InsertionTest(const vector<int> &rota, int posicao_destino, int estacao)
     return false;
 }
 
-bool RemovalTest(const vector<int>& rota, int posicao_original){
+bool RemovalTest(const vector<int> &rota, int posicao_original)
+{
     int prefix = 0;
     int min = p.demandas[rota[1] - 1];
     int max = min;
 
-
-    for(int i = 1; i < rota.size(); i++){
-        if(i == posicao_original){
+    for (int i = 1; i < rota.size(); i++)
+    {
+        if (i == posicao_original)
+        {
             continue;
         }
         //  acumula e verifica a adicao da demanda
         prefix += p.demandas[rota[i] - 1];
 
-        if(rota[i] == 0) continue;
+        if (rota[i] == 0)
+            continue;
 
-        if(prefix > max)
+        if (prefix > max)
             max = prefix;
-        else if(prefix < min)
+        else if (prefix < min)
             min = prefix;
     }
 
@@ -400,43 +404,49 @@ bool RemovalTest(const vector<int>& rota, int posicao_original){
     min = -min;
     max = p.capacidade_max - max;
 
-    if(max < min || max < 0 || min > p.capacidade_max){
+    if (max < min || max < 0 || min > p.capacidade_max)
+    {
         return false;
     }
 
     // verifica se algum numero de bicicletas inicial é válido.
-    for(int i = max; i >= min && i >= 0; i--)
-        if(i <= p.capacidade_max)
+    for (int i = max; i >= min && i >= 0; i--)
+        if (i <= p.capacidade_max)
             return true;
 
     return false;
 }
 
-bool ReinsertionTest(const vector<int>& rota, int posicao_original, int posicao_destino){
+bool ReinsertionTest(const vector<int> &rota, int posicao_original, int posicao_destino)
+{
     int prefix = 0;
     int min = p.demandas[rota[1] - 1];
     int max = min;
 
-    for(int i = 1; i < rota.size(); i++){
+    for (int i = 1; i < rota.size(); i++)
+    {
 
-        if(i == posicao_original) continue;
+        if (i == posicao_original)
+            continue;
 
-        if(i == posicao_destino){
+        if (i == posicao_destino)
+        {
             prefix += p.demandas[rota[posicao_original] - 1];
-            if(prefix > max)
+            if (prefix > max)
                 max = prefix;
-            else if(prefix < min)
+            else if (prefix < min)
                 min = prefix;
         }
 
-        if(rota[i] == 0) continue;
+        if (rota[i] == 0)
+            continue;
 
         //  acumula e verifica a adicao da demanda
         prefix += p.demandas[rota[i] - 1];
 
-        if(prefix > max)
+        if (prefix > max)
             max = prefix;
-        else if(prefix < min)
+        else if (prefix < min)
             min = prefix;
     }
 
@@ -444,18 +454,18 @@ bool ReinsertionTest(const vector<int>& rota, int posicao_original, int posicao_
     min = -min;
     max = p.capacidade_max - max;
 
-    if(max < min || max < 0 || min > p.capacidade_max){
+    if (max < min || max < 0 || min > p.capacidade_max)
+    {
         return false;
     }
 
     // verifica se algum numero de bicicletas inicial é válido.
-    for(int i = max; i >= min && i >= 0; i--)
-        if(i <= p.capacidade_max)
+    for (int i = max; i >= min && i >= 0; i--)
+        if (i <= p.capacidade_max)
             return true;
 
     return false;
 }
-
 
 /**
  * @brief Calcula o custo combinado entre rotas
@@ -478,10 +488,12 @@ int CustoTotal(vector<vector<int>> &rotas)
     return custo_total;
 }
 
-int CustoRota(vector<int> &rota){
+int CustoRota(vector<int> &rota)
+{
     int custo = 0;
-    for(size_t i=0; i < (rota.size() - 1); i++){
-        custo += p.matriz_custo[rota[i]][rota[i+1]];
+    for (size_t i = 0; i < (rota.size() - 1); i++)
+    {
+        custo += p.matriz_custo[rota[i]][rota[i + 1]];
     }
     return custo;
 }
@@ -522,29 +534,36 @@ bool VerificaSolucao(const vector<vector<int>> &rotas, bool verbose = false)
     vector<bool> visitados(p.qnt_estacoes + 1, false);
 
     /* Testa cada rota */
-    for(int i=0; i < rotas.size(); i++){
+    for (int i = 0; i < rotas.size(); i++)
+    {
 
-        for(int j=0; j < rotas[i].size(); j++){
-            if(visitados[rotas[i][j]]){
-                if(verbose) cout << "Erro: Estação " << rotas[i][j] << " visitada mais de uma vez." << endl;
+        for (int j = 0; j < rotas[i].size(); j++)
+        {
+            if (visitados[rotas[i][j]])
+            {
+                if (verbose)
+                    cout << "Erro: Estação " << rotas[i][j] << " visitada mais de uma vez." << endl;
                 return false;
-            }else{
+            }
+            else
+            {
                 visitados[rotas[i][j]] = true;
             }
         }
 
-
-        if(rotas[i].front() != 0 || rotas[i].back() != 0){
-            if(verbose) cout << "Erro: Rota " << i+1 << " não começa e termina na garagem." << endl;
+        if (rotas[i].front() != 0 || rotas[i].back() != 0)
+        {
+            if (verbose)
+                cout << "Erro: Rota " << i + 1 << " não começa e termina na garagem." << endl;
             return false;
         }
 
-
-        if(VerificaDemanda(rotas[i]) == false){
-            if(verbose) cout << "Erro: Rota " << i+1 << " não respeita a capacidade máxima." << endl;
+        if (VerificaDemanda(rotas[i]) == false)
+        {
+            if (verbose)
+                cout << "Erro: Rota " << i + 1 << " não respeita a capacidade máxima." << endl;
             return false;
         }
-
     }
 
     return true;
