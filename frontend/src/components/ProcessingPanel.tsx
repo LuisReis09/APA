@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { RouteVisualization } from "./RouteVisualization";
 import { StatisticsPanel } from "./StatisticsPanel";
+import { set } from "date-fns";
 
 interface ProcessingPanelProps {
   inputData: any;
@@ -28,6 +29,7 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
   const [results, setResults] = useState<any>(null);
   const [statistics, setStatistics] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState("");
 
   const colors = [
     "#FF5733", // vermelho
@@ -55,8 +57,8 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
 
   const steps = [
     { id: "greedy", name: "Buscas Gulosas", description: "Vizinho mais próximo e Inserção mais barata" },
-    { id: "vnd1", name: "VND1", description: "Variable Neighborhood Descent Intra e Inter Rotas" },
-    { id: "vnd2", name: "VND2", description: "Variable Neighborhood Descent" },
+    // { id: "vnd1", name: "VND1", description: "Variable Neighborhood Descent Intra e Inter Rotas" },
+    { id: "vnd", name: "VND", description: "Variable Neighborhood Descent" },
     { id: "ils", name: "ILS", description: "Iterated Local Search" },
   ];
 
@@ -76,6 +78,7 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
   const handleProcessStep = (stepId: string) => {
     setIsProcessing(true);
     setCurrentStep(stepId);
+    setError("");
 
     // Realiza um fetch para o backend 
     let rota = "";
@@ -83,10 +86,10 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
       case "greedy":
         rota = "processarGulosos";
         break;
-      case "vnd1":
-        rota = "aplicarVND1";
-        break;
-      case "vnd2":
+      // case "vnd1":
+      //   rota = "aplicarVND1";
+      //   break;
+      case "vnd":
         rota = "aplicarVND2";
         break;
       case "ils":
@@ -151,7 +154,7 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
         setIsProcessing(false);
       })
       .catch(err => {
-        console.error("Erro ao chamar API:", err);
+        setError("Ocorreu um erro durante o processamento. Confira se executou os gulosos antes de aplicar os outros métodos.");
         setIsProcessing(false);
       });
   };
@@ -189,14 +192,14 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
             </div>
           )}
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {steps.map((step) => (
               <Button
                 key={step.id}
                 variant={currentStep === step.id ? "processing" : "outline"}
                 onClick={() => handleProcessStep(step.id)}
                 disabled={isProcessing}
-                className="h-auto p-4 flex flex-col items-start"
+                className="h-auto p-4 flex flex-col items-start hover:bg-purple-700"
               >
                 <div className="font-medium text-left">{step.name}</div>
                 <div className="text-xs text-left opacity-70">{step.description}</div>
@@ -205,6 +208,13 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Results */}
       {results && (
@@ -268,6 +278,7 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
       {statistics.length > 0 && (
         <StatisticsPanel statistics={statistics} />
       )}
+
     </div>
   );
 };

@@ -31,8 +31,8 @@ export const StatisticsPanel = ({ statistics }: StatisticsPanelProps) => {
   const getAlgorithmName = (algorithm: string, baseMethod: string) => {
     const names: Record<string, string> = {
       greedy: "Buscas Gulosas",
-      vnd1: "VND1",
-      vnd: "VND2",
+      // vnd1: "VND1",
+      vnd: "VND",
       ils: "ILS"
     };
     const algorithmName = names[algorithm] || algorithm;
@@ -64,7 +64,7 @@ export const StatisticsPanel = ({ statistics }: StatisticsPanelProps) => {
         <div className="space-y-4">
           {sortedStats.map((stat, index) => (
             <div 
-              key={stat.timestamp}
+              key={`${stat.algorithm}-${stat.baseMethod}-${stat.timestamp}`}
               className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors"
             >
               <div className="flex items-center gap-4">

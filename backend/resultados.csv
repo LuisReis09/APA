@@ -1,0 +1,24 @@
+Arquivo de Entrada, Algoritmo Usado, Custo conseguido, Tempo de execução (ms), Valor ótimo, GAP
+"instancia1.txt","Vizinho Mais Próximo",9029,0,"null","null"
+"instancia1.txt","Inserção Mais Barata",27389,0,"null","null"
+"n12_q20.txt","Vizinho Mais Próximo",18900,0,15700,20.38
+"n12_q20.txt","Inserção Mais Barata",22400,0,15700,42.68
+"n12_q30.txt","Vizinho Mais Próximo",18900,0,14600,29.45
+"n12_q30.txt","Inserção Mais Barata",16000,0,14600,9.59
+"n12_q30.txt","VND 2 - IMB",16300,0,14600,11.64
+"n12_q30.txt","VND 2 - VMP",15000,0,14600,2.74
+"n12_q30.txt","ILS - IMB",16300,15,14600,11.64
+"n12_q30.txt","ILS - VMP",15000,8,14600,2.74
+"n12_q20.txt","Vizinho Mais Próximo",18900,0,15700,20.38
+"n12_q20.txt","Inserção Mais Barata",22400,0,15700,42.68
+"n12_q20.txt","VND 2 - IMB",16300,15,15700,3.82
+"n12_q20.txt","VND 2 - VMP",15000,8,15700,-4.46
+"n12_q20.txt","ILS - IMB",16300,7,15700,3.82
+"n12_q20.txt","ILS - VMP",15000,7,15700,-4.46
+"n12_q30.txt","Vizinho Mais Próximo",18900,0,14600,29.45
+"n12_q30.txt","Inserção Mais Barata",16000,0,14600,9.59
+"n12_q30.txt","VND 2 - IMB",16300,0,14600,11.64
+"n12_q30.txt","VND 2 - VMP",15000,7,14600,2.74
+"n12_q30.txt","ILS - IMB",16300,16,14600,11.64
+"n12_q30.txt","ILS - VMP",15000,9,14600,2.74
+"exemplo2.txt","Inserção Mais Barata",397,0,"null","null"

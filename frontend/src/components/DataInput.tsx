@@ -40,6 +40,7 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
       if (selectedFile.name.endsWith('.txt')) {
         const formData = new FormData();
         formData.append("input", input);
+        formData.append("file_name", selectedFile.name);
         fetch("http://localhost:4000/carregarArquivo", {
           method: "POST",
           body: formData
