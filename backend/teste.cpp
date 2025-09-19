@@ -11,6 +11,7 @@ Problema p;
 
 int main()
 {
+    srand(time(NULL));
     int menor_vmp, menor_imb, menor_vnd, menor_ils;
     int soma_vmp, soma_imb, soma_vnd, soma_ils;
     int media_vmp, media_imb, media_vnd, media_ils;
@@ -33,7 +34,7 @@ int main()
                 menor_vmp = sol.custo_total;
             }
 
-            cout << "vmp feito" << endl;
+            // cout << "vmp feito" << endl;
             sol.SalvarSolucao("./solucoes/instancia" + to_string(inst) + "/vmp/" + to_string(i) + ".txt");
 
             Solucao sol_imb = IMB();
@@ -58,22 +59,19 @@ int main()
             cout << "vnd feito" << endl;
             sol.SalvarSolucao("./solucoes/instancia" + to_string(inst) + "/vnd/" + to_string(i) + ".txt");
 
-            ILS_Backend(sol.rotas, 2000, 200);
-            sol.custo_total = CustoTotal(sol.rotas);
-            soma_ils += sol.custo_total;
-            if (sol.custo_total < menor_ils)
-            {
-                menor_ils = sol.custo_total;
-            }
-
-            cout << "ils feito" << endl;
-            sol.SalvarSolucao("./solucoes/instancia" + to_string(inst) + "/ils/" + to_string(i) + ".txt");
+            // ILS_Backend(sol.rotas, 2000, 200);
+            // sol.custo_total = CustoTotal(sol.rotas);
+            // soma_ils = sol.custo_total;
+            // if (sol.custo_total < menor_ils)
+            // {
+            //     menor_ils = sol.custo_total;
+            // }
         }
 
         media_vmp = soma_vmp / 15;
         media_imb = soma_imb / 15;
         media_vnd = soma_vnd / 15;
-        media_ils = soma_ils / 15;
+        // media_ils = soma_ils / 15;
 
         cout << "\n=== INSTANCIA " << inst << " ===" << endl;
         cout << "Media Vizinho Mais Proximo: " << media_vmp << endl;
@@ -82,8 +80,8 @@ int main()
         cout << "Menor Valor Insercao Mais Barata: " << menor_imb << endl;
         cout << "Media VND: " << media_vnd << endl;
         cout << "Menor Valor VND: " << menor_vnd << endl;
-        cout << "Media ILS: " << media_ils << endl;
-        cout << "Menor Valor ILS: " << menor_ils << endl;
+        // cout << "Media ILS: " << media_ils << endl;
+        // cout << "Menor Valor ILS: " << menor_ils << endl;
     }
 
     return 0;

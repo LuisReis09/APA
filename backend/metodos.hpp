@@ -1553,12 +1553,14 @@ int VNDReinsertion(vector<vector<int>> &rotas, int custo_antigo)
  */
 void VND2(vector<vector<int>> &rotas)
 {
-    int vizinhanca = 1;
+    int vizinhanca;
     int melhor_custo = CustoTotal(rotas);
     int teste;
+    int iter = 500;
 
-    while (vizinhanca < 4)
+    while (iter--)
     {
+        vizinhanca = rand() % 3 + 1;
 
         // Itera por cada função de acordo com o valor de vizinhança
         switch (vizinhanca)
