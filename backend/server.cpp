@@ -41,7 +41,7 @@ string MatrizToString(const vector<vector<int>>& matriz) {
 
 void processarILS(Solucao& solucao, int max_iteracoes, int max_sem_melhora) {
     auto start = std::chrono::high_resolution_clock::now();
-    ILS_Backend(solucao.rotas, max_iteracoes, max_sem_melhora);
+    ILS(solucao.rotas, max_iteracoes, max_sem_melhora);
     auto end = std::chrono::high_resolution_clock::now();
     long long duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     solucao.custo_total = CustoTotal(solucao.rotas);

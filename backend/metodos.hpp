@@ -370,7 +370,7 @@ vector<int> VND_Shift_N(const vector<int> &rota)
     {
         for (int j = i + 1; j < rota_ret.size() - 1; j++)
         {
-            int max_seg = min(nMax, (int)rota_ret.size() - 1 - i);
+            int max_seg = min(nMax, (int)rota_ret.size() - 2 - i);
             if (max_seg < 1)
                 continue;
 
@@ -726,7 +726,7 @@ int VNDInterNOpt1(vector<int> &r1, vector<int> &r2)
     int novo_custo;
     vector<int> copy_r1, copy_r2;
 
-    int max_seg = r1.size() - 2; // no máximo até antes do depósito
+    int max_seg = r1.size() - 3; // no máximo até antes do depósito
     if (max_seg < 4)
         return melhor_custo; // não tem segmento válido
 
@@ -927,34 +927,19 @@ void VNDIntraInter(vector<vector<int>> &rotas)
  * @param qtd_reverses Quantia de quantas rotas serão revertidas.
  * ---
  */
-void PerturbacaoReverse(vector<vector<int>> &rotas, int qtd_reverses)
+void PerturbacaoReverse(vector<vector<int>> &rotas)
 {
-    vector<int> reversed_routes;
-    if (qtd_reverses > rotas.size()) // Se o termo for maior que o numero de rotas, alguma delas vai ser revertida e posta de novo pro normal
-        return;                      // Portanto, evitar essa redundância
+    int id_a_inverter;
 
-    while (qtd_reverses > 0)
-    {
+    do{
+        id_a_inverter = rand() % rotas.size();
+    }while(rotas[id_a_inverter].size() <= 3); // garante que a rota tenha ao menos 2 elementos para inverter
 
-        int random_route_index = rand() % rotas.size();
-
-        // Verificação se o termo já está no vetor de rotas revertidas.
-        if (find(reversed_routes.begin(), reversed_routes.end(), random_route_index) != reversed_routes.end())
-        {
-            continue;
-        }
-
-        while (rotas[random_route_index].size() <= 3)
-        { // Rota só tem 1 termo efetivo, sortear dnv
-            random_route_index = rand() % rotas.size();
-        }
-
-        // Reverter rota
-        reverse(rotas[random_route_index].begin(), rotas[random_route_index].end());
-        reversed_routes.push_back(random_route_index);
-
-        qtd_reverses--;
+    int aux = 1;
+    for(int b = rotas[id_a_inverter].size() - 2; b > aux; b--, aux++){
+        swap(rotas[id_a_inverter][aux], rotas[id_a_inverter][b]);
     }
+    return;
 }
 
 /**
@@ -966,44 +951,28 @@ void PerturbacaoReverse(vector<vector<int>> &rotas, int qtd_reverses)
  */
 void PerturbacaoNewRoute(vector<vector<int>> &rotas, int qtd_elementos)
 {
-    // Tal perturbacao nao eh possivel se ja estivermos usando todos os veiculos
-    if (p.qnt_veiculos <= rotas.size())
-        return;
+    if (p.qnt_veiculos <= rotas.size()) return;
 
-    vector<int> elementos_retirados(qtd_elementos + 2);
-    elementos_retirados[0] = 0;                 // depósito inicial
-    elementos_retirados[qtd_elementos + 1] = 0; // depósito final
-    int aux = 1;
-
+    vector<int> nova_rota = {0}; // Inicia apenas com depósito inicial
+    nova_rota.reserve(qtd_elementos + 2);
+    
     while (qtd_elementos--)
     {
-        // Sorteia uma rota de origem
         int id_rota_origem = rand() % rotas.size();
-        if (rotas[id_rota_origem].size() < 3)
-        {
-            continue;
-        }
-        // Index máximo a ser sorteado (evita depositos)
-        int id_max = rotas[id_rota_origem].size() - 2;
-
-        // Sorteio de indice
-        int indice_retirada = RandomEntre(1, id_max);
-        // Adiciona os termos sorteados ao vetor de elementos
-        elementos_retirados[aux++] = rotas[id_rota_origem][indice_retirada];
-        // Retira da rota de origem
-        rotas[id_rota_origem].erase(rotas[id_rota_origem].begin() + indice_retirada);
-    }
-
-    for (int i = rotas.size() - 1; i >= 0; i--)
-    {
-        if (rotas[i].size() < 3)
-        {
-            rotas.erase(rotas.begin() + i);
+        if (rotas[id_rota_origem].size() <= 2) continue;
+        
+        int indice = 1 + rand() % (rotas[id_rota_origem].size() - 2);
+        nova_rota.push_back(rotas[id_rota_origem][indice]);
+        rotas[id_rota_origem].erase(rotas[id_rota_origem].begin() + indice);
+        
+        // Remove rota se ficou vazia (apenas [0,0])
+        if (rotas[id_rota_origem].size() == 2) {
+            rotas.erase(rotas.begin() + id_rota_origem);
         }
     }
-
-    // Cria a nova rota
-    rotas.push_back(elementos_retirados);
+    
+    nova_rota.push_back(0); // Depósito final
+    rotas.push_back(nova_rota);
 }
 
 /**
@@ -1015,31 +984,20 @@ void PerturbacaoNewRoute(vector<vector<int>> &rotas, int qtd_elementos)
  */
 void PerturbacaoSwitch(vector<vector<int>> &rotas, int trocar_a_realizar)
 {
-    int qtd_rotas = rotas.size();
-    int id_rota_origem, id_rota_destino; // index das rotas que terão seus termos trocados entre si
-    int pos1, pos2;                      // Posição dos termos que serão trocados na rota de origem e de destino, respectivamente
-
-    id_rota_origem = id_rota_destino = 0;
     while (trocar_a_realizar--)
     {
-        if (qtd_rotas > 1)
-        {
-            // Sorteia duas rotas aleatorias
-            id_rota_origem = rand() % qtd_rotas;
-            id_rota_destino = rand() % qtd_rotas;
-        }
-
-        // O range deve ser [1, rota.size() - 1], para nao incluir o galpao do inicio e do fim
-        // Sorteia duas posições nas rotas de origem e destino
-        pos1 = rand() % (rotas[id_rota_origem].size() - 2);
-        pos2 = rand() % (rotas[id_rota_destino].size() - 2);
-
-        // Para evitar de ser índice 0, onde esta o galpao
-        pos1++;
-        pos2++;
-
-        // troca os termos de lugar
-        swap(rotas[id_rota_origem][pos1], rotas[id_rota_destino][pos2]);
+        if (rotas.size() < 2) break;
+        
+        int r1 = rand() % rotas.size();
+        int r2 = rand() % rotas.size();
+        if (r1 == r2) continue;
+        
+        if (rotas[r1].size() < 3 || rotas[r2].size() < 3) continue;
+        
+        int pos1 = 1 + rand() % (rotas[r1].size() - 2);
+        int pos2 = 1 + rand() % (rotas[r2].size() - 2);
+        
+        swap(rotas[r1][pos1], rotas[r2][pos2]);
     }
 }
 
@@ -1050,29 +1008,38 @@ void PerturbacaoSwitch(vector<vector<int>> &rotas, int trocar_a_realizar)
  */
 void PerturbacaoHalfSwapRoutes(vector<vector<int>> &rotas)
 {
-    if (rotas.size() < 2)
-        return; // precisa de ao menos 2 rotas
+    if (rotas.size() < 2) return;
 
-    // Sorteia duas rotas aleatorias (e de tamanho efetivo maior que 3)
-    int rota1, rota2;
-    do
-    {
-        rota1 = rand() % rotas.size();
-        rota2 = rand() % rotas.size();
-    } while (rota1 == rota2 || rotas[rota1].size() <= 3 || rotas[rota2].size() <= 3);
+    // Encontrar duas rotas válidas
+    int rota1 = -1, rota2 = -1;
+    for (int tentativa = 0; tentativa < 50; tentativa++) {
+        int r1 = rand() % rotas.size();
+        int r2 = rand() % rotas.size();
+        
+        if (r1 != r2 && rotas[r1].size() >= 4 && rotas[r2].size() >= 4) {
+            rota1 = r1;
+            rota2 = r2;
+            break;
+        }
+    }
+    
+    if (rota1 == -1 || rota2 == -1) return; // Não encontrou rotas válidas
 
-    // Index da metade da primeira e segunda rota
-    int metade1 = 1 + (rotas[rota1].size() - 2) / 2;
-    int metade2 = 1 + (rotas[rota2].size() - 2) / 2;
+    // Calcular limites seguros
+    int estacoes1 = rotas[rota1].size() - 2;
+    int estacoes2 = rotas[rota2].size() - 2;
+    
+    // Determinar quantas estações trocar (mínimo 1, máximo metade da menor)
+    int max_trocas = min(estacoes1, estacoes2);
+    int trocas = max(1, rand() % (max_trocas / 2 + 1));
 
-    int i = 1, j = 1;
+    // Escolher posições iniciais aleatórias
+    int inicio1 = 1 + (rand() % (estacoes1 - trocas + 1));
+    int inicio2 = 1 + (rand() % (estacoes2 - trocas + 1));
 
-    // Troca as primeiras metades de cada rota entre si
-    while (i < metade1 && j < metade2)
-    {
-        swap(rotas[rota1][i], rotas[rota2][j]);
-        i++;
-        j++;
+    // Realizar as trocas
+    for (int i = 0; i < trocas; i++) {
+        swap(rotas[rota1][inicio1 + i], rotas[rota2][inicio2 + i]);
     }
 }
 
@@ -1084,22 +1051,26 @@ void PerturbacaoHalfSwapRoutes(vector<vector<int>> &rotas)
  */
 void PerturbacaoHalfSwap(vector<vector<int>> &rotas, bool reverso = false)
 {
+    if (rotas.empty()) return;
+
     int rota_alvo;
 
-    // Sorteia uma rota_alvo válida
+    // Sorteia uma rota válida
     do
     {
         rota_alvo = rand() % rotas.size();
-    } while (rotas[rota_alvo].size() <= 3); // garante que a rota tenha ao menos 2 elementos para trocar
+    } while (rotas[rota_alvo].size() < 5); 
+    // mínimo 5: {0, a, b, c, 0} → para garantir 2 metades não-triviais
 
-    int metade = 1 + (rotas[rota_alvo].size() - 2) / 2;
+    int n = rotas[rota_alvo].size();
+    int metade = n / 2;
 
     if (!reverso)
-    { // Troca as duas metades da rota sorteada, mantendo a ordem da segunda metade
-        // Exemplo: Antes: {0, 1, 2, 3, 4, 0} ---> Depois: {0, 3, 4, 1, 2, 0}
+    {
+        // Troca as duas metades mantendo ordem da segunda metade
+        // Exemplo: {0, 1, 2, 3, 4, 0} → {0, 3, 4, 1, 2, 0}
         int i = 1, j = metade;
-
-        while (i < metade)
+        while (i < metade && j < n - 1)
         {
             swap(rotas[rota_alvo][i], rotas[rota_alvo][j]);
             i++;
@@ -1107,12 +1078,10 @@ void PerturbacaoHalfSwap(vector<vector<int>> &rotas, bool reverso = false)
         }
     }
     else
-    { // Se a opção de reverso foi habilitada, troca as duas metades da rota sorteada, NÃO mantend a ordem da 2a fatia
-        // Exemplo: Antes: {0, 1, 2, 3, 4, 0} ---> Depois: {0, 4, 3, 2, 1, 0}
-
-        // Primeiro e ultimo termo, respectivamente
-        int i = 1, j = rotas[rota_alvo].size() - 2;
-
+    {
+        // Reverso: inverte toda a parte interna da rota
+        // Exemplo: {0, 1, 2, 3, 4, 0} → {0, 4, 3, 2, 1, 0}
+        int i = 1, j = n - 2;
         while (i < j)
         {
             swap(rotas[rota_alvo][i], rotas[rota_alvo][j]);
@@ -1142,38 +1111,14 @@ void PerturbacaoMergeRoutes(vector<vector<int>> &rotas)
         id2 = rand() % rotas.size();
     } while (id1 == id2);
 
-    // Montando nova rota
-    vector<int> rota_resultante;
-    rota_resultante.reserve(rotas[id1].size() + rotas[id2].size() - 2);
-    rota_resultante.push_back(0); // depósito inicial
+    rotas[id1].reserve(rotas[id1].size() + rotas[id2].size() - 2);
 
-    // Inserindo primeira rota
-    for (int i = 1; i < rotas[id1].size() - 1; i++)
-    {
-        rota_resultante.push_back(rotas[id1][i]);
-    }
+    rotas[id1].pop_back(); // Remove o depósito final da primeira rota
+    for(int j = 1; j < rotas[id2].size(); j++) // Começa do 1 para pular o depósito inicial
+        rotas[id1].push_back(rotas[id2][j]); // Adiciona todos os
 
-    // Inserindo as rotas
-    for (int j = 1; j < rotas[id2].size() - 1; j++)
-    {
-        rota_resultante.push_back(rotas[id2][j]);
-    }
-
-    rota_resultante.push_back(0);
-
-    // Apagas as fundidas
-    if (id1 < id2)
-    {
-        rotas.erase(rotas.begin() + id2);
-        rotas.erase(rotas.begin() + id1);
-    }
-    else
-    {
-        rotas.erase(rotas.begin() + id1);
-        rotas.erase(rotas.begin() + id2);
-    }
-
-    rotas.push_back(rota_resultante);
+    rotas.erase(rotas.begin() + id2); // Remove a segunda rota
+    return;
 }
 
 /**
@@ -1184,36 +1129,26 @@ void PerturbacaoMergeRoutes(vector<vector<int>> &rotas)
  */
 void PerturbacaoSplitRoute(vector<vector<int>> &rotas)
 {
-    // Se tiver caminhao suficiente, quebra uma rota aleatoria ao meio
-
-    if (rotas.size() >= p.qnt_veiculos)
-        return;
+    if (rotas.size() >= p.qnt_veiculos) return;
 
     int id;
+    do { id = rand() % rotas.size(); } 
+    while (rotas[id].size() < 4);
 
-    // Sorteia uma rota de tamanho apropriado
-    do
-    {
-        id = rand() % rotas.size();
-    } while (rotas[id].size() < 4);
+    int meio = 1 + (rotas[id].size() - 2) / 2; // Ponto de divisão
 
-    // Acha o meio dest rota
-    int meio = rotas[id].size() / 2;
+    // Nova rota (segunda metade)
+    vector<int> nova_rota;
+    nova_rota.push_back(0); // Depósito inicial
+    nova_rota.insert(nova_rota.end(), 
+                    rotas[id].begin() + meio, 
+                    rotas[id].end() - 1); // Exceto último 0
+    nova_rota.push_back(0); // Depósito final
 
-    // Cria uma nova rota
-    vector<int> nova_rota(rotas[id].size() - meio + 1);
-    nova_rota[0] = 0;
+    // Rota original (primeira metade)
+    rotas[id].erase(rotas[id].begin() + meio, rotas[id].end() - 1);
+    rotas[id].push_back(0); // Garante depósito final
 
-    // Monta a nova rota
-    int aux = 1;
-    for (int i = meio; i < rotas[id].size() - 1; i++)
-    {
-        nova_rota[aux] = rotas[id][i];
-    }
-
-    // Apaga aquela fatia da rota antiga e termina de montar a nova rota
-    rotas[id].erase(rotas[id].begin() + meio, rotas[id].end());
-    rotas[id].push_back(0);
     rotas.push_back(nova_rota);
 }
 
@@ -1229,47 +1164,41 @@ void Perturbar(vector<vector<int>> &rotas, int opcao, int nivel_perturbacao)
 {
     switch (opcao)
     {
-    case 1:
-        PerturbacaoNewRoute(rotas, 2 * nivel_perturbacao);
-        break;
+    // case 1:
+    //     PerturbacaoNewRoute(rotas, 2 * nivel_perturbacao);
+    //     break;
     case 2:
-        PerturbacaoHalfSwapRoutes(rotas);
+        PerturbacaoReverse(rotas);
         break;
     case 3:
-        PerturbacaoReverse(rotas, nivel_perturbacao);
-        break;
-    case 4:
         PerturbacaoMergeRoutes(rotas);
         break;
-    case 5:
+    case 4:
         PerturbacaoSplitRoute(rotas);
+        break;
+    case 5:
+        PerturbacaoHalfSwap(rotas, false);
         break;
     case 6:
         PerturbacaoHalfSwap(rotas, true);
         break;
     case 7:
-        PerturbacaoHalfSwap(rotas, false);
-        break;
+        PerturbacaoHalfSwapRoutes(rotas);
     default:
         break;
     }
 }
 
-bool VerificaSwapVND(const vector<int> &rota, int posicao, int nova_estacao)
-{
+bool VerificaSwapVND(const vector<int>& rota, int posicao, int elemento){
     int prefix = 0;
     int min = MAXX_INT, max = 0;
 
-    for (int i = 1; i < rota.size() - 1; i++)
-    {
-        if (i == posicao)
-        {
-            prefix += p.demandas[nova_estacao - 1];
-        }
+    for(int i=1; i < rota.size() - 1; i++){
+        if(i == posicao)
+            prefix += p.demandas[elemento - 1];
         else
-        {
             prefix += p.demandas[rota[i] - 1];
-        }
+
 
         if (prefix > max)
             max = prefix;
@@ -1301,7 +1230,7 @@ int VNDSwap(vector<vector<int>> &rotas, int custo_antigo)
         for (int id_e1 = 1; id_e1 < (rotas[id_r1].size() - 1); id_e1++)
         {
             int e1_ant = rotas[id_r1][id_e1 - 1];
-            const int e1 = rotas[id_r1][id_e1];
+            int e1 = rotas[id_r1][id_e1];
             int e1_pos = rotas[id_r1][id_e1 + 1];
             melhor_custo = 0;
 
@@ -1310,10 +1239,10 @@ int VNDSwap(vector<vector<int>> &rotas, int custo_antigo)
                 for (int id_e2 = 1; id_e2 < (rotas[id_r2].size() - 1); id_e2++)
                 {
                     int e2_ant = rotas[id_r2][id_e2 - 1];
-                    const int e2 = rotas[id_r2][id_e2];
+                    int e2 = rotas[id_r2][id_e2];
                     int e2_pos = rotas[id_r2][id_e2 + 1];
 
-                    if (e1 == e2 || rotas[id_r1].size() < 4 || rotas[id_r2].size() < 4)
+                    if (e1 == e2)
                     {
                         continue;
                     }
@@ -1328,8 +1257,7 @@ int VNDSwap(vector<vector<int>> &rotas, int custo_antigo)
                     custo_teste += p.matriz_custo[e2_ant][e1];
                     custo_teste += p.matriz_custo[e1][e2_pos];
 
-                    if (custo_teste < melhor_custo && VerificaSwapVND(rotas[id_r1], id_e1, e2) && VerificaSwapVND(rotas[id_r2], id_e2, e1))
-                    {
+                    if(custo_teste < melhor_custo && VerificaSwapVND(rotas[id_r1], id_e1, e2) && VerificaSwapVND(rotas[id_r2], id_e2, e1)){
                         melhor_custo = custo_teste;
                         melhor_troca_r = id_r2;
                         melhor_troca_e = id_e2;
@@ -1467,12 +1395,11 @@ int VNDReinsertion(vector<vector<int>> &rotas, int custo_antigo)
     {
         for (int id_e1 = 1; id_e1 < (rotas[id_r1].size() - 1); id_e1++)
         {
-
             for (int id_r2 = 0; id_r2 < rotas.size(); id_r2++)
             {
                 for (int id_e2 = 1; id_e2 < (rotas[id_r2].size() - 1); id_e2++)
                 {
-
+                    // Evita reinserção inútil
                     if (id_r1 == id_r2 && (id_e1 == id_e2 || id_e1 == (id_e2 - 1)))
                         continue;
 
@@ -1488,45 +1415,26 @@ int VNDReinsertion(vector<vector<int>> &rotas, int custo_antigo)
 
                     if ((custo_remocao + custo_insercao) < 0)
                     {
+                        // Caso intra-rota
                         if (id_r1 == id_r2 && ReinsertionTest(rotas[id_r1], id_e1, id_e2))
                         {
                             int estacao = rotas[id_r1][id_e1];
-                            int aux = 0;
+                            rotas[id_r1].erase(rotas[id_r1].begin() + id_e1);
+
+                            // Inserção segura
                             if (id_e1 < id_e2)
-                            {
-                                for (int i = id_e1; i < id_e2; i++)
-                                {
-                                    rotas[id_r1][i] = rotas[id_r1][i + 1];
-                                }
-                                // Insere estacao na nova posição
-                                rotas[id_r1][id_e2 - 1] = estacao;
-                            }
+                                rotas[id_r1].insert(rotas[id_r1].begin() + (id_e2 - 1), estacao);
                             else
-                            {
-                                for (int i = id_e1; i > id_e2; i--)
-                                {
-                                    rotas[id_r1][i] = rotas[id_r1][i - 1];
-                                }
-                                rotas[id_r1][id_e2] = estacao;
-                            }
+                                rotas[id_r1].insert(rotas[id_r1].begin() + id_e2, estacao);
                         }
-                        else if (RemovalTest(rotas[id_r1], id_e1) && InsertionTest(rotas[id_r2], id_e2, rotas[id_r1][id_e1]))
+                        // Caso inter-rotas
+                        else if (RemovalTest(rotas[id_r1], id_e1) &&
+                                 InsertionTest(rotas[id_r2], id_e2, rotas[id_r1][id_e1]))
                         {
                             int estacao = rotas[id_r1][id_e1];
-                            for (int i = id_e1; i < (rotas[id_r1].size() - 1); i++)
-                            {
-                                rotas[id_r1][i] = rotas[id_r1][i + 1];
-                            }
-                            rotas[id_r1].pop_back();
+                            rotas[id_r1].erase(rotas[id_r1].begin() + id_e1);
 
-                            rotas[id_r2].reserve(rotas[id_r2].size() + 1);
-                            rotas[id_r2].push_back(0);
-
-                            for (int i = rotas[id_r2].size() - 2; i > id_e2; i--)
-                            {
-                                rotas[id_r2][i] = rotas[id_r2][i - 1];
-                            }
-                            rotas[id_r2][id_e2] = estacao;
+                            rotas[id_r2].insert(rotas[id_r2].begin() + id_e2, estacao);
                         }
                     }
                 }
@@ -1534,36 +1442,38 @@ int VNDReinsertion(vector<vector<int>> &rotas, int custo_antigo)
         }
     }
 
+    // Remove rotas "mortas" (só depot)
     for (int i = rotas.size() - 1; i >= 0; i--)
     {
         if (rotas[i].size() < 3)
-        {
             rotas.erase(rotas.begin() + i);
-        }
     }
 
     custo_antigo = CustoTotal(rotas);
     return custo_antigo;
 }
+
 /**
  * @brief Algoritmo VND. Aplica as funções VNDSwap, VNDTwoOpt e VNDReinsertion em ordem, se todas falharem em diminuir o custo, termina
  * ---
  * @param rotas Vetor de vetor de inteiros. Rotas de uma dada solução
  * ---
  */
-void VND2(vector<vector<int>> &rotas)
+void VND2(vector<vector<int>> &rotas, int max_sem_melhora = 25)
 {
-    int vizinhanca;
     int melhor_custo = CustoTotal(rotas);
     int teste;
-    int iter = 500;
+    // int iter = 200;
+    int k = 1;
 
-    while (iter--)
+    int sem_melhora = 0;
+
+    while (sem_melhora < max_sem_melhora)
     {
-        vizinhanca = rand() % 3 + 1;
+        k = rand() % 3 + 1; // Randomiza a ordem das funções
 
         // Itera por cada função de acordo com o valor de vizinhança
-        switch (vizinhanca)
+        switch (k)
         {
         case 1:
             teste = VNDSwap(rotas, melhor_custo);
@@ -1580,11 +1490,12 @@ void VND2(vector<vector<int>> &rotas)
         if (teste < melhor_custo)
         {
             melhor_custo = teste;
-            vizinhanca = 1;
+            sem_melhora = 0;
         }
         else
         {
-            vizinhanca++;
+            sem_melhora++;
+            // k++;
         }
     }
 }
@@ -1597,79 +1508,42 @@ void VND2(vector<vector<int>> &rotas)
  * @param max_sem_melhora Máximo de iterações que o ILS tolera sem melhorar o custo encontrado.
  * ---
  */
-void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melhora = 1000)
-{
-    // srand(time(NULL)); deve ser chamado na main
-    int iteracoes = 0, sem_melhora = 0;
-    int melhor_custo = CustoTotal(rotas), custo_teste;
-
-    // Enquanto não bater o limite de iterações ou de iterações sem melhora ...
-    while (iteracoes < max_iteracoes && sem_melhora < max_sem_melhora)
-    {
-        // Define a perturbação escolhida e o grau de perturbação
-        int opcao_perturbacao = 1 + rand() % 7; // 1 a 7
-        int nivel_perturbacao = (sem_melhora / (max_sem_melhora / 6)) + 2;
-
-        // Perturbar as rotas
-        vector<vector<int>> rotas_copia = rotas;
-        Perturbar(rotas_copia, opcao_perturbacao, nivel_perturbacao);
-
-        // A partir dessas rotas modificadas, aplica VND
-        // VNDIntraInter(rotas_copia);
-        VND2(rotas_copia);
-
-        custo_teste = CustoTotal(rotas_copia);
-
-        // Se o custo for de fato melhor e as rotas forem todas válidas, atualizar solução
-        if (custo_teste < melhor_custo && VerificaDemandas(rotas_copia))
-        {
-            rotas = move(rotas_copia);
-            melhor_custo = custo_teste;
-            sem_melhora = 0;
-            cout << "Melhora! Novo custo: " << melhor_custo << endl;
-        }
-        else
-        {
-            sem_melhora++;
-        }
-
-        iteracoes++;
-    }
-}
-
-void ILS_Backend(vector<vector<int>> &rotas, int max_iteracoes, int max_sem_melhora)
+void ILS(vector<vector<int>> &rotas, int max_iteracoes, int max_sem_melhora)
 {
 
     // srand(time(NULL)); deve ser chamado na main
     int iteracoes = 0, sem_melhora = 0;
     int melhor_custo = CustoTotal(rotas), custo_teste;
+    vector<vector<int>> rotas_copia;
 
     // Enquanto não bater o limite de iterações ou de iterações sem melhora ...
     while (iteracoes < max_iteracoes && sem_melhora < max_sem_melhora)
     {
         // if(iteracoes & 1) cout << "It: " << iteracoes << endl;
         // Define a perturbação escolhida e o grau de perturbação
-        int opcao_perturbacao = 1 + rand() % 7; // 1 a 7
+        int opcao_perturbacao = 1 + rand() % 4; // 1 a 4
         int nivel_perturbacao = (sem_melhora / (max_sem_melhora / 6)) + 2;
-
+        
         // Perturbar as rotas
-        vector<vector<int>> rotas_copia = rotas;
+        rotas_copia = rotas;
         Perturbar(rotas_copia, opcao_perturbacao, nivel_perturbacao);
-
+        // cout << "Perturbou -- Opcao perturbacao: " << opcao_perturbacao << "\n";
+        
         // A partir dessas rotas modificadas, aplica VND
         // VNDIntraInter(rotas_copia);
-        VND2(rotas_copia);
 
+        VND2(rotas_copia);
+        // cout << "Passou pelo VND\n";
         custo_teste = CustoTotal(rotas_copia);
 
         // Se o custo for de fato melhor e as rotas forem todas válidas, atualizar solução
-        if (custo_teste < melhor_custo && VerificaSolucao(rotas_copia))
+        if (custo_teste < melhor_custo && VerificaDemandas(rotas_copia))
         {
             rotas = rotas_copia;
             melhor_custo = custo_teste;
             sem_melhora = 0;
 
-            cout << "Melhora! Novo custo: " << melhor_custo << endl;
+            // cout << "Melhora! Novo custo: " << melhor_custo << endl;
         }
         else
         {
@@ -1678,6 +1552,8 @@ void ILS_Backend(vector<vector<int>> &rotas, int max_iteracoes, int max_sem_melh
 
         iteracoes++;
     }
+
+    return;
 }
 
 #endif

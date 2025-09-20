@@ -21,6 +21,8 @@ Os resultados dos processamentos podem ser baixados em formato PDF, contendo uma
 2. Clique no botão **"Baixar Resultados"**.
 3. O PDF será gerado e aberto em uma nova aba do navegador.
 
+Também pode ser visualizado o relatório do processamento entregue na apresentação do projeto: [Relatório de Processamento (PDF)](./TabelaAPA.pdf)
+
 ---
 
 # Funcionamento da Aplicação
@@ -87,6 +89,14 @@ g++ server.cpp -o server
 cd ./frontend/
 npm install
 npm run dev
+```
+
+**Execução de Testes**
+1. Altere as constantes `nome_arquivo`, `valor_otimo` e `iteracoes_teste` no arquivo `backend/main.cpp`, então execute no terminal:
+```
+cd ./backend
+g++ main.cpp -o exec
+./exec
 ```
 
 ---

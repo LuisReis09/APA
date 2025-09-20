@@ -4,10 +4,10 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall
 
 # Nome do executável
-TARGET = teste
+TARGET = exec
 
 # Arquivos fonte
-SRC = teste.cpp
+SRC = main.cpp
 
 # Regra padrão (primeira a ser executada)
 all: $(TARGET)

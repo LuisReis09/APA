@@ -51,25 +51,25 @@ export const AlgorithmExplanations = () => {
       advantages: ["Melhor qualidade que vizinho mais próximo", "Considera impacto global"],
       disadvantages: ["Mais lento que vizinho mais próximo", "Ainda pode ser subótimo"]
     },
-    // {
-    //   id: "vnd1",
-    //   name: "Variable Neighborhood Descent Intra e Inter Rotas (VNDIntraInter)",
-    //   category: "Otimização",
-    //   icon: TrendingUp,
-    //   description: "Aplica movimentos locais para melhorar uma solução existente.",
-    //   steps: [
-    //     "Recebe uma solução inicial",
-    //     "Em loop, enquanto houver melhora na iteração",
-    //     "* Para cada estação em cada rota:",
-    //     "* Aplica o VND intra-rota de rota em rota, registrando se houve melhora",
-    //     "* Aplica o VND inter-rota em duplas de rotas, registrando se houve melhora",
-    //     "Se não houver melhoras, encerra",
-    //     "Retorna a solução otimizada nas estruturas de vizinhança intra e inter-rotas"
-    //   ],
-    //   complexity: "Depende das estuturas de vizinhança",
-    //   advantages: ["Melhora qualidade da solução", "Convergência garantida"],
-    //   disadvantages: ["Pode ficar preso em ótimos locais", "Depende da solução inicial", "Pode ser lento"]
-    // },
+    {
+      id: "vnd1",
+      name: "Variable Neighborhood Descent Intra e Inter Rotas (VNDIntraInter)",
+      category: "Otimização",
+      icon: TrendingUp,
+      description: "Aplica movimentos locais para melhorar uma solução existente.",
+      steps: [
+        "Recebe uma solução inicial",
+        "Em loop, enquanto houver melhora na iteração",
+        "* Para cada estação em cada rota:",
+        "* Aplica o VND intra-rota de rota em rota, registrando se houve melhora",
+        "* Aplica o VND inter-rota em duplas de rotas, registrando se houve melhora",
+        "Se não houver melhoras, encerra",
+        "Retorna a solução otimizada nas estruturas de vizinhança intra e inter-rotas"
+      ],
+      complexity: "Depende das estuturas de vizinhança",
+      advantages: ["Melhora qualidade da solução", "Convergência garantida"],
+      disadvantages: ["Pode ficar preso em ótimos locais", "Depende da solução inicial", "Pode ser lento"]
+    },
     {
       id: "vnd",
       name: "Variable Neighborhood Descent 2 (VND)",

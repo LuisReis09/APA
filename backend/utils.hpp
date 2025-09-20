@@ -167,6 +167,16 @@ void PrintProblema(Problema prob)
     }
 }
 
+double GAP(int valor_heuristica, int valor_otimo){
+    if(valor_otimo == -1){
+        return 100.0f;
+    }
+
+    double ret = ((double)(valor_heuristica - valor_otimo) / (double) valor_otimo)  * 100;
+    
+    return ret;
+}
+
 /**
  *  @brief Verifica se a demanda de uma rota está respeitando a capacidade máxima especificada
  *
@@ -474,7 +484,7 @@ bool ReinsertionTest(const vector<int> &rota, int posicao_original, int posicao_
  *
  * @return `int` - Custo combinado entre todas as rotas
  */
-int CustoTotal(vector<vector<int>> &rotas)
+int CustoTotal(const vector<vector<int>> &rotas)
 {
     int custo_total = 0;
 
@@ -537,7 +547,7 @@ bool VerificaSolucao(const vector<vector<int>> &rotas, bool verbose = false)
     for (int i = 0; i < rotas.size(); i++)
     {
 
-        for (int j = 0; j < rotas[i].size(); j++)
+        for (int j = 1; j < rotas[i].size() - 1; j++)
         {
             if (visitados[rotas[i][j]])
             {
@@ -562,6 +572,13 @@ bool VerificaSolucao(const vector<vector<int>> &rotas, bool verbose = false)
         {
             if (verbose)
                 cout << "Erro: Rota " << i + 1 << " não respeita a capacidade máxima." << endl;
+            return false;
+        }
+    }
+
+    for(int i=1; i <= p.qnt_estacoes; i++){
+        if(!visitados[i]){
+            if(verbose) cout << "Erro: Estação " << i << " não visitada." << endl;
             return false;
         }
     }

@@ -57,8 +57,8 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
 
   const steps = [
     { id: "greedy", name: "Buscas Gulosas", description: "Vizinho mais próximo e Inserção mais barata" },
-    // { id: "vnd1", name: "VND1", description: "Variable Neighborhood Descent Intra e Inter Rotas" },
-    { id: "vnd", name: "VND", description: "Variable Neighborhood Descent" },
+    { id: "vnd1", name: "VND1", description: "Variable Neighborhood Descent Intra e Inter Rotas" },
+    { id: "vnd2", name: "VND2", description: "Variable Neighborhood Descent" },
     { id: "ils", name: "ILS", description: "Iterated Local Search" },
   ];
 
@@ -86,10 +86,10 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
       case "greedy":
         rota = "processarGulosos";
         break;
-      // case "vnd1":
-      //   rota = "aplicarVND1";
-      //   break;
-      case "vnd":
+      case "vnd1":
+        rota = "aplicarVND1";
+        break;
+      case "vnd2":
         rota = "aplicarVND2";
         break;
       case "ils":
@@ -192,7 +192,7 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
             </div>
           )}
           
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {steps.map((step) => (
               <Button
                 key={step.id}
