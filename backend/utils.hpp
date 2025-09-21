@@ -190,13 +190,13 @@ double GAP(int valor_heuristica, int valor_otimo){
  * */
 bool VerificaDemanda(const vector<int> &rota)
 {
-    int n_rota = rota.size();
+    int n_rota = rota.size() - 1;
     int prefix = 0;
 
     int lower = 0;
     int upper = p.capacidade_max;
 
-    for (int i = 1; i < n_rota - 1; i++) {
+    for (int i = 1; i < n_rota; i++) {
         prefix += p.demandas[rota[i] - 1];
 
         lower = max(lower, -prefix);
@@ -339,16 +339,20 @@ bool InsertionTest(const vector<int> &rota, int posicao_destino, int estacao)
     for(int i=1; i < rota.size(); i++){
         if(i == posicao_destino){
             prefix += p.demandas[estacao - 1];
+            lower = max(lower, -prefix);
+            upper = min(upper, p.capacidade_max - prefix);
+            if (lower > upper) return false;
         }
         else if(rota[i] == 0) continue;
-        else prefix += p.demandas[rota[i] - 1];
+        
+        prefix += p.demandas[rota[i] - 1];
 
         lower = max(lower, -prefix);
         upper = min(upper, p.capacidade_max - prefix);
         if(lower > upper) return false;
     }
 
-    return false;
+    return true;
 }
 
 bool RemovalTest(const vector<int> &rota, int posicao_original)
@@ -364,7 +368,7 @@ bool RemovalTest(const vector<int> &rota, int posicao_original)
         upper = min(upper, p.capacidade_max - prefix);
         if(lower > upper) return false;
     }
-    return false;
+    return true;
 }
 
 bool ReinsertionTest(const vector<int> &rota, int posicao_original, int posicao_destino)
@@ -376,16 +380,22 @@ bool ReinsertionTest(const vector<int> &rota, int posicao_original, int posicao_
         if(i == posicao_original) continue;
         if(i == posicao_destino){
             prefix += p.demandas[rota[posicao_original] - 1];
+            lower = max(lower, -prefix);
+            upper = min(upper, p.capacidade_max - prefix);
+            if (lower > upper) return false;
         }
-        else if(rota[i] == 0) continue;
-        else prefix += p.demandas[rota[i] - 1];
+        else if(rota[i] == 0){
+            continue;
+        }
+
+        prefix += p.demandas[rota[i] - 1];
 
         lower = max(lower, -prefix);
         upper = min(upper, p.capacidade_max - prefix);
         if(lower > upper) return false;
     }
 
-    return false;
+    return true;
 }
 
 /**
@@ -505,13 +515,13 @@ typedef struct{
 
 VI_Resposta VerificaIntervalar(const vector<int> &rota)
 {
-    int n_rota = rota.size();
+    int n_rota = rota.size() -1;
     int prefix = 0;
 
     int lower = 0;
     int upper = p.capacidade_max;
 
-    for (int i = 1; i < n_rota - 1; i++) {
+    for (int i = 1; i < n_rota; i++) {
         prefix += p.demandas[rota[i] - 1];
 
         lower = max(lower, -prefix);
@@ -591,6 +601,60 @@ void CorrigeSolucao(vector<vector<int>> &rotas)
     for (int i = (int)rotas.size() - 1; i >= 0; i--)
         if (rotas[i].size() <= 2)
             rotas.erase(rotas.begin() + i);
+}
+
+/**
+ * @brief Tenta inverter um trecho de uma rota, retornando o custo se for válido
+ * 
+ * @param rota Vetor de inteiros representando a rota
+ * @param id_e1 Índice do primeiro elemento do trecho a ser invertido
+ * @param id_e2 Índice do último elemento do trecho a ser invertido
+ * 
+ * @return Retorna o custo total da rota com o trecho invertido, ou -1 se a inversão não for válida
+ */
+int TentaInverter(vector<int> &rota, int id_e1, int id_e2){
+    int prefix = 0;
+    int custo_total = 0;
+    int estacao_anterior = 0, estacao_atual;
+    int lower = 0, upper = p.capacidade_max;
+
+    for(int i=1; i < id_e1; i++){
+        prefix += p.demandas[rota[i] - 1];
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return -1;
+
+        estacao_atual = rota[i];
+        custo_total += p.matriz_custo[estacao_anterior][estacao_atual];
+        estacao_anterior = estacao_atual;
+    }
+
+    // agora comeca a inversao
+    for(int i=id_e2; i >= id_e1; i--){
+        prefix += p.demandas[rota[i] - 1];
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return -1;
+
+        estacao_atual = rota[i];
+        custo_total += p.matriz_custo[estacao_anterior][estacao_atual];
+        estacao_anterior = estacao_atual;
+    }
+
+    // agora a parte final, fora da inversao
+    for(int i=id_e2 + 1; i < (rota.size() - 1); i++){
+        prefix += p.demandas[rota[i] - 1];
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return -1;
+
+        estacao_atual = rota[i];
+        custo_total += p.matriz_custo[estacao_anterior][estacao_atual];
+        estacao_anterior = estacao_atual;
+    }
+
+    custo_total += p.matriz_custo[estacao_anterior][0]; // volta pro deposito
+    return custo_total;
 }
 
 #endif

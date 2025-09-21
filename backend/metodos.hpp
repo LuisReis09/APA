@@ -1299,7 +1299,7 @@ bool VerificaSwapInterVND(const vector<int>& rota, int posicao, int elemento){
         if(lower > upper) return false;
     }
 
-    return false;
+    return true;
 }
 
 bool VerificaSwapIntraVND(const vector<int>& rota, int posicao1, int posicao2){
@@ -1320,7 +1320,7 @@ bool VerificaSwapIntraVND(const vector<int>& rota, int posicao1, int posicao2){
         if(lower > upper) return false;
     }
 
-    return false;
+    return true;
 }
 
 int VNDSwap(vector<vector<int>> &rotas, int custo_antigo)
@@ -1566,6 +1566,28 @@ int VNDReinsertion(vector<vector<int>> &rotas, int custo_antigo)
     return custo_antigo;
 }
 
+int VNDInvertion(vector<vector<int>> &rotas, int custo_antigo)
+{
+    for(int id_r = 0; id_r < rotas.size(); id_r++){
+        for(int id_e1 = 1; id_e1 < rotas[id_r].size() - 2; id_e1++){
+            for(int id_e2 = id_e1 + 2; id_e2 < (rotas[id_r].size()-1) && id_e2 <= (id_e1 + 7); id_e2++){
+                int tentativa_inversao = TentaInverter(rotas[id_r], id_e1, id_e2);
+                if(tentativa_inversao != -1){
+                    int custo_rota = CustoRota(rotas[id_r]);
+                    if(tentativa_inversao < custo_rota){
+                        reverse(rotas[id_r].begin() + id_e1, rotas[id_r].begin() + id_e2 + 1);
+                        custo_antigo -= custo_rota;
+                        custo_antigo += tentativa_inversao;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    return custo_antigo;
+}
+
 /**
  * @brief Algoritmo VND. Aplica as funções VNDSwap, VNDTwoOpt e VNDReinsertion em ordem, se todas falharem em diminuir o custo, termina
  * ---
@@ -1578,21 +1600,22 @@ int VND2(vector<vector<int>> &rotas)
     int teste;
     int k = 1;
 
-    int sem_melhora = 0;
-
-    while (k < 4)
+    while (k < 5)
     {
         // Itera por cada função de acordo com o valor de vizinhança
         switch (k)
         {
-        case 2:
+        case 1:
             teste = VNDSwap(rotas, melhor_custo);
             break;
-        case 1:
+        case 2:
             teste = VNDTwoOpt(rotas, melhor_custo);
             break;
         case 3:
             teste = VNDReinsertion(rotas, melhor_custo);
+            break;
+        case 4: 
+            teste = VNDInvertion(rotas, melhor_custo);
             break;
         }
 
@@ -1605,6 +1628,56 @@ int VND2(vector<vector<int>> &rotas)
         else
         {
             k++;
+        }
+    }
+
+    return melhor_custo;
+}
+int RVND(vector<vector<int>> &rotas)
+{
+    int melhor_custo = CustoTotal(rotas);
+
+    // Conjunto de vizinhanças (identificadores)
+    vector<int> vizinhos = {1, 2, 3, 4};
+
+    bool melhorou = true;
+    while (melhorou)
+    {
+        melhorou = false;
+
+        // Reinicia e embaralha a lista de vizinhanças
+        vector<int> lista = vizinhos;
+        random_shuffle(lista.begin(), lista.end());
+
+        // Enquanto ainda houver vizinhanças não testadas
+        while (!lista.empty())
+        {
+            int k = lista.back();
+            lista.pop_back();
+
+            int teste;
+            switch (k)
+            {
+            case 1:
+                teste = VNDSwap(rotas, melhor_custo);
+                break;
+            case 2:
+                teste = VNDTwoOpt(rotas, melhor_custo);
+                break;
+            case 3:
+                teste = VNDReinsertion(rotas, melhor_custo);
+                break;
+            case 4:
+                teste = VNDInvertion(rotas, melhor_custo);
+                break;
+            }
+
+            if (teste < melhor_custo)
+            {
+                melhor_custo = teste;
+                melhorou = true;
+                break;
+            }
         }
     }
 
@@ -1630,7 +1703,6 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melh
     // Enquanto não bater o limite de iterações ou de iterações sem melhora ...
     while (iteracoes < max_iteracoes && sem_melhora < max_sem_melhora)
     {
-        // if(iteracoes & 1) cout << "It: " << iteracoes << endl;
         // Define a perturbação escolhida e o grau de perturbação
         int opcao_perturbacao = 1 + rand() % 6; // 1 a 6
         int nivel_perturbacao = (sem_melhora / (max_sem_melhora / 5)) + 2;
@@ -1650,7 +1722,7 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melh
             }
         }
 
-        custo_teste = VND2(rotas_copia);
+        custo_teste = RVND(rotas_copia);
         // cout << "Passou pelo VND\n";
 
         // Se o custo for de fato melhor e as rotas forem todas válidas, atualizar solução

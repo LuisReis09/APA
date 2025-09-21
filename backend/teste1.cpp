@@ -6,7 +6,7 @@
 
 using namespace std;
 
-Problema p("../exemplos/instancia3.txt", true);
+Problema p("../exemplos/instancia1.txt", true);
 
 int main()
 {
@@ -96,7 +96,6 @@ int main()
             }
             cout << endl;
         }
-        s.SalvarSolucao("solucao_teste_ILS1.txt");
     }
     else
     {
