@@ -6,14 +6,14 @@
 
 using namespace std;
 
-Problema p("../exemplos/instancia1.txt", true);
+Problema p("../exemplos/instancia3.txt", true);
 
 int main()
 {
     srand(time(NULL)); // seed para aleatorizar o tamanho do segmento
 
     cout << "====== Teste de Metodos ======" << endl;
-    Solucao s = VizinhoMaisProximo();
+    Solucao s = VizinhoMaisProximo2();
     s.custo_total = CustoTotal(s.rotas);
 
     if (VerificaSolucao(s.rotas, true))
@@ -55,8 +55,8 @@ int main()
     //     cout << "Solucao INVALIDA" << endl;
     // }
 
-    cout << "====== VND Intra Inter ======" << endl;
-    VNDIntraInter(s.rotas);
+    cout << "====== VND 2 ======" << endl;
+    VND2(s.rotas);
     s.custo_total = CustoTotal(s.rotas);
 
     if (VerificaSolucao(s.rotas, true))
@@ -80,7 +80,7 @@ int main()
     }
 
     // cout << "====== ILS ======" << endl;
-    ILS(s.rotas, 10000, 1000);
+    ILS(s.rotas, 10000, 500);
     s.custo_total = CustoTotal(s.rotas);
 
     if (VerificaSolucao(s.rotas, true))

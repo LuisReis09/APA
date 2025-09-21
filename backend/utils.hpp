@@ -9,6 +9,8 @@
 #include <random>
 #include "structures.hpp"
 
+#define MAXX_INT 2147483647
+
 /**
  * Instância de Problema que MelhoresVerticesserá utilizada por todas as funções que envolverem problema,
  * a fim de reduzir a empilhagem e desempilhagem do mesmo parametro múltiplas vezes.
@@ -189,33 +191,22 @@ double GAP(int valor_heuristica, int valor_otimo){
 bool VerificaDemanda(const vector<int> &rota)
 {
     int n_rota = rota.size();
-    int max = 0, min = p.demandas[rota[1] - 1];
     int prefix = 0;
-    for (int i = 1; i < n_rota - 1; i++)
-    {
+
+    int lower = 0;
+    int upper = p.capacidade_max;
+
+    for (int i = 1; i < n_rota - 1; i++) {
         prefix += p.demandas[rota[i] - 1];
 
-        if (prefix > max)
-            max = prefix;
-        else if (prefix < min)
-            min = prefix;
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+
+        if (lower > upper) 
+            return false;
     }
 
-    // ajustando o intervalo de checagem
-    min = -min;
-    max = p.capacidade_max - max;
-
-    if (max < min || max < 0 || min > p.capacidade_max)
-    {
-        return false;
-    }
-
-    // verifica se algum numero de bicicletas inicial é válido.
-    for (int i = max; i >= min && i >= 0; i--)
-        if (i <= p.capacidade_max)
-            return true;
-
-    return false;
+    return true;
 }
 
 /**
@@ -343,45 +334,19 @@ bool TestaRota(const vector<int> &rota, int estacao_teste)
 bool InsertionTest(const vector<int> &rota, int posicao_destino, int estacao)
 {
     int prefix = 0;
-    int min = p.demandas[rota[1] - 1];
-    int max = min;
+    int lower = 0, upper = p.capacidade_max;
 
-    for (int i = 1; i < rota.size(); i++)
-    {
-        if (i == posicao_destino)
-        {
-            //  acumula e verifica a adicao da demanda da nova estacao
+    for(int i=1; i < rota.size(); i++){
+        if(i == posicao_destino){
             prefix += p.demandas[estacao - 1];
-
-            if (prefix > max)
-                max = prefix;
-            else if (prefix < min)
-                min = prefix;
         }
-        if (rota[i] == 0)
-            continue;
-        //  acumula e verifica a adicao da demanda
-        prefix += p.demandas[rota[i] - 1];
+        else if(rota[i] == 0) continue;
+        else prefix += p.demandas[rota[i] - 1];
 
-        if (prefix > max)
-            max = prefix;
-        else if (prefix < min)
-            min = prefix;
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return false;
     }
-
-    // ajustando o intervalo de checagem
-    min = -min;
-    max = p.capacidade_max - max;
-
-    if (max < min || max < 0 || min > p.capacidade_max)
-    {
-        return false;
-    }
-
-    // verifica se algum numero de bicicletas inicial é válido.
-    for (int i = max; i >= min && i >= 0; i--)
-        if (i <= p.capacidade_max)
-            return true;
 
     return false;
 }
@@ -389,90 +354,36 @@ bool InsertionTest(const vector<int> &rota, int posicao_destino, int estacao)
 bool RemovalTest(const vector<int> &rota, int posicao_original)
 {
     int prefix = 0;
-    int min = p.demandas[rota[1] - 1];
-    int max = min;
+    int lower = 0, upper = p.capacidade_max;
 
-    for (int i = 1; i < rota.size(); i++)
-    {
-        if (i == posicao_original)
-        {
-            continue;
-        }
-        //  acumula e verifica a adicao da demanda
+    for(int i=1; i < rota.size() - 1; i++){
+        if(i == posicao_original) continue;
         prefix += p.demandas[rota[i] - 1];
 
-        if (rota[i] == 0)
-            continue;
-
-        if (prefix > max)
-            max = prefix;
-        else if (prefix < min)
-            min = prefix;
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return false;
     }
-
-    // ajustando o intervalo de checagem
-    min = -min;
-    max = p.capacidade_max - max;
-
-    if (max < min || max < 0 || min > p.capacidade_max)
-    {
-        return false;
-    }
-
-    // verifica se algum numero de bicicletas inicial é válido.
-    for (int i = max; i >= min && i >= 0; i--)
-        if (i <= p.capacidade_max)
-            return true;
-
     return false;
 }
 
 bool ReinsertionTest(const vector<int> &rota, int posicao_original, int posicao_destino)
 {
     int prefix = 0;
-    int min = p.demandas[rota[1] - 1];
-    int max = min;
+    int lower = 0, upper = p.capacidade_max;
 
-    for (int i = 1; i < rota.size(); i++)
-    {
-
-        if (i == posicao_original)
-            continue;
-
-        if (i == posicao_destino)
-        {
+    for(int i=1; i < rota.size(); i++){
+        if(i == posicao_original) continue;
+        if(i == posicao_destino){
             prefix += p.demandas[rota[posicao_original] - 1];
-            if (prefix > max)
-                max = prefix;
-            else if (prefix < min)
-                min = prefix;
         }
+        else if(rota[i] == 0) continue;
+        else prefix += p.demandas[rota[i] - 1];
 
-        if (rota[i] == 0)
-            continue;
-
-        //  acumula e verifica a adicao da demanda
-        prefix += p.demandas[rota[i] - 1];
-
-        if (prefix > max)
-            max = prefix;
-        else if (prefix < min)
-            min = prefix;
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return false;
     }
-
-    // ajustando o intervalo de checagem
-    min = -min;
-    max = p.capacidade_max - max;
-
-    if (max < min || max < 0 || min > p.capacidade_max)
-    {
-        return false;
-    }
-
-    // verifica se algum numero de bicicletas inicial é válido.
-    for (int i = max; i >= min && i >= 0; i--)
-        if (i <= p.capacidade_max)
-            return true;
 
     return false;
 }
@@ -584,6 +495,102 @@ bool VerificaSolucao(const vector<vector<int>> &rotas, bool verbose = false)
     }
 
     return true;
+}
+
+typedef struct{
+    bool ok;
+    int min, max;
+    int problema;
+} VI_Resposta;
+
+VI_Resposta VerificaIntervalar(const vector<int> &rota)
+{
+    int n_rota = rota.size();
+    int prefix = 0;
+
+    int lower = 0;
+    int upper = p.capacidade_max;
+
+    for (int i = 1; i < n_rota - 1; i++) {
+        prefix += p.demandas[rota[i] - 1];
+
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+
+        if (lower > upper) {
+            // inviável
+            return {
+                .ok = false,
+                .min = lower,
+                .max = upper,
+                .problema = i
+            };
+        }
+    }
+
+    // viável
+    return {
+        .ok = true,
+        .min = lower,
+        .max = upper,
+        .problema = -1
+    };
+}
+
+void CorrigeSolucao(vector<vector<int>> &rotas)
+{
+    for (int i = 0; i < (int)rotas.size(); i++)
+    {
+        while (rotas[i].size() > 2)
+        {
+            VI_Resposta resp = VerificaIntervalar(rotas[i]);
+            if (resp.ok) break; // rota já viável
+
+            int estacao_a_remover = resp.problema;
+            int estacao = rotas[i][estacao_a_remover];
+            rotas[i].erase(rotas[i].begin() + estacao_a_remover);
+
+            // Realocar na posição de menor custo
+            bool realocou = false;
+            int melhor_rota = -1, melhor_pos = -1;
+            int menor_custo = MAXX_INT;
+
+            for (int r = 0; r < (int)rotas.size(); r++)
+            {
+                for (int pos = 1; pos < (int)rotas[r].size(); pos++)
+                {
+                    if (InsertionTest(rotas[r], pos, estacao))
+                    {
+                        int custo_insercao = p.matriz_custo[rotas[r][pos - 1]][estacao] +
+                                             p.matriz_custo[estacao][rotas[r][pos]] -
+                                             p.matriz_custo[rotas[r][pos - 1]][rotas[r][pos]];
+
+                        if (custo_insercao < menor_custo)
+                        {
+                            menor_custo = custo_insercao;
+                            melhor_rota = r;
+                            melhor_pos = pos;
+                        }
+                    }
+                }
+            }
+
+            if (melhor_rota != -1)
+            {
+                rotas[melhor_rota].insert(rotas[melhor_rota].begin() + melhor_pos, estacao);
+                realocou = true;
+            }
+
+            // Se não encontrou posição válida, cria nova rota
+            if (!realocou)
+                rotas.push_back({0, estacao, 0});
+        }
+    }
+
+    // Remove rotas "mortas" (apenas depósitos)
+    for (int i = (int)rotas.size() - 1; i >= 0; i--)
+        if (rotas[i].size() <= 2)
+            rotas.erase(rotas.begin() + i);
 }
 
 #endif
