@@ -55,7 +55,7 @@ int main()
     //     cout << "Solucao INVALIDA" << endl;
     // }
 
-    cout << "====== VND 2 ======" << endl;
+    cout << "====== VND Intra Inter ======" << endl;
     VNDIntraInter(s.rotas);
     s.custo_total = CustoTotal(s.rotas);
 

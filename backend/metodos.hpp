@@ -953,8 +953,9 @@ void PerturbacaoNewRoute(vector<vector<int>> &rotas, int qtd_elementos)
 {
     if (p.qnt_veiculos <= rotas.size()) return;
 
-    vector<int> nova_rota = {0}; // Inicia apenas com depósito inicial
+    vector<int> nova_rota; // Inicia apenas com depósito inicial
     nova_rota.reserve(qtd_elementos + 2);
+    nova_rota.push_back(0); // Depósito inicial
     
     while (qtd_elementos--)
     {
@@ -965,13 +966,17 @@ void PerturbacaoNewRoute(vector<vector<int>> &rotas, int qtd_elementos)
         nova_rota.push_back(rotas[id_rota_origem][indice]);
         rotas[id_rota_origem].erase(rotas[id_rota_origem].begin() + indice);
         
-        // Remove rota se ficou vazia (apenas [0,0])
-        if (rotas[id_rota_origem].size() == 2) {
-            rotas.erase(rotas.begin() + id_rota_origem);
+    }
+
+    for(int i=0; i<rotas.size(); i++){
+        if(rotas[i].size() <= 2){
+            rotas.erase(rotas.begin() + i);
+            i--;
         }
     }
     
     nova_rota.push_back(0); // Depósito final
+    if(nova_rota.size() > 2) // Adiciona a nova rota apenas se tiver elementos
     rotas.push_back(nova_rota);
 }
 
@@ -1164,27 +1169,27 @@ void Perturbar(vector<vector<int>> &rotas, int opcao, int nivel_perturbacao)
 {
     switch (opcao)
     {
-    // case 1:
-    //     PerturbacaoNewRoute(rotas, 2 * nivel_perturbacao);
-    //     break;
-    case 2:
-        PerturbacaoReverse(rotas);
+    case 1:
+        PerturbacaoNewRoute(rotas, 2 * nivel_perturbacao);
         break;
-    case 3:
+    case 2:
         PerturbacaoMergeRoutes(rotas);
         break;
-    case 4:
+    case 3:
         PerturbacaoSplitRoute(rotas);
         break;
-    case 5:
+    case 4:
         PerturbacaoHalfSwap(rotas, false);
         break;
-    case 6:
+    case 5:
         PerturbacaoHalfSwap(rotas, true);
         break;
-    case 7:
+    case 6:
         PerturbacaoHalfSwapRoutes(rotas);
-    default:
+        default:
+        break;
+    case 7:
+        PerturbacaoReverse(rotas);
         break;
     }
 }
@@ -1459,19 +1464,16 @@ int VNDReinsertion(vector<vector<int>> &rotas, int custo_antigo)
  * @param rotas Vetor de vetor de inteiros. Rotas de uma dada solução
  * ---
  */
-void VND2(vector<vector<int>> &rotas, int max_sem_melhora = 25)
+int VND2(vector<vector<int>> &rotas)
 {
     int melhor_custo = CustoTotal(rotas);
     int teste;
-    // int iter = 200;
     int k = 1;
 
     int sem_melhora = 0;
 
-    while (sem_melhora < max_sem_melhora)
+    while (k < 4)
     {
-        k = rand() % 3 + 1; // Randomiza a ordem das funções
-
         // Itera por cada função de acordo com o valor de vizinhança
         switch (k)
         {
@@ -1490,14 +1492,15 @@ void VND2(vector<vector<int>> &rotas, int max_sem_melhora = 25)
         if (teste < melhor_custo)
         {
             melhor_custo = teste;
-            sem_melhora = 0;
+            k = 1;
         }
         else
         {
-            sem_melhora++;
-            // k++;
+            k++;
         }
     }
+
+    return melhor_custo;
 }
 
 /**
@@ -1508,7 +1511,7 @@ void VND2(vector<vector<int>> &rotas, int max_sem_melhora = 25)
  * @param max_sem_melhora Máximo de iterações que o ILS tolera sem melhorar o custo encontrado.
  * ---
  */
-void ILS(vector<vector<int>> &rotas, int max_iteracoes, int max_sem_melhora)
+void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melhora = 10000)
 {
 
     // srand(time(NULL)); deve ser chamado na main
@@ -1521,7 +1524,7 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes, int max_sem_melhora)
     {
         // if(iteracoes & 1) cout << "It: " << iteracoes << endl;
         // Define a perturbação escolhida e o grau de perturbação
-        int opcao_perturbacao = 1 + rand() % 4; // 1 a 4
+        int opcao_perturbacao = 1 + rand() % 7; // 1 a 7
         int nivel_perturbacao = (sem_melhora / (max_sem_melhora / 6)) + 2;
         
         // Perturbar as rotas
@@ -1532,9 +1535,8 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes, int max_sem_melhora)
         // A partir dessas rotas modificadas, aplica VND
         // VNDIntraInter(rotas_copia);
 
-        VND2(rotas_copia);
+        custo_teste = VND2(rotas_copia);
         // cout << "Passou pelo VND\n";
-        custo_teste = CustoTotal(rotas_copia);
 
         // Se o custo for de fato melhor e as rotas forem todas válidas, atualizar solução
         if (custo_teste < melhor_custo && VerificaDemandas(rotas_copia))
@@ -1543,7 +1545,12 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes, int max_sem_melhora)
             melhor_custo = custo_teste;
             sem_melhora = 0;
 
-            // cout << "Melhora! Novo custo: " << melhor_custo << endl;
+            Solucao sol;
+            sol.custo_total = melhor_custo;
+            sol.rotas = rotas;
+            sol.SalvarSolucao("ils_teste.txt");
+
+            cout << "Melhora! Novo custo: " << melhor_custo << endl;
         }
         else
         {
