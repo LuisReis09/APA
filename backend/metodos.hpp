@@ -6,7 +6,6 @@
 #include <vector>
 #include "structures.hpp"
 #include "utils.hpp"
-// #include "threadpool.hpp"
 #include <time.h>
 #include <map>
 #include <functional>
@@ -1570,7 +1569,7 @@ int VNDInvertion(vector<vector<int>> &rotas, int custo_antigo)
 {
     for(int id_r = 0; id_r < rotas.size(); id_r++){
         for(int id_e1 = 1; id_e1 < rotas[id_r].size() - 2; id_e1++){
-            for(int id_e2 = id_e1 + 2; id_e2 < (rotas[id_r].size()-1) && id_e2 <= (id_e1 + 7); id_e2++){
+            for(int id_e2 = id_e1 + 2; id_e2 < (rotas[id_r].size()-1) && id_e2 <= (id_e1 + 15); id_e2++){
                 int tentativa_inversao = TentaInverter(rotas[id_r], id_e1, id_e2);
                 if(tentativa_inversao != -1){
                     int custo_rota = CustoRota(rotas[id_r]);
@@ -1579,6 +1578,59 @@ int VNDInvertion(vector<vector<int>> &rotas, int custo_antigo)
                         custo_antigo -= custo_rota;
                         custo_antigo += tentativa_inversao;
                         break;
+                    }
+                }
+            }
+        }
+    }
+
+    return custo_antigo;
+}
+
+int VNDBlockSwap(vector<vector<int>>& rotas, int custo_antigo, int tamanho_bloco = 4) {
+    int n_rotas = rotas.size();
+
+    for(int r1 = 0; r1 < n_rotas; r1++) {
+        for(int r2 = r1 + 1; r2 < n_rotas; r2++) {
+            vector<int>& rota_orig1 = rotas[r1];
+            vector<int>& rota_orig2 = rotas[r2];
+
+            int max_start1 = rota_orig1.size() - tamanho_bloco - 1;
+            int max_start2 = rota_orig2.size() - tamanho_bloco - 1;
+
+            int c1 = CustoRota(rota_orig1);
+            int c2 = CustoRota(rota_orig2);
+
+            if(max_start1 < 1 || max_start2 < 1) continue; // bloco muito grande
+
+            for(int e1 = 1; e1 <= max_start1; e1++) {
+                for(int e2 = 1; e2 <= max_start2; e2++) {
+                    // cria cópias temporárias
+                    vector<int> rota1 = rota_orig1;
+                    vector<int> rota2 = rota_orig2;
+
+                    // faz o swap do bloco
+                    for(int aux = 0; aux < tamanho_bloco; aux++){
+                        swap(rota1[e1+aux], rota2[e2+aux]);
+                    }
+
+                    // verifica se é válido e melhora custo
+                    if(VerificaDemanda(rota1) && VerificaDemanda(rota2)) {
+                        int cr1 = CustoRota(rota1);
+                        int cr2 = CustoRota(rota2);
+
+                        if(cr1 + cr2 < c1 + c2){
+
+                            // aplica o swap nas rotas originais
+                            for(int aux = 0; aux < tamanho_bloco; aux++){
+                                rota_orig1[e1+aux] = rota1[e1+aux];
+                                rota_orig2[e2+aux] = rota2[e2+aux];
+                            }
+                            
+                            custo_antigo += cr1 + cr2 - c1 - c2;
+                            c1 = cr1;
+                            c2 = cr2;
+                        }
                     }
                 }
             }
@@ -1600,7 +1652,7 @@ int VND2(vector<vector<int>> &rotas)
     int teste;
     int k = 1;
 
-    while (k < 5)
+    while (k < 6)
     {
         // Itera por cada função de acordo com o valor de vizinhança
         switch (k)
@@ -1609,13 +1661,16 @@ int VND2(vector<vector<int>> &rotas)
             teste = VNDSwap(rotas, melhor_custo);
             break;
         case 2:
-            teste = VNDTwoOpt(rotas, melhor_custo);
+            teste = VNDReinsertion(rotas, melhor_custo);
             break;
         case 3:
-            teste = VNDReinsertion(rotas, melhor_custo);
+            teste = VNDTwoOpt(rotas, melhor_custo);
             break;
         case 4: 
             teste = VNDInvertion(rotas, melhor_custo);
+            break;
+        case 5:
+            teste = VNDBlockSwap(rotas, melhor_custo);
             break;
         }
 
@@ -1633,12 +1688,13 @@ int VND2(vector<vector<int>> &rotas)
 
     return melhor_custo;
 }
-int RVND(vector<vector<int>> &rotas)
+
+int RVND(vector<vector<int>> &rotas, int custo_inicial = -1)
 {
-    int melhor_custo = CustoTotal(rotas);
+    int melhor_custo = custo_inicial == -1 ? CustoTotal(rotas) : custo_inicial;
 
     // Conjunto de vizinhanças (identificadores)
-    vector<int> vizinhos = {1, 2, 3, 4};
+    vector<int> vizinhos = {1, 2, 3, 4, 5};
 
     bool melhorou = true;
     while (melhorou)
@@ -1669,6 +1725,9 @@ int RVND(vector<vector<int>> &rotas)
                 break;
             case 4:
                 teste = VNDInvertion(rotas, melhor_custo);
+                break;
+            case 5:
+                teste = VNDBlockSwap(rotas, melhor_custo);
                 break;
             }
 
@@ -1715,18 +1774,16 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melh
         // A partir dessas rotas modificadas, aplica VND
         // VNDIntraInter(rotas_copia);
 
-        if(!VerificaDemandas(rotas_copia)){
-            CorrigeSolucao(rotas_copia);
-            if(!VerificaDemandas(rotas_copia)){
-                cout << "Erro grave: solução inválida mesmo após correção.\n";
-            }
-        }
+        // if(CustoTotal(rotas_copia) < melhor_custo){
+        //     CorrigeSolucao(rotas_copia);
+        // }
 
-        custo_teste = RVND(rotas_copia);
+        CorrigeSolucao(rotas_copia);
+        custo_teste = RVND(rotas_copia, CustoTotal(rotas_copia));
         // cout << "Passou pelo VND\n";
 
         // Se o custo for de fato melhor e as rotas forem todas válidas, atualizar solução
-        if (custo_teste < melhor_custo && VerificaDemandas(rotas_copia))
+        if (custo_teste < melhor_custo)
         {
             rotas = rotas_copia;
             melhor_custo = custo_teste;

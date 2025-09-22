@@ -350,7 +350,7 @@ int main()
         cout << "Aplicando VND nas soluções gulosas..." << endl;
         try{
             auto start = chrono::high_resolution_clock::now();
-            VND2(melhor_vizinho_mais_proximo.rotas);
+            RVND(melhor_vizinho_mais_proximo.rotas, melhor_vizinho_mais_proximo.custo_total);
             auto end = chrono::high_resolution_clock::now();
             
             long long duration_vnd_vmp = chrono::duration_cast<chrono::milliseconds>(end - start).count();
@@ -358,7 +358,7 @@ int main()
             cout << "Aplicou VND 1" << endl;
             
             start = chrono::high_resolution_clock::now();
-            VND2(melhor_insercao_mais_barata.rotas);
+            RVND(melhor_insercao_mais_barata.rotas, melhor_insercao_mais_barata.custo_total);
             end = chrono::high_resolution_clock::now();
             
             cout << "Aplicou VND 2" << endl;

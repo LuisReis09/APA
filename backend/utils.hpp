@@ -657,4 +657,37 @@ int TentaInverter(vector<int> &rota, int id_e1, int id_e2){
     return custo_total;
 }
 
+void TentaMinimizar(vector<vector<int>>& rotas){
+    // Para cada estacao das rotas 2 ... n, tenta colocar na rota 1
+    int menor_custo, melhor_posicao;
+    for(int i=1; i < rotas.size(); i++){
+        for(int j=1; j < rotas[i].size() -1; j++){
+            melhor_posicao = -1;
+            menor_custo = MAXX_INT;
+            for(int k=1; k < rotas[0].size(); k++){
+                if(InsertionTest(rotas[0], k, rotas[i][j]) && RemovalTest(rotas[i], j)){
+                    int custo = p.matriz_custo[rotas[0][k-1]][rotas[i][j]] +
+                                p.matriz_custo[rotas[i][j]][rotas[0][k]] -
+                                p.matriz_custo[rotas[0][k-1]][rotas[0][k]];
+                    if(custo < menor_custo){
+                         menor_custo = custo;
+                         melhor_posicao = k;
+                    }
+                }
+            }
+            if(melhor_posicao != -1){
+                rotas[0].insert(rotas[0].begin() + melhor_posicao, rotas[i][j]);
+                rotas[i].erase(rotas[i].begin() + j);
+                j--;
+            }
+        }
+    }
+
+    for (int i = rotas.size() - 1; i >= 1; i--) {
+        if (rotas[i].size() <= 2) {
+            rotas.erase(rotas.begin() + i);
+        }
+    }
+}
+
 #endif

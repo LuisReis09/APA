@@ -6,7 +6,7 @@
 
 using namespace std;
 
-Problema p("../exemplos/instancia1.txt", true);
+Problema p("../exemplos/instancia2.txt", true);
 
 int main()
 {
@@ -14,21 +14,22 @@ int main()
 
     cout << "====== Teste de Metodos ======" << endl;
     Solucao s = VizinhoMaisProximo2();
+    TentaMinimizar(s.rotas);
     s.custo_total = CustoTotal(s.rotas);
 
     if (VerificaSolucao(s.rotas, true))
     {
         cout << "Solucao VALIDA" << endl;
         cout << "Custo: " << s.custo_total << endl;
-        cout << "Veiculos usados: " << s.rotas.size() << endl;
-        for (const vector<int> &r : s.rotas)
-        {
-            for (const int &e : r)
-            {
-                cout << e << " ";
-            }
-            cout << endl;
-        }
+        cout << "Veiculos usados: " << s.rotas.size() << endl << endl;
+        // for (const vector<int> &r : s.rotas)
+        // {
+        //     for (const int &e : r)
+        //     {
+        //         cout << e << " ";
+        //     }
+        //     cout << endl;
+        // }
     }
     else
     {
@@ -56,7 +57,7 @@ int main()
     // }
 
     cout << "====== VND 2 ======" << endl;
-    VND2(s.rotas);
+    RVND(s.rotas);
     s.custo_total = CustoTotal(s.rotas);
 
     if (VerificaSolucao(s.rotas, true))
@@ -64,14 +65,14 @@ int main()
         cout << "Solucao VALIDA" << endl;
         cout << "Custo: " << s.custo_total << endl;
         cout << "Veiculos usados: " << s.rotas.size() << endl;
-        for (const vector<int> &r : s.rotas)
-        {
-            for (const int &e : r)
-            {
-                cout << e << " ";
-            }
-            cout << endl;
-        }
+        // for (const vector<int> &r : s.rotas)
+        // {
+        //     for (const int &e : r)
+        //     {
+        //         cout << e << " ";
+        //     }
+        //     cout << endl;
+        // }
         s.SalvarSolucao("solucao_teste_VND1.txt");
     }
     else
@@ -79,8 +80,8 @@ int main()
         cout << "Solucao INVALIDA" << endl;
     }
 
-    // cout << "====== ILS ======" << endl;
-    ILS(s.rotas, 10000, 500);
+    cout << "====== ILS ======" << endl;
+    ILS(s.rotas, 10000, 700);
     s.custo_total = CustoTotal(s.rotas);
 
     if (VerificaSolucao(s.rotas, true))
@@ -88,14 +89,14 @@ int main()
         cout << "Solucao VALIDA" << endl;
         cout << "Custo: " << s.custo_total << endl;
         cout << "Veiculos usados: " << s.rotas.size() << endl;
-        for (const vector<int> &r : s.rotas)
-        {
-            for (const int &e : r)
-            {
-                cout << e << " ";
-            }
-            cout << endl;
-        }
+        // for (const vector<int> &r : s.rotas)
+        // {
+        //     for (const int &e : r)
+        //     {
+        //         cout << e << " ";
+        //     }
+        //     cout << endl;
+        // }
     }
     else
     {
