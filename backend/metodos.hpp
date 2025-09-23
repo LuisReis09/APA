@@ -136,6 +136,14 @@ Solucao VizinhoMaisProximo2()
     int custo_total = 0;
     int qtd_iteracoes = p.qnt_estacoes;
 
+    typedef struct{
+        int lower = 0;
+        int upper = p.capacidade_max;
+        int prefix = 0;
+    } Range;
+
+    vector<Range> range_demandas(p.qnt_veiculos);
+
     typedef vector<vector<pair<int, int>>> FilaPrioridade;
     FilaPrioridade fila_prioridade(p.qnt_estacoes + 1);
 
@@ -177,7 +185,8 @@ Solucao VizinhoMaisProximo2()
                 int custo = fila_prioridade[ultimo_elemento][j].second;
 
                 // Testa se a rota, ao adicionar essa estação, permanece válida
-                bool pode_inserir = TestaRota(rotas[i], estacao);
+                int prefix = range_demandas[i].prefix + p.demandas[estacao - 1];
+                bool pode_inserir = (max(range_demandas[i].lower, -prefix) <= min(range_demandas[i].upper, p.capacidade_max - prefix));
                 // bool pode_inserir = true;
                 if (pode_inserir && !visitados[estacao - 1])
                 {
@@ -205,11 +214,20 @@ Solucao VizinhoMaisProximo2()
             rotas.push_back({0, melhor_estacao});
             custo_total += p.matriz_custo[0][melhor_estacao];
             visitados[melhor_estacao - 1] = true;
+
+            melhor_rota = rotas.size() - 1;
+            range_demandas[melhor_rota].prefix += p.demandas[melhor_estacao - 1];
+            range_demandas[melhor_rota].lower = max(range_demandas[melhor_rota].lower, -range_demandas[melhor_rota].prefix);
+            range_demandas[melhor_rota].upper = min(range_demandas[melhor_rota].upper, p.capacidade_max - range_demandas[melhor_rota].prefix);
         }else{
             // Agora que temos a melhor rota e a melhor estação, inserimos
             rotas[melhor_rota].push_back(melhor_estacao);
             custo_total += melhor_custo;
             visitados[melhor_estacao - 1] = true;
+
+            range_demandas[melhor_rota].prefix += p.demandas[melhor_estacao - 1];
+            range_demandas[melhor_rota].lower = max(range_demandas[melhor_rota].lower, -range_demandas[melhor_rota].prefix);
+            range_demandas[melhor_rota].upper = min(range_demandas[melhor_rota].upper, p.capacidade_max - range_demandas[melhor_rota].prefix);
         }
 
         // Remove a estação escolhida das filas de prioridades
