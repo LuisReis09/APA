@@ -513,15 +513,16 @@ typedef struct{
     int problema;
 } VI_Resposta;
 
-VI_Resposta VerificaIntervalar(const vector<int> &rota)
+VI_Resposta VerificaIntervalar(const vector<int> &rota, int a_ignorar = -1, int ind_max = -1)
 {
-    int n_rota = rota.size() -1;
+    int n_rota = ind_max == -1 ? rota.size() : ind_max;
     int prefix = 0;
 
     int lower = 0;
     int upper = p.capacidade_max;
 
     for (int i = 1; i < n_rota; i++) {
+        if(rota[i] == 0 || i == a_ignorar) continue;
         prefix += p.demandas[rota[i] - 1];
 
         lower = max(lower, -prefix);
@@ -549,59 +550,62 @@ VI_Resposta VerificaIntervalar(const vector<int> &rota)
 
 void CorrigeSolucao(vector<vector<int>> &rotas)
 {
-    for (int i = 0; i < (int)rotas.size(); i++)
-    {
-        while (rotas[i].size() > 2)
-        {
-            VI_Resposta resp = VerificaIntervalar(rotas[i]);
-            if (resp.ok) break; // rota já viável
+    int menor_custo_remocao, melhor_a_retirar, custo_retirar;
+    int custo_inserir, menor_custo_inserir, melhor_r, melhor_p;
+    vector<int> fila_realocacao;
 
-            int estacao_a_remover = resp.problema;
-            int estacao = rotas[i][estacao_a_remover];
-            rotas[i].erase(rotas[i].begin() + estacao_a_remover);
+    for(int i = 0; i < rotas.size(); i++){
+        while(1){
+            VI_Resposta res = VerificaIntervalar(rotas[i]);
+            if(res.ok) break;
 
-            // Realocar na posição de menor custo
-            bool realocou = false;
-            int melhor_rota = -1, melhor_pos = -1;
-            int menor_custo = MAXX_INT;
-
-            for (int r = 0; r < (int)rotas.size(); r++)
-            {
-                for (int pos = 1; pos < (int)rotas[r].size(); pos++)
-                {
-                    if (InsertionTest(rotas[r], pos, estacao))
-                    {
-                        int custo_insercao = p.matriz_custo[rotas[r][pos - 1]][estacao] +
-                                             p.matriz_custo[estacao][rotas[r][pos]] -
-                                             p.matriz_custo[rotas[r][pos - 1]][rotas[r][pos]];
-
-                        if (custo_insercao < menor_custo)
-                        {
-                            menor_custo = custo_insercao;
-                            melhor_rota = r;
-                            melhor_pos = pos;
-                        }
+            menor_custo_remocao = MAXX_INT;
+            for(int j = 1; j <= res.problema; j++){
+                if(VerificaIntervalar(rotas[i], j, res.problema).ok){
+                    custo_retirar = p.matriz_custo[rotas[i][j-1]][rotas[i][j+1]] - (p.matriz_custo[rotas[i][j-1]][rotas[i][j]] + p.matriz_custo[rotas[i][j]][rotas[i][j+1]]);
+                    if(custo_retirar < menor_custo_remocao){
+                        menor_custo_remocao = custo_retirar;
+                        melhor_a_retirar = j;
                     }
                 }
             }
+    
+            fila_realocacao.push_back(rotas[i][melhor_a_retirar]);
+            rotas[i].erase(rotas[i].begin() + melhor_a_retirar);
+        }
+    }
 
-            if (melhor_rota != -1)
-            {
-                rotas[melhor_rota].insert(rotas[melhor_rota].begin() + melhor_pos, estacao);
-                realocou = true;
+    for(int a_realocar: fila_realocacao){
+        menor_custo_inserir = MAXX_INT;
+        melhor_r = -1;
+
+        for(int i=0; i < rotas.size(); i++){
+            for(int j=1; j < rotas[i].size(); j++){
+                if(InsertionTest(rotas[i], j, a_realocar)){
+                    custo_inserir = p.matriz_custo[rotas[i][j-1]][a_realocar] + p.matriz_custo[a_realocar][rotas[i][j]] - p.matriz_custo[rotas[i][j-1]][rotas[i][j]];
+                    if(custo_inserir < menor_custo_inserir){
+                        menor_custo_inserir = custo_inserir;
+                        melhor_r = i;
+                        melhor_p = j;
+                    }
+                }
             }
+        }
 
-            // Se não encontrou posição válida, cria nova rota
-            if (!realocou)
-                rotas.push_back({0, estacao, 0});
+        if(melhor_r != -1){
+            rotas[melhor_r].insert(rotas[melhor_r].begin() + melhor_p, a_realocar);
+        }else{
+            rotas.push_back({0, a_realocar, 0});
         }
     }
 
     // Remove rotas "mortas" (apenas depósitos)
-    for (int i = (int)rotas.size() - 1; i >= 0; i--)
+    for (int i = (int)rotas.size() - 1; i >= 0; i--){
         if (rotas[i].size() <= 2)
             rotas.erase(rotas.begin() + i);
+    }
 }
+
 
 /**
  * @brief Tenta inverter um trecho de uma rota, retornando o custo se for válido

@@ -6,7 +6,7 @@
 
 using namespace std;
 
-Problema p("../exemplos/instancia2.txt", true);
+Problema p("../exemplos/instancia3.txt", true);
 
 int main()
 {
@@ -14,8 +14,11 @@ int main()
 
     cout << "====== Teste de Metodos ======" << endl;
     Solucao s = VizinhoMaisProximo2();
-    TentaMinimizar(s.rotas);
     s.custo_total = CustoTotal(s.rotas);
+    cout << "custo sem verificacoes: " << s.custo_total << endl;
+    CorrigeSolucao(s.rotas);
+    RVND(s.rotas);
+    cout << "custo depois de corrigir: " << CustoTotal(s.rotas) << endl;
 
     if (VerificaSolucao(s.rotas, true))
     {
@@ -81,7 +84,7 @@ int main()
     }
 
     cout << "====== ILS ======" << endl;
-    ILS(s.rotas, 10000, 700);
+    ILS(s.rotas, 10000, 400);
     s.custo_total = CustoTotal(s.rotas);
 
     if (VerificaSolucao(s.rotas, true))

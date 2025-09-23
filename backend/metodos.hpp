@@ -178,6 +178,7 @@ Solucao VizinhoMaisProximo2()
 
                 // Testa se a rota, ao adicionar essa estação, permanece válida
                 bool pode_inserir = TestaRota(rotas[i], estacao);
+                // bool pode_inserir = true;
                 if (pode_inserir && !visitados[estacao - 1])
                 {
                     if (custo < melhor_custo) // Se a inserção daquela estação for de fato a menor encontrada até então
@@ -1779,7 +1780,8 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melh
         // }
 
         CorrigeSolucao(rotas_copia);
-        custo_teste = RVND(rotas_copia, CustoTotal(rotas_copia));
+        // custo_teste = RVND(rotas_copia, CustoTotal(rotas_copia));
+        custo_teste = VND2(rotas_copia);
         // cout << "Passou pelo VND\n";
 
         // Se o custo for de fato melhor e as rotas forem todas válidas, atualizar solução
