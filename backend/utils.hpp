@@ -218,13 +218,34 @@ bool VerificaDemanda(const vector<int> &rota)
  *  ---
  *  @return `int` - Custo total calculado
  * */
-int CalculaCusto(vector<int> rota)
+int CalculaCusto(vector<int>& rota)
 {
     int custo = 0;
     for (int i = 0; i < rota.size() - 1; i++)
     {
         custo += p.matriz_custo[rota[i]][rota[i + 1]];
     }
+    return custo;
+}
+
+// Retorna -1 se nao for possivel, ou o custo da rota, se for possivel.
+int CustoDemanda(vector<int> &rota){
+    int prefix = 0;
+    int lower = 0;
+    int upper = p.capacidade_max;
+    int custo = 0;
+    int N = rota.size();
+
+    for(int i = 1; i < N - 1; i++){
+        prefix += p.demandas[rota[i] - 1];
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+
+        if(lower > upper) return -1;
+        custo += p.matriz_custo[rota[i-1]][rota[i]];
+    }
+
+    custo += p.matriz_custo[rota[N - 1]][0];
     return custo;
 }
 

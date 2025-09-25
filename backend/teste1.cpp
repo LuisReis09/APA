@@ -60,7 +60,13 @@ int main()
     // }
 
     cout << "====== VND 2 ======" << endl;
-    RVND(s.rotas);
+
+    for(int i=0; i < 15; i++){
+        cout << "ITER " << i+1 << endl;
+        s.custo_total = RVND(s.rotas);
+        VNDIntraInter(s.rotas);
+        
+    }
     s.custo_total = CustoTotal(s.rotas);
 
     if (VerificaSolucao(s.rotas, true))
