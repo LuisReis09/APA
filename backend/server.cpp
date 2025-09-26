@@ -3,6 +3,7 @@
 #include "structures.hpp"
 #include "utils.hpp"
 #include "metodos.hpp"
+#include "VND1.hpp"
 #include <chrono>
 
 using namespace std;
@@ -274,7 +275,7 @@ int main()
         cout << "Aplicando VND nas soluções gulosas..." << endl;
         try{
             auto start = chrono::high_resolution_clock::now();
-            VNDIntraInter(melhor_vizinho_mais_proximo.rotas);
+            VND1(melhor_vizinho_mais_proximo.rotas);
             auto end = chrono::high_resolution_clock::now();
             
             long long duration_vnd_vmp = chrono::duration_cast<chrono::milliseconds>(end - start).count();
@@ -282,7 +283,7 @@ int main()
             cout << "Aplicou VND 1" << endl;
             
             start = chrono::high_resolution_clock::now();
-            VNDIntraInter(melhor_insercao_mais_barata.rotas);
+            VND1(melhor_insercao_mais_barata.rotas);
             end = chrono::high_resolution_clock::now();
             
             cout << "Aplicou VND 2" << endl;

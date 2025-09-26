@@ -234,9 +234,9 @@ int CustoDemanda(vector<int> &rota){
     int lower = 0;
     int upper = p.capacidade_max;
     int custo = 0;
-    int N = rota.size();
+    int N = rota.size() - 1;
 
-    for(int i = 1; i < N - 1; i++){
+    for(int i = 1; i < N; i++){
         prefix += p.demandas[rota[i] - 1];
         lower = max(lower, -prefix);
         upper = min(upper, p.capacidade_max - prefix);
@@ -245,7 +245,7 @@ int CustoDemanda(vector<int> &rota){
         custo += p.matriz_custo[rota[i-1]][rota[i]];
     }
 
-    custo += p.matriz_custo[rota[N - 1]][0];
+    custo += p.matriz_custo[rota[N]][0];
     return custo;
 }
 
@@ -417,6 +417,180 @@ bool ReinsertionTest(const vector<int> &rota, int posicao_original, int posicao_
     }
 
     return true;
+}
+
+/**
+ * @brief Verifica a inserção de um bloco de `tam_seg` elementos de r1 
+ *        (a partir do índice `pos_origem`) na posição `pos_destino` da r2.
+ * 
+ * @return
+ * - `-1` se, por causa das demandas, a alteração não for possível.
+ * - `custo` total das rotas caso a inserção seja viável.
+ */
+int VerificaInterNOpt(const vector<int> &r1, const vector<int> &r2, int pos_destino, int pos_origem, int tam_seg) {
+    int custo = 0;
+    int anterior, atual;
+
+    // --- Verifica remoção do bloco de r1 ---
+    int prefix = 0;
+    int lower = 0, upper = p.capacidade_max;
+
+    anterior = r1[0];
+    for(int i = 1; i < r1.size() - 1; i++){
+        if(i == pos_origem){
+            i = i + tam_seg - 1;
+            continue;
+        }
+
+        atual = r1[i];
+        prefix += p.demandas[atual - 1];
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return -1;
+
+        custo += p.matriz_custo[anterior][atual];
+        anterior = atual;
+    }
+
+    custo += p.matriz_custo[anterior][0];
+    prefix = lower = 0;
+    upper = p.capacidade_max;
+
+    anterior = r2[0];
+    for(int i = 1; i < r2.size() - 1; i++){
+        if(i == pos_destino){
+            anterior = r2[i-1];
+            for(int j = 0; j < tam_seg; j++){
+                atual = r1[pos_origem + j];
+
+                prefix += p.demandas[atual - 1];
+                lower = max(lower, -prefix);
+                upper = min(upper, p.capacidade_max - prefix);
+                if(lower > upper) return -1;
+
+                custo += p.matriz_custo[anterior][atual];
+                anterior = atual;
+            }
+
+            atual = r2[i];
+            prefix += p.demandas[atual - 1];
+            lower = max(lower, -prefix);
+            upper = min(upper, p.capacidade_max - prefix);
+            if(lower > upper) return -1;
+
+            custo += p.matriz_custo[anterior][atual];
+            anterior = atual;
+        }
+        else{
+            atual = r2[i];
+            prefix += p.demandas[atual - 1];
+            lower = max(lower, -prefix);
+            upper = min(upper, p.capacidade_max - prefix);
+            if(lower > upper) return -1;
+
+            custo += p.matriz_custo[anterior][atual];
+            anterior = atual;
+        }
+    }
+
+    custo += p.matriz_custo[anterior][0];
+    
+    return custo;
+}
+
+
+bool VerificaSwapInterVND(const vector<int>& rota, int posicao, int elemento){
+    int prefix = 0;
+    int lower = 0, upper = p.capacidade_max;
+
+    for(int i=1; i < rota.size() - 1; i++){
+        if(i == posicao)
+            prefix += p.demandas[elemento - 1];
+        else
+            prefix += p.demandas[rota[i] - 1];
+
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return false;
+    }
+
+    return true;
+}
+
+bool VerificaSwapIntraVND(const vector<int>& rota, int posicao1, int posicao2){
+    int prefix = 0;
+    int lower = 0, upper = p.capacidade_max;
+
+    for(int i=1; i < rota.size() - 1; i++){
+        if(i == posicao1){
+            prefix += p.demandas[rota[posicao2] - 1];
+        }else if(i == posicao2){
+            prefix += p.demandas[rota[posicao1] - 1];
+        }else{
+            prefix += p.demandas[rota[i] - 1];
+        }
+
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return false;
+    }
+
+    return true;
+}
+
+int VerificaIntraShiftn(const vector<int> &rota, int posicao_origem, int posicao_destino, int tam_seg) {
+    int prefix = 0;
+    int lower = 0;
+    int upper = p.capacidade_max;
+    int custo = 0;
+    int anterior = rota[0], atual;
+
+    for(int i = 1; i < rota.size() - 1; i++){
+        if(i == posicao_origem){
+            i = i + tam_seg - 1;
+            continue;
+        }
+
+        if(i == posicao_destino){
+            anterior = rota[i-1];
+
+            for(int j = 0; j < tam_seg; j++){
+                atual = rota[posicao_origem + j];
+
+                prefix += p.demandas[atual - 1];
+                lower = max(lower, -prefix);
+                upper = min(upper, p.capacidade_max - prefix);
+                if(lower > upper) return -1;
+
+                custo += p.matriz_custo[anterior][atual];
+                anterior = atual;
+            }
+
+            atual = rota[i];
+            prefix += p.demandas[atual - 1];
+            lower = max(lower, -prefix);
+            upper = min(upper, p.capacidade_max - prefix);
+            if(lower > upper) return -1;
+
+            custo += p.matriz_custo[anterior][atual];
+            anterior = atual;
+        }
+        else{
+            atual = rota[i];
+            prefix += p.demandas[atual - 1];
+            lower = max(lower, -prefix);
+            upper = min(upper, p.capacidade_max - prefix);
+            if(lower > upper) return -1;
+
+            custo += p.matriz_custo[anterior][atual];
+            anterior = atual;
+        }
+    }
+
+    // custo do último arco para o depósito
+    custo += p.matriz_custo[anterior][0];
+
+    return custo;
 }
 
 /**

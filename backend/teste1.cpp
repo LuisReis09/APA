@@ -1,12 +1,14 @@
 #include <iostream>
 #include "structures.hpp"
-#include "metodos.hpp"
 #include "utils.hpp"
+#include "metodos.hpp"
+#include "VND1.hpp"
+// #include "VNDHerick.hpp"
 #include <time.h>
 
 using namespace std;
 
-Problema p("../exemplos/instancia3.txt", true);
+Problema p("../exemplos/instancia1.txt", true);
 
 int main()
 {
@@ -17,8 +19,8 @@ int main()
     s.custo_total = CustoTotal(s.rotas);
     cout << "custo sem verificacoes: " << s.custo_total << endl;
     CorrigeSolucao(s.rotas);
-    RVND(s.rotas);
-    cout << "custo depois de corrigir: " << CustoTotal(s.rotas) << endl;
+    s.custo_total = RVND(s.rotas);
+    cout << "custo depois de corrigir: " << s.custo_total << endl;
 
     if (VerificaSolucao(s.rotas, true))
     {
@@ -64,10 +66,11 @@ int main()
     for(int i=0; i < 15; i++){
         cout << "ITER " << i+1 << endl;
         s.custo_total = RVND(s.rotas);
-        VNDIntraInter(s.rotas);
-        
+        cout << "Custo Pos-RVND: " << s.custo_total << endl;
+        s.custo_total = VND1(s.rotas);
+        cout << "Custo Pos-VND1: " << s.custo_total << endl;
+        s.SalvarSolucao("iteracao_vnds.txt");
     }
-    s.custo_total = CustoTotal(s.rotas);
 
     if (VerificaSolucao(s.rotas, true))
     {
@@ -112,11 +115,11 @@ int main()
         cout << "Solucao INVALIDA" << endl;
     }
 
-    VNDIntraInter(s.rotas);
-    s.custo_total = CustoTotal(s.rotas);
+    // VNDIntraInter(s.rotas);
+    // s.custo_total = CustoTotal(s.rotas);
 
-    cout << "Custo Ultimate: " << s.custo_total << endl;
-    s.SalvarSolucao("solucao_ultimate.txt");
+    // cout << "Custo Ultimate: " << s.custo_total << endl;
+    // s.SalvarSolucao("solucao_ultimate.txt");
 
     return 0;
 }
