@@ -1072,7 +1072,10 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melh
         // cout << "Perturbou -- Opcao perturbacao: " << opcao_perturbacao << "\n";
 
         CorrigeSolucao(rotas_copia);
-        custo_teste = RVND(rotas_copia);
+        if(iteracoes & 1)
+            custo_teste = RVND(rotas_copia);
+        else
+            custo_teste = VND1(rotas_copia);
 
         // Se o custo for de fato melhor e as rotas forem todas válidas, atualizar solução
         if (custo_teste < melhor_custo)

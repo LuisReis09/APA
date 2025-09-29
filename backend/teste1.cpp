@@ -8,14 +8,14 @@
 
 using namespace std;
 
-Problema p("../exemplos/instancia1.txt", true);
+Problema p("../exemplos/instancia2.txt", true);
 
 int main()
 {
     srand(time(NULL)); // seed para aleatorizar o tamanho do segmento
 
     cout << "====== Teste de Metodos ======" << endl;
-    Solucao s = VizinhoMaisProximo();
+    Solucao s = VizinhoMaisProximo2();
     s.custo_total = CustoTotal(s.rotas);
     cout << "custo sem verificacoes: " << s.custo_total << endl;
     CorrigeSolucao(s.rotas);
