@@ -842,6 +842,9 @@ int VNDReinsertion(vector<vector<int>> &rotas)
                                 rotas[id_r1].insert(rotas[id_r1].begin() + (id_e2 - 1), estacao);
                             else
                                 rotas[id_r1].insert(rotas[id_r1].begin() + id_e2, estacao);
+
+                            RetiraRotasVazias(rotas);
+                            return CustoTotal(rotas);
                         }
                         // Caso inter-rotas
                         else if (RemovalTest(rotas[id_r1], id_e1) &&
@@ -851,6 +854,9 @@ int VNDReinsertion(vector<vector<int>> &rotas)
                             rotas[id_r1].erase(rotas[id_r1].begin() + id_e1);
 
                             rotas[id_r2].insert(rotas[id_r2].begin() + id_e2, estacao);
+
+                            RetiraRotasVazias(rotas);
+                            return CustoTotal(rotas);
                         }
                     }
                 }
@@ -859,11 +865,7 @@ int VNDReinsertion(vector<vector<int>> &rotas)
     }
 
     // Remove rotas "mortas" (só depot)
-    for (int i = rotas.size() - 1; i >= 0; i--)
-    {
-        if (rotas[i].size() < 3)
-            rotas.erase(rotas.begin() + i);
-    }
+    RetiraRotasVazias(rotas);
 
     return CustoTotal(rotas);
 }
@@ -989,9 +991,14 @@ int VND2(vector<vector<int>> &rotas)
     return melhor_custo;
 }
 
+// RNG para o shuffle
+static std::mt19937 rng(std::random_device{}());
+
 int RVND(vector<vector<int>> &rotas, int custo_inicial = -1)
 {
     int melhor_custo = custo_inicial == -1 ? CustoTotal(rotas) : custo_inicial;
+    int teste;
+    int estrutura_atual;
 
     // Conjunto de vizinhanças (identificadores)
     vector<int> vizinhos = {1, 2, 3, 4, 5};
@@ -1002,42 +1009,37 @@ int RVND(vector<vector<int>> &rotas, int custo_inicial = -1)
         melhorou = false;
 
         // Reinicia e embaralha a lista de vizinhanças
-        vector<int> lista = vizinhos;
-        random_shuffle(lista.begin(), lista.end());
+        shuffle(vizinhos.begin(), vizinhos.end(), rng);
 
-        // Enquanto ainda houver vizinhanças não testadas
-        while (!lista.empty())
+        for (int estrutura_atual : vizinhos)
         {
-            int k = lista.back();
-            lista.pop_back();
-
-            int teste;
-            switch (k)
+            switch (estrutura_atual)
             {
-            case 1:
-                teste = VNDSwap(rotas);
-                break;
-            case 2:
-                teste = VNDTwoOpt(rotas);
-                break;
-            case 3:
-                teste = VNDReinsertion(rotas);
-                break;
-            case 4:
-                teste = VNDInvertion(rotas);
-                break;
-            case 5:
-                teste = VNDBlockSwap(rotas);
-                break;
+                case 1:
+                    teste = VNDSwap(rotas);
+                    break;
+                case 2:
+                    teste = VNDTwoOpt(rotas);
+                    break;
+                case 3:
+                    teste = VNDReinsertion(rotas);
+                    break;
+                case 4:
+                    teste = VNDInvertion(rotas);
+                    break;
+                case 5:
+                    teste = VNDBlockSwap(rotas);
+                    break;
             }
 
             if (teste < melhor_custo)
             {
                 melhor_custo = teste;
                 melhorou = true;
-                break;
+                break; // reinicia as vizinhanças
             }
         }
+        
     }
 
     return melhor_custo;
@@ -1051,7 +1053,7 @@ int RVND(vector<vector<int>> &rotas, int custo_inicial = -1)
  * @param max_sem_melhora Máximo de iterações que o ILS tolera sem melhorar o custo encontrado.
  * ---
  */
-void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melhora = 10000)
+void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melhora = 1000)
 {
 
     // srand(time(NULL)); deve ser chamado na main
@@ -1064,7 +1066,7 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melh
     {
         // Define a perturbação escolhida e o grau de perturbação
         int opcao_perturbacao = 1 + rand() % 6; // 1 a 6
-        int nivel_perturbacao = (sem_melhora / (max_sem_melhora / 5)) + 2;
+        int nivel_perturbacao = (sem_melhora / (max_sem_melhora / 5)) + 2; // 2 a 6
         
         // Perturbar as rotas
         rotas_copia = rotas;
@@ -1072,6 +1074,7 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melh
         // cout << "Perturbou -- Opcao perturbacao: " << opcao_perturbacao << "\n";
 
         CorrigeSolucao(rotas_copia);
+
         if(iteracoes & 1)
             custo_teste = RVND(rotas_copia);
         else

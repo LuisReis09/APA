@@ -57,8 +57,8 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
 
   const steps = [
     { id: "greedy", name: "Buscas Gulosas", description: "Vizinho mais próximo e Inserção mais barata" },
-    { id: "vnd1", name: "VND1", description: "Variable Neighborhood Descent Intra e Inter Rotas" },
-    { id: "vnd2", name: "VND2", description: "Variable Neighborhood Descent" },
+    { id: "vnd", name: "VND", description: "Variable Neighborhood Descent" },
+    { id: "rvnd", name: "RVND", description: "Random Variable Neighborhood Descent" },
     { id: "ils", name: "ILS", description: "Iterated Local Search" },
   ];
 
@@ -86,10 +86,10 @@ export const ProcessingPanel = ({ inputData }: ProcessingPanelProps) => {
       case "greedy":
         rota = "processarGulosos";
         break;
-      case "vnd1":
+      case "vnd":
         rota = "aplicarVND1";
         break;
-      case "vnd2":
+      case "rvnd":
         rota = "aplicarVND2";
         break;
       case "ils":

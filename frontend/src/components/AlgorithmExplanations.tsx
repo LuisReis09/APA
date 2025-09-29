@@ -52,28 +52,30 @@ export const AlgorithmExplanations = () => {
       disadvantages: ["Mais lento que vizinho mais próximo", "Ainda pode ser subótimo"]
     },
     {
-      id: "vnd1",
-      name: "Variable Neighborhood Descent Intra e Inter Rotas (VNDIntraInter)",
-      category: "Otimização",
-      icon: TrendingUp,
+      id: "vnd",
+      name: "Variable Neighborhood Descent",
+      category: "Busca Local",
+      icon: Search,
       description: "Aplica movimentos locais para melhorar uma solução existente.",
       steps: [
         "Recebe uma solução inicial",
-        "Em loop, enquanto houver melhora na iteração",
-        "* Para cada estação em cada rota:",
-        "* Aplica o VND intra-rota de rota em rota, registrando se houve melhora",
-        "* Aplica o VND inter-rota em duplas de rotas, registrando se houve melhora",
-        "Se não houver melhoras, encerra",
-        "Retorna a solução otimizada nas estruturas de vizinhança intra e inter-rotas"
+        "Em loop, enquanto houver melhora na iteração:",
+        "* Para cada rota, executa o algoritmo VND_Intra:",
+        "** Aplica Estruturas de Vizinhança (EV), registrando se houve melhora",
+        "* Para cada combinação de duas rotas, executa o algoritmo VND_Inter:",
+        "** Aplica EVs, registrando se houve melhora",
+        "Se houve melhoras, retorna ao passo 3",
+        "Se não houve melhoras, encerra",
+        "Soma o custo total das rotas da nova solução e retorna"
       ],
       complexity: "Depende das estuturas de vizinhança",
-      advantages: ["Melhora qualidade da solução", "Convergência garantida"],
+      advantages: ["Melhora qualidade da solução", "Convergência garantida", "Mais Otimizado"],
       disadvantages: ["Pode ficar preso em ótimos locais", "Depende da solução inicial", "Pode ser lento"]
     },
     {
-      id: "vnd",
-      name: "Variable Neighborhood Descent 2 (VND)",
-      category: "Metaheurística",
+      id: "rvnd",
+      name: "Random Variable Neighborhood Descent",
+      category: "Busca Local",
       icon: Search,
       description: "Explora sistematicamente diferentes estruturas de vizinhança.",
       steps: [
@@ -95,8 +97,9 @@ export const AlgorithmExplanations = () => {
       steps: [
         "Recebe solução inicial e aplica busca local",
         "Aplica perturbação na solução atual",
+        "Realiza correções na solução perturbada",
         "Executa busca local na solução perturbada",
-        "Aceita nova solução baseado em critério",
+        "Aceita nova solução baseado em critério de custo",
         "Repete até critério de parada"
       ],
       complexity: "Depende da busca local usada",
