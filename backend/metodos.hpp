@@ -6,9 +6,9 @@
 #include <vector>
 #include "structures.hpp"
 #include "utils.hpp"
-#include "VND1.hpp"
 #include <time.h>
 #include <map>
+#include "VND1.hpp"
 #include <functional>
 #include <random>
 #include <algorithm>
@@ -22,20 +22,20 @@ using namespace std;
  */
 Solucao VizinhoMaisProximo()
 {
-    vector<vector<int>> rotas(p.qnt_veiculos, vector<int>(1, 0)); // inicia todas as rotas com o depósito
+    vector<vector<int>> rotas;
+    rotas.reserve(p.qnt_veiculos);
+    vector<int> visitados(p.qnt_estacoes, false);
     int custo_total = 0;
     int qtd_iteracoes = p.qnt_estacoes;
 
-    /*
-        ----- MONTAGEM DOS CUSTOS -----
+    typedef struct{
+        int lower = 0;
+        int upper = p.capacidade_max;
+        int prefix = 0;
+    } Range;
 
-        Para cada estacao, guarda:
-        [
-            1: [1: 0, 2: 10, 3: 15 ...] // custos para cada estacao
-            2: [1: 5, 2: 0, 3: 20 ...]  // custos para cada estacao
-            ...
-        ]
-    */
+    vector<Range> range_demandas(p.qnt_veiculos);
+
     typedef vector<vector<pair<int, int>>> FilaPrioridade;
     FilaPrioridade fila_prioridade(p.qnt_estacoes + 1);
 
@@ -62,9 +62,8 @@ Solucao VizinhoMaisProximo()
     }
 
     // A cada iteração uma estação encontrará uma rota a pertencer
-    while (qtd_iteracoes--)
-    {
-        int melhor_rota, melhor_custo = MAXX_INT, melhor_estacao;
+    while(qtd_iteracoes--){
+        int melhor_rota = -1, melhor_custo = MAXX_INT, melhor_estacao;
 
         // Para cada rota ...
         for (int i = 0; i < rotas.size(); i++)
@@ -78,8 +77,10 @@ Solucao VizinhoMaisProximo()
                 int custo = fila_prioridade[ultimo_elemento][j].second;
 
                 // Testa se a rota, ao adicionar essa estação, permanece válida
-                bool pode_inserir = TestaRota(rotas[i], estacao);
-                if (pode_inserir)
+                int prefix = range_demandas[i].prefix + p.demandas[estacao - 1];
+                bool pode_inserir = (max(range_demandas[i].lower, -prefix) <= min(range_demandas[i].upper, p.capacidade_max - prefix));
+                // bool pode_inserir = true;
+                if (pode_inserir && !visitados[estacao - 1])
                 {
                     if (custo < melhor_custo) // Se a inserção daquela estação for de fato a menor encontrada até então
                     {                         // Substitui os valores de melhor_custo, melhor_rota e melhor_estacao
@@ -92,9 +93,51 @@ Solucao VizinhoMaisProximo()
             }
         }
 
-        // Agora que temos a melhor rota e a melhor estação, inserimos
-        rotas[melhor_rota].push_back(melhor_estacao);
-        custo_total += melhor_custo;
+        if(melhor_rota == -1){
+            // Se não encontrou nenhuma rota possível de inserção, cria uma nova rota o mais próximo não visitado.
+            melhor_estacao = -1;
+            for(int i = 0; i < fila_prioridade[0].size(); i++){
+                if(!visitados[fila_prioridade[0][i].first - 1]){
+                    melhor_estacao = fila_prioridade[0][i].first;
+                    break;
+                }
+            }
+
+            rotas.push_back({0, melhor_estacao});
+            custo_total += p.matriz_custo[0][melhor_estacao];
+            visitados[melhor_estacao - 1] = true;
+
+            melhor_rota = rotas.size() - 1;
+            range_demandas[melhor_rota].prefix += p.demandas[melhor_estacao - 1];
+            range_demandas[melhor_rota].lower = max(range_demandas[melhor_rota].lower, -range_demandas[melhor_rota].prefix);
+            range_demandas[melhor_rota].upper = min(range_demandas[melhor_rota].upper, p.capacidade_max - range_demandas[melhor_rota].prefix);
+        }else{
+            // Agora que temos a melhor rota e a melhor estação, inserimos, caso não compense mais ir da base a estacao
+
+            int custo_nova_rota = p.matriz_custo[0][melhor_estacao] + p.matriz_custo[melhor_estacao][0];
+
+            if(custo_nova_rota < melhor_custo){
+                // Caso em que compensa mais criar uma nova rota
+                rotas.push_back({0, melhor_estacao});
+                custo_total += p.matriz_custo[0][melhor_estacao];
+                visitados[melhor_estacao - 1] = true;
+
+                melhor_rota = rotas.size() - 1;
+                range_demandas[melhor_rota].prefix += p.demandas[melhor_estacao - 1];
+                range_demandas[melhor_rota].lower = max(range_demandas[melhor_rota].lower, -range_demandas[melhor_rota].prefix);
+                range_demandas[melhor_rota].upper = min(range_demandas[melhor_rota].upper, p.capacidade_max - range_demandas[melhor_rota].prefix);
+
+            }else{
+                // Caso em que a rota encontrada realmente é melhor
+                rotas[melhor_rota].push_back(melhor_estacao);
+                custo_total += melhor_custo;
+                visitados[melhor_estacao - 1] = true;
+
+                range_demandas[melhor_rota].prefix += p.demandas[melhor_estacao - 1];
+                range_demandas[melhor_rota].lower = max(range_demandas[melhor_rota].lower, -range_demandas[melhor_rota].prefix);
+                range_demandas[melhor_rota].upper = min(range_demandas[melhor_rota].upper, p.capacidade_max - range_demandas[melhor_rota].prefix);
+            }
+        }
 
         // Remove a estação escolhida das filas de prioridades
         for (int i = 0; i < fila_prioridade.size(); i++)
@@ -112,19 +155,17 @@ Solucao VizinhoMaisProximo()
 
     // Construção do objeto Solucao
     Solucao solucao;
+    solucao.rotas.resize(rotas.size());
     for (int i = 0; i < rotas.size(); i++)
     {
-        if (rotas[i].size() <= 1)
-            break;
-
         custo_total += p.matriz_custo[rotas[i].back()][0];
         rotas[i].push_back(0); // volta para o depósito, rota ficara com formato {0, X, Y, Z, 0}
-        solucao.rotas.push_back(rotas[i]);
+        solucao.rotas[i] = rotas[i];
     }
+
     solucao.custo_total = custo_total;
     solucao.veiculos_usados = solucao.rotas.size();
     solucao.veiculos_disponiveis = p.qnt_veiculos - solucao.veiculos_usados;
-
     return solucao;
 }
 
@@ -587,7 +628,7 @@ void Perturbar(vector<vector<int>> &rotas, int opcao, int nivel_perturbacao)
     }
 }
 
-int VNDSwap(vector<vector<int>> &rotas, int custo_antigo)
+int VNDSwap(vector<vector<int>> &rotas)
 {
     int custo_teste;
     int melhor_custo, melhor_troca_r, melhor_troca_e;
@@ -649,11 +690,10 @@ int VNDSwap(vector<vector<int>> &rotas, int custo_antigo)
         }
     }
 
-    custo_antigo = CustoTotal(rotas);
-    return custo_antigo;
+    return CustoTotal(rotas);
 }
 
-int VNDTwoOpt(vector<vector<int>> &rotas, int custo_antigo)
+int VNDTwoOpt(vector<vector<int>> &rotas)
 {
     for (int r1 = 0; r1 < rotas.size(); r1++)
     {
@@ -762,11 +802,10 @@ int VNDTwoOpt(vector<vector<int>> &rotas, int custo_antigo)
         }
     }
 
-    custo_antigo = CustoTotal(rotas);
-    return custo_antigo;
+    return CustoTotal(rotas);
 }
 
-int VNDReinsertion(vector<vector<int>> &rotas, int custo_antigo)
+int VNDReinsertion(vector<vector<int>> &rotas)
 {
     for (int id_r1 = 0; id_r1 < rotas.size(); id_r1++)
     {
@@ -826,11 +865,10 @@ int VNDReinsertion(vector<vector<int>> &rotas, int custo_antigo)
             rotas.erase(rotas.begin() + i);
     }
 
-    custo_antigo = CustoTotal(rotas);
-    return custo_antigo;
+    return CustoTotal(rotas);
 }
 
-int VNDInvertion(vector<vector<int>> &rotas, int custo_antigo)
+int VNDInvertion(vector<vector<int>> &rotas)
 {
     for(int id_r = 0; id_r < rotas.size(); id_r++){
         for(int id_e1 = 1; id_e1 < rotas[id_r].size() - 2; id_e1++){
@@ -840,8 +878,6 @@ int VNDInvertion(vector<vector<int>> &rotas, int custo_antigo)
                     int custo_rota = CustoRota(rotas[id_r]);
                     if(tentativa_inversao < custo_rota){
                         reverse(rotas[id_r].begin() + id_e1, rotas[id_r].begin() + id_e2 + 1);
-                        custo_antigo -= custo_rota;
-                        custo_antigo += tentativa_inversao;
                         break;
                     }
                 }
@@ -849,10 +885,10 @@ int VNDInvertion(vector<vector<int>> &rotas, int custo_antigo)
         }
     }
 
-    return custo_antigo;
+    return CustoTotal(rotas);
 }
 
-int VNDBlockSwap(vector<vector<int>>& rotas, int custo_antigo, int tamanho_bloco = 4) {
+int VNDBlockSwap(vector<vector<int>>& rotas, int tamanho_bloco = 4) {
     int n_rotas = rotas.size();
 
     for(int r1 = 0; r1 < n_rotas; r1++) {
@@ -892,7 +928,6 @@ int VNDBlockSwap(vector<vector<int>>& rotas, int custo_antigo, int tamanho_bloco
                                 rota_orig2[e2+aux] = rota2[e2+aux];
                             }
                             
-                            custo_antigo += cr1 + cr2 - c1 - c2;
                             c1 = cr1;
                             c2 = cr2;
                         }
@@ -902,7 +937,7 @@ int VNDBlockSwap(vector<vector<int>>& rotas, int custo_antigo, int tamanho_bloco
         }
     }
 
-    return custo_antigo;
+    return CustoTotal(rotas);
 }
 
 /**
@@ -923,19 +958,19 @@ int VND2(vector<vector<int>> &rotas)
         switch (k)
         {
         case 1:
-            teste = VNDSwap(rotas, melhor_custo);
+            teste = VNDSwap(rotas);
             break;
         case 2:
-            teste = VNDReinsertion(rotas, melhor_custo);
+            teste = VNDReinsertion(rotas);
             break;
         case 3:
-            teste = VNDTwoOpt(rotas, melhor_custo);
+            teste = VNDTwoOpt(rotas);
             break;
         case 4: 
-            teste = VNDInvertion(rotas, melhor_custo);
+            teste = VNDInvertion(rotas);
             break;
         case 5:
-            teste = VNDBlockSwap(rotas, melhor_custo);
+            teste = VNDBlockSwap(rotas);
             break;
         }
 
@@ -980,19 +1015,19 @@ int RVND(vector<vector<int>> &rotas, int custo_inicial = -1)
             switch (k)
             {
             case 1:
-                teste = VNDSwap(rotas, melhor_custo);
+                teste = VNDSwap(rotas);
                 break;
             case 2:
-                teste = VNDTwoOpt(rotas, melhor_custo);
+                teste = VNDTwoOpt(rotas);
                 break;
             case 3:
-                teste = VNDReinsertion(rotas, melhor_custo);
+                teste = VNDReinsertion(rotas);
                 break;
             case 4:
-                teste = VNDInvertion(rotas, melhor_custo);
+                teste = VNDInvertion(rotas);
                 break;
             case 5:
-                teste = VNDBlockSwap(rotas, melhor_custo);
+                teste = VNDBlockSwap(rotas);
                 break;
             }
 
@@ -1035,18 +1070,9 @@ void ILS(vector<vector<int>> &rotas, int max_iteracoes = 10000, int max_sem_melh
         rotas_copia = rotas;
         Perturbar(rotas_copia, opcao_perturbacao, nivel_perturbacao);
         // cout << "Perturbou -- Opcao perturbacao: " << opcao_perturbacao << "\n";
-        
-        // A partir dessas rotas modificadas, aplica VND
-        // VNDIntraInter(rotas_copia);
-
-        // if(CustoTotal(rotas_copia) < melhor_custo){
-        //     CorrigeSolucao(rotas_copia);
-        // }
 
         CorrigeSolucao(rotas_copia);
-        // custo_teste = RVND(rotas_copia, CustoTotal(rotas_copia));
         custo_teste = RVND(rotas_copia);
-        // cout << "Passou pelo VND\n";
 
         // Se o custo for de fato melhor e as rotas forem todas válidas, atualizar solução
         if (custo_teste < melhor_custo)

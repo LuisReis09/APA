@@ -8,9 +8,12 @@
     #include "utils.hpp"
     #include "structures.hpp"
 
-    int VND_Intra_Swap(vector<int>& rota, int custo_anterior){
+    using namespace std;
+
+    bool VND_Intra_Swap(vector<int>& rota){
         int custo_swap, custo_atual;
         int n = rota.size();
+        bool achou_melhora = false;
 
         for(int i = 1; i < n-2; i++){
             for(int j = i+1; j < n-1; j++){
@@ -28,95 +31,136 @@
                     // Precisamos verificar se essa troca eh possivel segundo as demandas
                     if(VerificaSwapIntraVND(rota, i, j)){
                         swap(rota[i], rota[j]);
-                        custo_anterior -= custo_atual;
-                        custo_anterior += custo_swap;
+                        achou_melhora = true;
                     }
                 }
             }
         }
 
-        return custo_anterior;
+        return achou_melhora;
     }
 
-    int VND_Intra_ShiftN(vector<int>& rota, int custo_anterior){
-        int nMax = min((int) rota.size() - 2, 4);
-        int custo_teste, custo_atual = CustoRota(rota);
+    bool VND_Intra_ShiftN(vector<int>& rota) {
+        int nMax = min((int) rota.size() - 2, 5);
+        
+        int melhor_custo = CustoRota(rota);
+        int melhor_i = -1, melhor_j, melhor_tamseg;
 
-        for(int i = 1; i < rota.size() - 2; i++){
+        for (int i = 1; i < (int)rota.size() - 2; i++) {
             int max_seg = min(nMax, (int) rota.size() - i - 1);
-            if(max_seg < 1) continue;
-            int tam_seg = 1 + rand() % max_seg;
+            if (max_seg < 2) continue;
 
-            for(int j = i+tam_seg; j < rota.size(); j++){
+            int tam_seg = RandomEntre(2, max_seg);
 
-                custo_teste = VerificaIntraShiftn(rota, i, j, tam_seg);
-                
-                if(custo_teste != -1 && custo_teste < custo_atual){
-                    vector<int> bloco(rota.begin() + i, rota.begin() + i + tam_seg);
-                    // Fastar os elementos, preenchendo o espaco da "retirada" do bloco
-                    for(int aux = i; aux < j; aux++){
-                        rota[aux] = rota[aux + tam_seg];
+            for (int j = i + tam_seg + 1; j < (int)rota.size() - 1; j++) {
+
+                int custo_teste = VerificaIntraShiftn(rota, i, j, tam_seg);
+
+                if (custo_teste != -1) {
+                    if(custo_teste < melhor_custo){
+                        melhor_custo = custo_teste;
+                        melhor_i = i;
+                        melhor_j = j;
+                        melhor_tamseg = tam_seg;
                     }
-
-                    // Inserir os elementos, preenchendo o espaco liberado
-                    for(int aux = j, aux2 = 0; aux2 < tam_seg; aux++, aux2++){
-                        rota[aux] = bloco[aux2];
-                    }
-                    
-                    custo_anterior -= custo_atual;
-                    custo_anterior += custo_teste;
-                    custo_atual = custo_teste;
                 }
             }
         }
 
-        return custo_anterior;
+        if (melhor_i != -1) {
+            rota.insert(rota.begin() + melhor_j, rota.begin() + melhor_i, rota.begin() + melhor_i + melhor_tamseg);
+            rota.erase(rota.begin() + melhor_i, rota.begin() + melhor_i + melhor_tamseg);
+            return true;
+        }
+
+        return false;
     }
 
-    int VND_Intra_Reinsertion(vector<int>& rota, int custo_anterior){
-        int custo_reinsertion, custo_atual;
+    bool VND_Intra_Reinsertion_BestChoice(vector<int>& rota){
+        int melhor_posicao, melhor_custo;
+        int custo_remocao, custo_insercao, delta;
+        bool achou_melhora = false;
 
         for(int i = 1; i < rota.size() - 1; i++){
-            for(int j = 1; j < rota.size() - 1; j++){
+            melhor_custo = MAXX_INT;
+            melhor_posicao = -1;
+
+            for(int j = 1; j < rota.size(); j++){
                 if(i == j || j == i+1) continue;
 
-                // O que seria adicionado
-                custo_reinsertion = p.matriz_custo[rota[j-1]][rota[i]] + p.matriz_custo[rota[i]][rota[j]] + p.matriz_custo[rota[i-1]][rota[i+1]];
+                // Custo da remocao
+                custo_remocao = p.matriz_custo[rota[i-1]][rota[i+1]] - p.matriz_custo[rota[i-1]][rota[i]] - p.matriz_custo[rota[i]][rota[i+1]];
 
-                // O que seria removido
-                custo_atual = p.matriz_custo[rota[i-1]][rota[i]] + p.matriz_custo[rota[i]][rota[i+1]] + p.matriz_custo[rota[j-1]][rota[j]];
+                // Custo da Insercao
+                custo_insercao = p.matriz_custo[rota[j-1]][rota[i]] + p.matriz_custo[rota[i]][rota[j]] - p.matriz_custo[rota[j-1]][rota[j]];
 
-                // Se o custo compensar
-                if(custo_reinsertion < custo_atual){
-                    // Se for possivel atender as demandas
-                    if(ReinsertionTest(rota, i, j)){
-                        // Se for inserindo depois de onde esta
-                        if(i < j){
-                            int estacao = rota[i];
-                            for(int aux = i; aux < j; aux++){
-                                rota[aux] = rota[aux+1];
-                            }
-                            rota[j] = estacao;
-                        }
-                        else{
-                            int estacao = rota[i];
-                            for(int aux = i; aux > j; aux--){
-                                rota[aux] = rota[aux-1];
-                            }
-                            rota[j] = estacao;
-                        }
+                delta = custo_remocao + custo_insercao;
 
-                        custo_anterior += custo_reinsertion - custo_atual;
+                // Se o custo compensar e for possivel de atender às demandas
+                if(delta < 0 && ReinsertionTest(rota, i, j)){
+                    
+                    if(delta < melhor_custo){
+                        melhor_custo = delta;
+                        melhor_posicao = j;
                     }
+                }
+            }
+
+            if(melhor_posicao != -1){
+                int estacao = rota[i];
+                rota.erase(rota.begin() + i);
+                if(i < melhor_posicao)
+                    rota.insert(rota.begin() + melhor_posicao - 1, estacao);
+                else
+                    rota.insert(rota.begin() + melhor_posicao, estacao);
+
+                achou_melhora = true;
+            }
+        }
+
+        return achou_melhora;
+    }
+
+    bool VND_Intra_Reinsertion_FirstChoice(vector<int>& rota){
+        int custo_remocao, custo_insercao, delta;
+        int custo_backup = CustoRota(rota);
+        bool achou_melhora = false;
+
+        for(int i = 1; i < rota.size() - 1; i++){
+
+            for(int j = 1; j < rota.size(); j++){
+                if(i == j || j == i+1) continue;
+
+                // Custo da remocao
+                custo_remocao = p.matriz_custo[rota[i-1]][rota[i+1]] - p.matriz_custo[rota[i-1]][rota[i]] - p.matriz_custo[rota[i]][rota[i+1]];
+
+                // Custo da Insercao
+                custo_insercao = p.matriz_custo[rota[j-1]][rota[i]] + p.matriz_custo[rota[i]][rota[j]] - p.matriz_custo[rota[j-1]][rota[j]];
+
+                delta = custo_remocao + custo_insercao;
+
+                // Se o custo compensar e for possivel de atender às demandas
+                if(delta < 0 && ReinsertionTest(rota, i, j)){
+                    int estacao = rota[i];
+                    achou_melhora = true;
+
+                    rota.erase(rota.begin() + i);
+
+                    if(i < j)
+                        rota.insert(rota.begin() + j - 1, estacao);
+                    else
+                        rota.insert(rota.begin() + j, estacao);
+
                 }
             }
         }
 
-        return custo_anterior;
+        return achou_melhora;
     }
 
-    int VND_Intra_Inversion(vector<int> &rota, int custo_anterior){
+    bool VND_Intra_Inversion(vector<int> &rota){
         int custo_inversion, custo_atual;
+        bool achou_melhora = false;
 
         custo_atual = CustoRota(rota);
 
@@ -130,44 +174,51 @@
                     // Se o custo compensar, invertemos
                     if(custo_inversion < custo_atual){
                         reverse(rota.begin() + i, rota.begin() + j + 1);
-                        custo_anterior -= custo_atual;
-                        custo_anterior += custo_inversion;
                         custo_atual = custo_inversion;
+
+                        achou_melhora = true;
                     }
                 }
             }
         }
 
-        return custo_anterior;
+        return achou_melhora;
     }
 
-    int VND_Intra(vector<int>& rota, int custo_anterior){
-        int novo_custo;
+    bool VND_Intra(vector<int>& rota){
+        bool melhorou;
+        bool intra_melhorou = false;
         int k = 1;
 
-        // Teremos 4 estruturas de vizinhanca
-        while(k < 4){
+        // Teremos 5 estruturas de vizinhanca
+        while(k < 6){
+
             switch(k){
-                case 1: novo_custo = VND_Intra_Swap(rota, custo_anterior); break;
-                case 2: novo_custo = VND_Intra_Inversion(rota, custo_anterior); break;
-                case 3: novo_custo = VND_Intra_Reinsertion(rota, custo_anterior); break;
-                case 4: novo_custo = VND_Intra_ShiftN(rota, custo_anterior); break;
+                case 1: melhorou = VND_Intra_Swap(rota); break;
+                case 2: melhorou = VND_Intra_Inversion(rota); break;
+                case 3: melhorou = VND_Intra_ShiftN(rota); break;
+                case 4: melhorou = VND_Intra_Reinsertion_BestChoice(rota); break;
+                case 5: melhorou = VND_Intra_Reinsertion_FirstChoice(rota); break;
             }
 
-            if(novo_custo < custo_anterior){
-                custo_anterior = novo_custo;
+            // cout << "Intra aplicou " << k << ": " << (melhorou? "melhorou" : "nao melhorou") << endl;
+            // cout << "Custo: " << CustoRota(rota) << endl;
+
+            if(melhorou){
                 k = 1;
+                intra_melhorou = true;
             }
             else{
                 k++;
             }
         }
 
-        return custo_anterior;
+        return intra_melhorou;
     }
 
-    int VND_Inter_Swap(vector<int> &r1, vector<int> &r2, int custo_anterior){
+    bool VND_Inter_Swap(vector<int> &r1, vector<int> &r2){
         int custo_atual, custo_swap;
+        bool achou_melhora = false;
 
         for(int i = 1; i < r1.size() - 1; i++){
             for(int j = 1; j < r2.size() - 1; j++){
@@ -187,18 +238,18 @@
                 if(custo_swap < custo_atual){
                     if(VerificaSwapInterVND(r1, i, r2[j]) && VerificaSwapInterVND(r2, j, r1[i])){
                         swap(r1[i], r2[j]);
-                        custo_anterior -= custo_atual;
-                        custo_anterior += custo_swap;
+                        achou_melhora = true;
                     }
                 }
             }
         }
 
-        return custo_anterior;
+        return achou_melhora;
     }
 
-    int VND_Inter_Relocate(vector<int> &r1, vector<int> &r2, int custo_anterior){
+    bool VND_Inter_Relocate(vector<int> &r1, vector<int> &r2){
         int custo_novo, custo_atual;
+        bool achou_melhora = false;
 
         for(int i = 1; i < r1.size() - 1; i++){
             for(int j = 1; j < r2.size(); j++){
@@ -217,19 +268,18 @@
                     if(RemovalTest(r1, i) && InsertionTest(r2, j, r1[i])){
                         r2.insert(r2.begin() + j, r1[i]);
                         r1.erase(r1.begin() + i);
-
-                        custo_anterior -= custo_atual;
-                        custo_anterior += custo_novo;
+                        achou_melhora = true;
                     }
                 }
             }
         }
 
-        return custo_anterior;
+        return achou_melhora;
     }
 
-    int VND_Inter_Swap2x2(vector<int> &r1, vector<int> &r2, int custo_anterior){
+    bool VND_Inter_Swap2x2(vector<int> &r1, vector<int> &r2){
         int custo_novo, custo_atual;
+        bool achou_melhora = false;
 
         for(int i = 1; i < r1.size() - 2; i++){
             for(int j = 1; j < r2.size() - 2; j++){
@@ -244,25 +294,25 @@
                     swap(r1[i], r2[j]);
                     swap(r1[i+1], r2[j+1]);
 
-                    if(VerificaDemanda(r1) && VerificaDemanda(r2)){
-                        custo_anterior -= custo_atual;
-                        custo_anterior += custo_novo;
-                    }
-                    else{
+                    if(!VerificaDemanda(r1) || !VerificaDemanda(r2)){
                         // Desfaz o swap
                         swap(r1[i], r2[j]);
                         swap(r1[i+1], r2[j+1]);
+                        continue;
                     }
+
+                    achou_melhora = true;
                 }
             }
         }
 
-        return custo_anterior;
+        return achou_melhora;
     }
 
-    int VND_Inter_NOpt1(vector<int> &r1, vector<int> &r2, int custo_anterior){
+    bool VND_Inter_NOpt1(vector<int> &r1, vector<int> &r2){
         int custo_novo, custo_atual;
         int max_seg, tam_seg;
+        bool achou_melhora = false;
 
         custo_atual = CustoRota(r1) + CustoRota(r2);
 
@@ -277,80 +327,70 @@
                     r2.insert(r2.begin() + j, r1.begin() + i, r1.begin() + i + tam_seg);
                     r1.erase(r1.begin() + i, r1.begin() + i + tam_seg);
 
-                    custo_anterior -= custo_atual;
-                    custo_anterior += custo_novo;
                     custo_atual = custo_novo;
+                    achou_melhora = true;
                 }
             }
         }
 
-        return custo_anterior;
+        return achou_melhora;
     }
 
-    int VND_Inter(vector<int>& rota1, vector<int>& rota2, int custo_anterior){
-        int novo_custo, k = 1;
+    bool VND_Inter(vector<int>& rota1, vector<int>& rota2){
+        int k = 1;
+        bool melhorou;
+        bool inter_melhorou = false;
 
         // Teremos 4 estruturas de vizinhanca
         while(k < 5){
 
             switch(k){
-                case 1: novo_custo = VND_Inter_Swap(rota1, rota2, custo_anterior); break;
-                case 2: novo_custo = VND_Inter_Relocate(rota1, rota2, custo_anterior); break;
-                case 3: novo_custo = VND_Inter_Swap2x2(rota1, rota2, custo_anterior); break;
-                case 4: novo_custo = VND_Inter_NOpt1(rota1, rota2, custo_anterior); break;
+                case 1: melhorou = VND_Inter_Swap(rota1, rota2); break;
+                case 2: melhorou = VND_Inter_Relocate(rota1, rota2); break;
+                case 3: melhorou = VND_Inter_Swap2x2(rota1, rota2); break;
+                case 4: melhorou = VND_Inter_NOpt1(rota1, rota2); break;
             }
 
-            if(novo_custo < custo_anterior){
+            // cout << "Inter aplicou metodo " << k << endl;
+
+            if(melhorou){
                 k = 1;
-                custo_anterior = novo_custo;
+                inter_melhorou = true;
             }
             else{
                 k++;
             }
-
         }
 
-        return custo_anterior;
+        return inter_melhorou;
     }
 
-    int VND1(vector<vector<int>> &rotas, int custo_inicial = -1){
+    int VND1(vector<vector<int>> &rotas){
         bool melhorou = true;
         int novo_custo;
-        int custo_anterior = custo_inicial == -1 ? CustoTotal(rotas) : custo_inicial;
 
         while(melhorou){
-            melhorou = false;
 
             // VND INTRA-ROTA
             for(int i = 0; i < rotas.size(); i++){
-                novo_custo = VND_Intra(rotas[i], custo_anterior);
-
-                if(novo_custo < custo_anterior){
-                    melhorou = true;
-                    custo_anterior = novo_custo;
-                }
+                melhorou = VND_Intra(rotas[i]);
 
                 // cout << "Intra aplicado a " << i << endl;
             }
 
-            VerificaSolucao(rotas, true);
-
             // VND INTER-ROTAS
             for(int i = 0; i < rotas.size(); i++){
                 for(int j = i+1; j < rotas.size(); j++){
-                    novo_custo = VND_Inter(rotas[i], rotas[j], custo_anterior);
-
-                    if(novo_custo < custo_anterior){
-                        melhorou = true;
-                        custo_anterior = novo_custo;
-                    }
+                    melhorou |= VND_Inter(rotas[i], rotas[j]);
 
                     // cout << "Inter aplicado a " << i << " e " << j << endl;
                 }
             }
+
+            RetiraRotasVazias(rotas);
         }
 
-        return custo_anterior;
+        return CustoTotal(rotas);
     }
 
 #endif

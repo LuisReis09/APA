@@ -242,10 +242,11 @@ int CustoDemanda(vector<int> &rota){
         upper = min(upper, p.capacidade_max - prefix);
 
         if(lower > upper) return -1;
+
         custo += p.matriz_custo[rota[i-1]][rota[i]];
     }
 
-    custo += p.matriz_custo[rota[N]][0];
+    custo += p.matriz_custo[rota[N-1]][rota[N]];
     return custo;
 }
 
@@ -538,6 +539,15 @@ bool VerificaSwapIntraVND(const vector<int>& rota, int posicao1, int posicao2){
     return true;
 }
 
+/**
+ * @brief Verifica se a retirada do sub array rota[posicao_origem, posicao_origem + tam_seg) e sua 
+ * seguinte inserção na posição `posicao_destino` da mesma rota é possível
+ * 
+ * @return
+ *  - Caso não seja, retorna `-1`
+ * 
+ *  - Caso seja, retorna o custo final da rota ao fazer tal operação
+ */
 int VerificaIntraShiftn(const vector<int> &rota, int posicao_origem, int posicao_destino, int tam_seg) {
     int prefix = 0;
     int lower = 0;
@@ -545,49 +555,59 @@ int VerificaIntraShiftn(const vector<int> &rota, int posicao_origem, int posicao
     int custo = 0;
     int anterior = rota[0], atual;
 
-    for(int i = 1; i < rota.size() - 1; i++){
-        if(i == posicao_origem){
-            i = i + tam_seg - 1;
-            continue;
-        }
+    // Primeira parte: da base ate antes da posicao_origem
+    for(int i = 1; i < posicao_origem; i++){
+        atual = rota[i];
+        prefix += p.demandas[atual - 1];
 
-        if(i == posicao_destino){
-            anterior = rota[i-1];
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return -1;
 
-            for(int j = 0; j < tam_seg; j++){
-                atual = rota[posicao_origem + j];
-
-                prefix += p.demandas[atual - 1];
-                lower = max(lower, -prefix);
-                upper = min(upper, p.capacidade_max - prefix);
-                if(lower > upper) return -1;
-
-                custo += p.matriz_custo[anterior][atual];
-                anterior = atual;
-            }
-
-            atual = rota[i];
-            prefix += p.demandas[atual - 1];
-            lower = max(lower, -prefix);
-            upper = min(upper, p.capacidade_max - prefix);
-            if(lower > upper) return -1;
-
-            custo += p.matriz_custo[anterior][atual];
-            anterior = atual;
-        }
-        else{
-            atual = rota[i];
-            prefix += p.demandas[atual - 1];
-            lower = max(lower, -prefix);
-            upper = min(upper, p.capacidade_max - prefix);
-            if(lower > upper) return -1;
-
-            custo += p.matriz_custo[anterior][atual];
-            anterior = atual;
-        }
+        custo += p.matriz_custo[anterior][atual];
+        anterior = atual;
     }
 
-    // custo do último arco para o depósito
+    // Segunda parte: da posicao_origem + tam_seg até antes da posicao_destino
+    for(int i = posicao_origem + tam_seg; i < posicao_destino; i++){
+        atual = rota[i];
+        prefix += p.demandas[atual - 1];
+
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return -1;
+
+        custo += p.matriz_custo[anterior][atual];
+        anterior = atual;
+    }
+
+    // Terceira parte: Inserindo o bloco [posicao_origem, posicao_origem + tam_seg)
+    for(int i = 0; i < tam_seg; i++){
+        atual = rota[posicao_origem + i];
+        prefix += p.demandas[atual - 1];
+
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return -1;
+
+        custo += p.matriz_custo[anterior][atual];
+        anterior = atual;
+    }
+
+    // Quarta parte: intervalo [posicao_destino, galpão_final)
+    for(int i = posicao_destino; i < (rota.size()-1); i++){
+        atual = rota[i];
+        prefix += p.demandas[atual - 1];
+
+        lower = max(lower, -prefix);
+        upper = min(upper, p.capacidade_max - prefix);
+        if(lower > upper) return -1;
+
+        custo += p.matriz_custo[anterior][atual];
+        anterior = atual;
+    }
+
+    // Quinta e ultima parte: somar custo da ultima estacao ao galpao
     custo += p.matriz_custo[anterior][0];
 
     return custo;
@@ -617,9 +637,9 @@ int CustoTotal(const vector<vector<int>> &rotas)
 int CustoRota(vector<int> &rota)
 {
     int custo = 0;
-    for (size_t i = 0; i < (rota.size() - 1); i++)
+    for (int i = 1; i < rota.size(); i++)
     {
-        custo += p.matriz_custo[rota[i]][rota[i + 1]];
+        custo += p.matriz_custo[rota[i-1]][rota[i]];
     }
     return custo;
 }
@@ -680,14 +700,14 @@ bool VerificaSolucao(const vector<vector<int>> &rotas, bool verbose = false)
         if (rotas[i].front() != 0 || rotas[i].back() != 0)
         {
             if (verbose)
-                cout << "Erro: Rota " << i + 1 << " não começa e termina na garagem." << endl;
+                cout << "Erro: Rota " << i + 1 << " nao começa ou termina na garagem." << endl;
             return false;
         }
 
         if (VerificaDemanda(rotas[i]) == false)
         {
             if (verbose)
-                cout << "Erro: Rota " << i + 1 << " não respeita a capacidade máxima." << endl;
+                cout << "Erro: Rota " << i + 1 << " nao respeita a capacidade maxima." << endl;
             return false;
         }
     }
@@ -889,4 +909,11 @@ void TentaMinimizar(vector<vector<int>>& rotas){
     }
 }
 
+void RetiraRotasVazias(vector<vector<int>> &rotas){
+    for(int i = rotas.size() - 1; i >= 0; i --){
+        if(rotas[i].size() <= 2){
+            rotas.erase(rotas.begin() + i);
+        }
+    }
+}
 #endif

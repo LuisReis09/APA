@@ -15,7 +15,7 @@ int main()
     srand(time(NULL)); // seed para aleatorizar o tamanho do segmento
 
     cout << "====== Teste de Metodos ======" << endl;
-    Solucao s = VizinhoMaisProximo2();
+    Solucao s = VizinhoMaisProximo();
     s.custo_total = CustoTotal(s.rotas);
     cout << "custo sem verificacoes: " << s.custo_total << endl;
     CorrigeSolucao(s.rotas);
