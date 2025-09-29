@@ -1072,10 +1072,6 @@ int RVND(vector<vector<int>> &rotas)
                     break;
             }
 
-            if(teste > melhor_custo){
-                cout << estrutura_atual << " retornou custo errado" << endl;
-            }
-
             if (teste < melhor_custo)
             {
                 melhor_custo = teste;

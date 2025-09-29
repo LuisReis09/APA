@@ -115,11 +115,5 @@ int main()
         cout << "Solucao INVALIDA" << endl;
     }
 
-    // VNDIntraInter(s.rotas);
-    // s.custo_total = CustoTotal(s.rotas);
-
-    // cout << "Custo Ultimate: " << s.custo_total << endl;
-    // s.SalvarSolucao("solucao_ultimate.txt");
-
     return 0;
 }
