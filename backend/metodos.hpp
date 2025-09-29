@@ -308,14 +308,29 @@ Solucao VizinhoMaisProximo2()
  */
 Solucao IMB()
 {
+    struct Range {
+        int lower = 0;
+        int upper = p.capacidade_max;
+        int prefix = 0;
+    };
+
     // Cria um vetor de rotas do tipo {0, 0}
     vector<vector<int>> rotas(p.qnt_veiculos, vector<int>(2, 0));
     rotas[0].insert(rotas[0].begin() + 1, 1); // inicia a primeira rota com a estação 1, ficando {0, 1, 0}
     for (int i = 0; i < p.qnt_veiculos; i++)
         rotas[i].reserve(p.qnt_estacoes / p.qnt_veiculos + 2);
 
+    // Controle de demandas por rota
+    vector<Range> range_demandas(p.qnt_veiculos);
+
+    // Atualiza a primeira rota com a estação 1
+    range_demandas[0].prefix += p.demandas[0];
+    range_demandas[0].lower = max(range_demandas[0].lower, -range_demandas[0].prefix);
+    range_demandas[0].upper = min(range_demandas[0].upper, p.capacidade_max - range_demandas[0].prefix);
+
     int caminhoes_usados = 1;
     int custo_total = 0;
+    custo_total += p.matriz_custo[0][1] + p.matriz_custo[1][0];
 
     // Para cada estação ...
     for (int i = 2; i <= p.qnt_estacoes; i++)
@@ -323,7 +338,7 @@ Solucao IMB()
         // Inicialização de variaveis auxiliares
         int menor_custo = MAXX_INT;
         int melhor_rota = -1;
-        int melhor_posicao;
+        int melhor_posicao = -1;
 
         // Para cada caminhão já usado (ou seja, rotas)
         for (int j = 0; j < caminhoes_usados; j++)
@@ -331,10 +346,18 @@ Solucao IMB()
             // Examina cada termo daquela rota
             for (int k = 1; k < rotas[j].size(); k++)
             {
-                // Calculo do custo daquele inserção naquele ponto
-                int custo = p.matriz_custo[rotas[j][k - 1]][i] + p.matriz_custo[i][rotas[j][k]] - p.matriz_custo[rotas[j][k - 1]][rotas[j][k]];
-                if (custo < menor_custo && InsertionTest(rotas[j], k, i))
-                { // Se for, atualiza as variaveis auxiliares
+                // Calculo do custo daquela inserção naquele ponto
+                int custo = p.matriz_custo[rotas[j][k - 1]][i] +
+                            p.matriz_custo[i][rotas[j][k]] -
+                            p.matriz_custo[rotas[j][k - 1]][rotas[j][k]];
+
+                // Testa demanda se for inserir "i"
+                int prefix = range_demandas[j].prefix + p.demandas[i - 1];
+                bool pode_inserir = (max(range_demandas[j].lower, -prefix) <=
+                                     min(range_demandas[j].upper, p.capacidade_max - prefix));
+
+                if (custo < menor_custo && pode_inserir)
+                {
                     menor_custo = custo;
                     melhor_rota = j;
                     melhor_posicao = k;
@@ -343,17 +366,31 @@ Solucao IMB()
         }
 
         // Se não encontrou nenhuma rota possível de inserção, cria uma nova rota.
-        // Não precisamos, em teoria, verificar se há caminhões disponíveis, pois o problema é inviável se não houver.
         if (melhor_rota == -1)
         {
             rotas[caminhoes_usados] = {0, i, 0};
             custo_total += p.matriz_custo[0][i] + p.matriz_custo[i][0];
+
+            // Atualiza demanda da nova rota
+            range_demandas[caminhoes_usados].prefix += p.demandas[i - 1];
+            range_demandas[caminhoes_usados].lower = max(range_demandas[caminhoes_usados].lower,
+                                                         -range_demandas[caminhoes_usados].prefix);
+            range_demandas[caminhoes_usados].upper = min(range_demandas[caminhoes_usados].upper,
+                                                         p.capacidade_max - range_demandas[caminhoes_usados].prefix);
+
             caminhoes_usados++;
         }
         else
-        { // Insere a rota com a nova estação
+        { // Insere a estação na rota existente
             rotas[melhor_rota].insert(rotas[melhor_rota].begin() + melhor_posicao, i);
             custo_total += menor_custo;
+
+            // Atualiza demanda da rota escolhida
+            range_demandas[melhor_rota].prefix += p.demandas[i - 1];
+            range_demandas[melhor_rota].lower = max(range_demandas[melhor_rota].lower,
+                                                    -range_demandas[melhor_rota].prefix);
+            range_demandas[melhor_rota].upper = min(range_demandas[melhor_rota].upper,
+                                                    p.capacidade_max - range_demandas[melhor_rota].prefix);
         }
     }
 
@@ -430,32 +467,6 @@ void PerturbacaoNewRoute(vector<vector<int>> &rotas, int qtd_elementos)
     nova_rota.push_back(0); // Depósito final
     if(nova_rota.size() > 2) // Adiciona a nova rota apenas se tiver elementos
         rotas.push_back(nova_rota);
-}
-
-/**
- * @brief Algoritmo parte do ILS. Troca dois termos entre as rotas.
- * ---
- * @param rotas Vetor de vetor de inteiros. Rotas de uma dada solução
- * @param trocar_a_realizar Inteiro representando quantas trocas devem ser feitas. Determinada pelo grau de perturbação.
- * ---
- */
-void PerturbacaoSwitch(vector<vector<int>> &rotas, int trocar_a_realizar)
-{
-    while (trocar_a_realizar--)
-    {
-        if (rotas.size() < 2) break;
-        
-        int r1 = rand() % rotas.size();
-        int r2 = rand() % rotas.size();
-        if (r1 == r2) continue;
-        
-        if (rotas[r1].size() < 3 || rotas[r2].size() < 3) continue;
-        
-        int pos1 = 1 + rand() % (rotas[r1].size() - 2);
-        int pos2 = 1 + rand() % (rotas[r2].size() - 2);
-        
-        swap(rotas[r1][pos1], rotas[r2][pos2]);
-    }
 }
 
 /**
@@ -650,20 +661,50 @@ int VNDSwap(vector<vector<int>> &rotas)
                     int e2 = rotas[id_r2][id_e2];
                     int e2_pos = rotas[id_r2][id_e2 + 1];
 
-                    if (e1 == e2)
-                    {
-                        continue;
+                    if(e1 == e2) continue;
+
+                    if(id_r1 == id_r2){
+                        if(id_e2 == id_e1 + 1){
+                            custo_teste  = p.matriz_custo[e1_ant][e2];
+                            custo_teste += p.matriz_custo[e2][e1];
+                            custo_teste += p.matriz_custo[e1][e2_pos];
+    
+                            custo_teste -= p.matriz_custo[e1_ant][e1];
+                            custo_teste -= p.matriz_custo[e1][e2];
+                            custo_teste -= p.matriz_custo[e2][e2_pos];
+                        }
+                        else if(id_e1 == id_e2 + 1){
+                            custo_teste  = p.matriz_custo[e2_ant][e1];
+                            custo_teste += p.matriz_custo[e1][e2];
+                            custo_teste += p.matriz_custo[e2][e1_pos];
+    
+                            custo_teste -= p.matriz_custo[e2_ant][e2];
+                            custo_teste -= p.matriz_custo[e2][e1];
+                            custo_teste -= p.matriz_custo[e1][e1_pos];
+                        }
+                        else{
+                            custo_teste = -p.matriz_custo[e1_ant][e1];
+                            custo_teste -= p.matriz_custo[e1][e1_pos];
+                            custo_teste -= p.matriz_custo[e2_ant][e2];
+                            custo_teste -= p.matriz_custo[e2][e2_pos];
+        
+                            custo_teste += p.matriz_custo[e1_ant][e2];
+                            custo_teste += p.matriz_custo[e2][e1_pos];
+                            custo_teste += p.matriz_custo[e2_ant][e1];
+                            custo_teste += p.matriz_custo[e1][e2_pos];
+                        }
+                    }else{
+                        custo_teste = -p.matriz_custo[e1_ant][e1];
+                        custo_teste -= p.matriz_custo[e1][e1_pos];
+                        custo_teste -= p.matriz_custo[e2_ant][e2];
+                        custo_teste -= p.matriz_custo[e2][e2_pos];
+    
+                        custo_teste += p.matriz_custo[e1_ant][e2];
+                        custo_teste += p.matriz_custo[e2][e1_pos];
+                        custo_teste += p.matriz_custo[e2_ant][e1];
+                        custo_teste += p.matriz_custo[e1][e2_pos];
                     }
 
-                    custo_teste = -p.matriz_custo[e1_ant][e1];
-                    custo_teste -= p.matriz_custo[e1][e1_pos];
-                    custo_teste -= p.matriz_custo[e2_ant][e2];
-                    custo_teste -= p.matriz_custo[e2][e2_pos];
-
-                    custo_teste += p.matriz_custo[e1_ant][e2];
-                    custo_teste += p.matriz_custo[e2][e1_pos];
-                    custo_teste += p.matriz_custo[e2_ant][e1];
-                    custo_teste += p.matriz_custo[e1][e2_pos];
 
                     if(custo_teste < melhor_custo){
                         if(id_r1 == id_r2){
@@ -866,7 +907,6 @@ int VNDReinsertion(vector<vector<int>> &rotas)
 
     // Remove rotas "mortas" (só depot)
     RetiraRotasVazias(rotas);
-
     return CustoTotal(rotas);
 }
 
@@ -994,9 +1034,9 @@ int VND2(vector<vector<int>> &rotas)
 // RNG para o shuffle
 static std::mt19937 rng(std::random_device{}());
 
-int RVND(vector<vector<int>> &rotas, int custo_inicial = -1)
+int RVND(vector<vector<int>> &rotas)
 {
-    int melhor_custo = custo_inicial == -1 ? CustoTotal(rotas) : custo_inicial;
+    int melhor_custo = CustoTotal(rotas);
     int teste;
     int estrutura_atual;
 
@@ -1030,6 +1070,10 @@ int RVND(vector<vector<int>> &rotas, int custo_inicial = -1)
                 case 5:
                     teste = VNDBlockSwap(rotas);
                     break;
+            }
+
+            if(teste > melhor_custo){
+                cout << estrutura_atual << " retornou custo errado" << endl;
             }
 
             if (teste < melhor_custo)

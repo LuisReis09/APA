@@ -8,7 +8,7 @@
 
 using namespace std;
 
-Problema p("../exemplos/instancia1.txt", true);
+Problema p("../exemplos/instancia3.txt", true);
 
 int main()
 {

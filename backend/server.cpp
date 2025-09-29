@@ -9,7 +9,7 @@
 using namespace std;
 
 Problema p;
-static int gap_antigo_imb = -1, gap_antigo_vmp = -1;
+static int gap_antigo_imb, gap_antigo_vmp;
 static string nome_arquivo = "";
 static bool gulosos_executados = false;
 
@@ -90,14 +90,14 @@ int main()
        - success: booleano indicando se a entrada foi válida
        - message: indicando a mensagem de sucesso ou a razão do erro.
     */
-    server.Options("/carregarArquivo", [](const httplib::Request &, httplib::Response &res) {
+    server.Options("/carregarArquivo", [&melhor_vizinho_mais_proximo, &melhor_insercao_mais_barata](const httplib::Request &, httplib::Response &res) {
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
         res.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization");
         res.status = 200; // precisa responder OK
     });
 
-    server.Post("/carregarArquivo", [](const httplib::Request &req, httplib::Response &res){
+    server.Post("/carregarArquivo", [&melhor_vizinho_mais_proximo, &melhor_insercao_mais_barata](const httplib::Request &req, httplib::Response &res){
         res.set_header("Access-Control-Allow-Origin", "*");
 
         try{
@@ -114,6 +114,9 @@ int main()
             nome_arquivo = get_form_field(req, "file_name");
 
             gulosos_executados = false;
+            melhor_vizinho_mais_proximo = Solucao();
+            melhor_insercao_mais_barata = Solucao();
+            gap_antigo_imb = gap_antigo_vmp = -1;
 
             res.status = 200;
             string json_response = R"({"success": true, "message": "Arquivo recebido e instanciado com sucesso!"})";
@@ -205,8 +208,6 @@ int main()
         Solucao sol_insercao_mais_barata = IMB();
         end = chrono::high_resolution_clock::now();
         long long duration_insercao_mais_barata = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-
-        cout << MatrizToString(sol_insercao_mais_barata.rotas) << endl;
 
         cout << "Tempo Inserção Mais Barata: " << duration_insercao_mais_barata << " ms" << endl;
 
@@ -351,7 +352,7 @@ int main()
         cout << "Aplicando VND nas soluções gulosas..." << endl;
         try{
             auto start = chrono::high_resolution_clock::now();
-            RVND(melhor_vizinho_mais_proximo.rotas, melhor_vizinho_mais_proximo.custo_total);
+            RVND(melhor_vizinho_mais_proximo.rotas);
             auto end = chrono::high_resolution_clock::now();
             
             long long duration_vnd_vmp = chrono::duration_cast<chrono::milliseconds>(end - start).count();
@@ -359,17 +360,17 @@ int main()
             cout << "Aplicou VND 1" << endl;
             
             start = chrono::high_resolution_clock::now();
-            RVND(melhor_insercao_mais_barata.rotas, melhor_insercao_mais_barata.custo_total);
+            RVND(melhor_insercao_mais_barata.rotas);
             end = chrono::high_resolution_clock::now();
             
             cout << "Aplicou VND 2" << endl;
             long long duration_vnd_imb = chrono::duration_cast<chrono::milliseconds>(end - start).count();
 
-            melhor_insercao_mais_barata.custo_total = CustoTotal(melhor_insercao_mais_barata.rotas);
             melhor_vizinho_mais_proximo.custo_total = CustoTotal(melhor_vizinho_mais_proximo.rotas);
+            melhor_insercao_mais_barata.custo_total = CustoTotal(melhor_insercao_mais_barata.rotas);
 
-            SalvarResultado(melhor_insercao_mais_barata, "VND 2 - IMB");
-            SalvarResultado(melhor_vizinho_mais_proximo, "VND 2 - VMP");
+            SalvarResultado(melhor_insercao_mais_barata, "RVND - IMB");
+            SalvarResultado(melhor_vizinho_mais_proximo, "RVND - VMP");
 
             double gap_vmp , gap_imb = -1;
             if(p.valor_otimo != -1){

@@ -21,7 +21,7 @@ export const DataInput = ({ onDataSubmit }: DataInputProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [optimalValue, setOptimalValue] = useState("");
   const [maxIterations, setMaxIterations] = useState("2000");
-  const [maxIterationsWithoutImprovement, setMaxIterationsWithoutImprovement] = useState("200");
+  const [maxIterationsWithoutImprovement, setMaxIterationsWithoutImprovement] = useState("100");
   const [error, setError] = useState("");
 
   const onDrop = useCallback((acceptedFiles: File[]) => {

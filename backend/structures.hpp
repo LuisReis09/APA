@@ -20,7 +20,7 @@ public:
     int veiculos_disponiveis;
     vector<vector<int>> matriz_custo;
     int max_iteracoes = 2000;
-    int max_sem_melhora = 200;
+    int max_sem_melhora = 100;
     int valor_otimo = -1;
 
     Problema() : qnt_veiculos(0), capacidade_max(0), qnt_estacoes(0), veiculos_disponiveis(0) {}
